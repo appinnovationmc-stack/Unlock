@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
-import { logOut } from "@/lib/actions/auth";
+import { logOut, getCurrentRole } from "@/lib/actions/auth";
 
 export async function Nav() {
   const supabase = createClient();
@@ -8,21 +8,47 @@ export async function Nav() {
     data: { user }
   } = await supabase.auth.getUser();
 
+  const role = user ? await getCurrentRole() : null;
+
   return (
     <nav className="flex items-center justify-between px-6 py-3 border-b border-white/5 font-mono text-xs uppercase tracking-widest">
-      <Link href="/" className="text-fog">
+      <Link href="/" className="text-fog font-display tracking-normal text-sm">
         UNLOCK
       </Link>
-      <div className="flex items-center gap-4 text-mute">
-        <Link href="/discover" className="hover:text-volt">Discover</Link>
-        <Link href="/studio" className="hover:text-volt">Studio</Link>
-        <Link href="/dashboard" className="hover:text-volt">Creator</Link>
+      <div className="flex items-center gap-3 sm:gap-4 text-mute flex-wrap justify-end">
+        <Link href="/discover" className="hover:text-volt">
+          Discover
+        </Link>
+        {(role === "brand" || !user) && (
+          <Link href="/studio" className="hover:text-volt">
+            Studio
+          </Link>
+        )}
+        {(role === "creator" || !user) && (
+          <Link href="/dashboard" className="hover:text-volt">
+            Creator
+          </Link>
+        )}
+        {role === "consumer" && (
+          <Link href="/wallet" className="hover:text-volt">
+            Wallet
+          </Link>
+        )}
+        {role === "admin" && (
+          <Link href="/admin" className="hover:text-volt">
+            Admin
+          </Link>
+        )}
         {user ? (
           <form action={logOut}>
-            <button className="hover:text-magenta">{user.email} · Log out</button>
+            <button type="submit" className="hover:text-magenta truncate max-w-[140px]">
+              {user.email?.split("@")[0]} · Out
+            </button>
           </form>
         ) : (
-          <Link href="/login" className="hover:text-volt">Log in</Link>
+          <Link href="/login" className="hover:text-volt">
+            Log in
+          </Link>
         )}
       </div>
     </nav>
