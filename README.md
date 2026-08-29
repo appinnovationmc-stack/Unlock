@@ -1,72 +1,98 @@
 # UNLOCK
 
-Real scaffold — Next.js 14 (App Router) + TypeScript + Tailwind + Supabase.
-Replaces the single-HTML prototype with an actual multi-tenant product
-architecture, per the master build direction.
+**Don't just see the ad. Unlock it.**
 
-## Structure
+Interactive advertising and customer-engagement platform connecting:
 
-```
-app/
-  (consumer)/discover/         Consumer discover feed
-  (consumer)/campaign/[id]/    Campaign detail + unlock flow
-  (brand)/studio/              Brand Campaign Studio
-  (creator)/dashboard/         Creator earnings + campaign marketplace
-components/
-  ui/                          Button, XPBadge — shared primitives
-  campaign/CampaignCard.tsx    Signature keyhole-cut campaign surface
-  campaign/UnlockReveal.tsx    Signature foil-tear unlock interaction
-lib/
-  types.ts                     Domain types (mirrors schema.sql)
-  mock-data.ts                 Demo content (NOVA) — not hard-coded logic
-  supabase/                    Browser + server Supabase clients
-supabase/
-  schema.sql                   Multi-tenant Postgres schema + RLS
-```
+**Brands → Campaigns → Consumers → Interactive Experiences → Creators → Engagement → Conversion → Measurable Results**
 
-## Design system
+Born in Africa. Built for the world.
 
-- **Palette**: violet-black void (`#0B0A14`), electric volt (`#C6FF3D`) and
-  magenta (`#FF3DCB`) as a duotone accent pair, gold (`#FFC24B`) reserved
-  strictly for "reward won" states.
-- **Type**: Unbounded (display, bold/900 for headlines), Inter (body),
-  IBM Plex Mono (XP counters, stats, mechanic tags — the "data/code" voice).
-- **Signature shape**: the keyhole clip-path (`.clip-keyhole`) — a diagonal
-  notch cut from one corner, used on every campaign card, stat block and
-  button. It's the platform's one repeated, ownable geometry.
-- **Signature interaction**: `UnlockReveal` — a foil layer that tears away
-  diagonally on tap, reused for prize reveals, hidden-price mechanics and
-  product unlocks.
+## Product
 
-## Data model
+Unlock is infrastructure for *advertising people participate in*, not advertising people merely see.
 
-`supabase/schema.sql` implements:
-- `organizations` / `org_members` — multi-tenant boundary (brand, creator
-  agency, or platform), industry-agnostic (`industry` is free text).
-- `consumers` / `creators` — platform-wide identities, not tenant-owned.
-- `campaigns` + `campaign_mechanic[]` enum — quiz, puzzle, riddle, treasure
-  hunt, QR, NFC, geolocation, timed challenge, social action, referral.
-- `campaign_locations` (PostGIS) — location-based mechanics.
-- `products`, `rewards` — hidden-product/secret-price and reward logic.
-- `attribution_events` — attention → engagement → physical_visit →
-  conversion → purchase, the funnel named in the brief.
-- `referrals`, `transactions` — creator monetisation loop.
-- RLS scoped by `org_members`; public read policy for `status = 'live'`
-  campaigns (consumer-facing Discover feed).
+| Experience | Route | Purpose |
+|------------|-------|--------|
+| **Consumer** | `/discover`, `/campaign/[id]`, `/wallet` | Discover, participate, unlock, collect rewards |
+| **Brand** | `/onboarding`, `/studio` | Create orgs, build & publish campaigns, performance |
+| **Creator** | `/dashboard` | Earnings, referrals, live campaigns |
+| **Admin** | `/admin` | Platform monitoring (`user_metadata.role = "admin"`) |
+
+## Stack
+
+- **Next.js 14** (App Router) + TypeScript
+- **Tailwind CSS** — void / volt / magenta / gold, keyhole geometry
+- **Supabase** — Auth, Postgres, RLS, PostGIS, SECURITY DEFINER RPCs
+
+## Signature design
+
+- **Palette**: violet-black void (`#0B0A14`), electric volt (`#C6FF3D`), magenta (`#FF3DCB`), gold (`#FFC24B`) for reward states only
+- **Type**: Unbounded (display), Inter (body), IBM Plex Mono (data/stats)
+- **Geometry**: keyhole clip-path on cards, buttons, stat blocks
+- **Interaction**: `UnlockReveal` foil-tear unlock moment
+
+## Data model (core)
+
+- `organizations` / `org_members` — multi-tenant boundary
+- `consumers` / `creators` — global identities
+- `campaigns` — lifecycle: draft → scheduled → live → paused → ended → archived
+- `rewards` + `reward_claims` — claim / redeem with server-side enforcement
+- `attribution_events` — funnel stages
+- `campaign_participations`, `referrals`, `transactions`
+- RLS on every tenant table; public read only for `status = 'live'` campaigns
+
+## Security highlights
+
+- Org membership bootstrap locked to first owner only (anti-hijack)
+- XP and wallet columns not client-writable
+- `unlock_campaign` SECURITY DEFINER RPC: server-side XP, one conversion per consumer per campaign, auto reward claim
+- Role-aware routing after login
 
 ## Setup
 
 ```bash
 npm install
-cp .env.example .env.local   # fill in Supabase project URL + anon key
-# apply supabase/schema.sql to a Supabase project (SQL editor or CLI)
+cp .env.example .env.local
+# Fill:
+# NEXT_PUBLIC_SUPABASE_URL=
+# NEXT_PUBLIC_SUPABASE_ANON_KEY=
+# NEXT_PUBLIC_SITE_URL=http://localhost:3000
+
+# Apply ALL migrations in order (SQL editor or supabase db push)
+# supabase/migrations/*.sql including 00000006_production_completion.sql
+
 npm run dev
 ```
 
-## Not yet built (next passes)
+## Demo path (executive)
 
-- Auth flows (Supabase Auth wired into consumer/brand/creator sign-in)
-- Campaign Builder UI (brand side — currently read-only Studio)
-- Wallet + reward redemption transactions
-- Map/spatial interface for geolocation campaigns
-- Live Supabase project + Vercel deployment
+1. Sign up as **Brand** → complete onboarding  
+2. **Studio** → create campaign (draft or publish live)  
+3. Lifecycle: Publish / Pause / Resume / End / Archive  
+4. Sign up as **Consumer** → Discover → open campaign → **Unlock**  
+5. Reward appears in **Wallet**; XP awarded  
+6. Brand Studio shows unlock / attribution counts  
+7. Creator dashboard shows campaigns + referral metrics  
+
+## Environment
+
+| Variable | Required | Notes |
+|----------|----------|-------|
+| `NEXT_PUBLIC_SUPABASE_URL` | yes | Supabase project URL |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | yes | Anon/public key |
+| `NEXT_PUBLIC_SITE_URL` | recommended | Absolute origin for auth email redirects |
+
+## Production checklist
+
+- [ ] Supabase project live, all migrations applied (through `00000006`)
+- [ ] Auth email templates configured (reset password)
+- [ ] RLS verified (cross-org isolation)
+- [ ] `unlock_campaign` RPC present and granted
+- [ ] Vercel (or host) env vars set
+- [ ] Production build: `npm run build`
+- [ ] No secrets in client bundles
+
+## License
+
+Private — App Innovation MC
