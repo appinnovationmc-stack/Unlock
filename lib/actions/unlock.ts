@@ -10,7 +10,12 @@ export async function unlockCampaign(campaignId: string) {
   } = await supabase.auth.getUser();
 
   if (!user) {
-    return { error: "You need to log in to unlock this.", alreadyUnlocked: false };
+    return {
+      error: "You need to log in to unlock this.",
+      alreadyUnlocked: false,
+      xpAwarded: 0,
+      rewardLabel: null as string | null
+    };
   }
 
   const { data, error } = await supabase
@@ -18,14 +23,28 @@ export async function unlockCampaign(campaignId: string) {
     .single();
 
   if (error) {
-    return { error: error.message, alreadyUnlocked: false };
+    return {
+      error: error.message,
+      alreadyUnlocked: false,
+      xpAwarded: 0,
+      rewardLabel: null as string | null
+    };
   }
+
+  const row = data as {
+    xp_awarded: number;
+    already_unlocked: boolean;
+    reward_label: string | null;
+  } | null;
 
   revalidatePath(`/campaign/${campaignId}`);
   revalidatePath("/discover");
+  revalidatePath("/wallet");
 
   return {
     error: null,
-    alreadyUnlocked: (data as { already_unlocked: boolean } | null)?.already_unlocked ?? false
+    alreadyUnlocked: row?.already_unlocked ?? false,
+    xpAwarded: row?.xp_awarded ?? 0,
+    rewardLabel: row?.reward_label ?? null
   };
 }
