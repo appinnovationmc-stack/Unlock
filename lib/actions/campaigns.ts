@@ -22,6 +22,15 @@ export async function getMyOrgId() {
   return data?.org_id ?? null;
 }
 
+function parseDateInput(raw: string): string | null {
+  const v = raw.trim();
+  if (!v) return null;
+  // datetime-local → "2026-08-29T18:00" — append Z-less local; store as ISO-ish
+  const d = new Date(v);
+  if (Number.isNaN(d.getTime())) return null;
+  return d.toISOString();
+}
+
 function parseCampaignForm(formData: FormData) {
   const title = String(formData.get("title") ?? "").trim();
   const tagline = String(formData.get("tagline") ?? "").trim();
@@ -32,8 +41,9 @@ function parseCampaignForm(formData: FormData) {
   const mechanics = formData.getAll("mechanics") as CampaignMechanicType[];
   const rewardLabel = String(formData.get("reward_label") ?? "").trim();
   const rewardValue = String(formData.get("reward_value") ?? "").trim();
-  const startsAt = String(formData.get("starts_at") ?? "") || new Date().toISOString();
-  const endsAt = String(formData.get("ends_at") ?? "") || null;
+  const startsAt =
+    parseDateInput(String(formData.get("starts_at") ?? "")) ?? new Date().toISOString();
+  const endsAt = parseDateInput(String(formData.get("ends_at") ?? ""));
   const heroImage = String(formData.get("hero_image_url") ?? "").trim() || null;
   const status = (String(formData.get("status") ?? "draft") as CampaignStatus) || "draft";
 
@@ -43,7 +53,7 @@ function parseCampaignForm(formData: FormData) {
     description,
     objective,
     targetAudience,
-    xp,
+    xp: Number.isFinite(xp) ? xp : 100,
     mechanics,
     rewardLabel,
     rewardValue,
