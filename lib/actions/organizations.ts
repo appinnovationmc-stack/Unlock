@@ -22,17 +22,17 @@ export async function createOrganization(formData: FormData) {
     return redirect(`/onboarding?error=${encodeURIComponent("Organization name is required")}`);
   }
 
+  // Atomic: org insert + owner membership insert happen in one transaction
+  // inside the RPC, so a mid-flow failure can never leave the org without
+  // an owner. Also enforces one org per user server-side.
   const { data: org, error } = await supabase
-    .from("organizations")
-    .insert({
-      name,
-      industry,
-      kind: "brand",
-      description: description || null,
-      website: website || null,
-      logo_url: logoUrl
+    .rpc("create_organization", {
+      p_name: name,
+      p_industry: industry,
+      p_description: description || null,
+      p_website: website || null,
+      p_logo_url: logoUrl
     })
-    .select("id")
     .single();
 
   if (error || !org) {
@@ -40,12 +40,6 @@ export async function createOrganization(formData: FormData) {
       `/onboarding?error=${encodeURIComponent(error?.message ?? "Could not create organization")}`
     );
   }
-
-  await supabase.from("org_members").insert({
-    org_id: org.id,
-    user_id: user.id,
-    role: "owner"
-  });
 
   revalidatePath("/studio");
   redirect("/studio");
@@ -64,6 +58,19 @@ export async function updateOrganization(formData: FormData) {
     data: { user }
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
+
+  // Explicit app-layer check, not just reliance on the RLS policy: keeps
+  // this action safe even if the DB policy is ever loosened or dropped.
+  const { data: membership } = await supabase
+    .from("org_members")
+    .select("org_id")
+    .eq("user_id", user.id)
+    .eq("org_id", orgId)
+    .maybeSingle();
+
+  if (!membership) {
+    return redirect(`/studio?error=${encodeURIComponent("Not authorized to update this organization")}`);
+  }
 
   const { error } = await supabase
     .from("organizations")

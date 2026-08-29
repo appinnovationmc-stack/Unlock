@@ -17,9 +17,9 @@ export default async function AdminPage() {
       <main className="min-h-screen px-6 py-10 md:px-12">
         <h1 className="font-display text-2xl text-fog mb-4">Admin</h1>
         <p className="text-mute text-sm">
-          Platform administration is restricted. Set{" "}
-          <code className="text-volt">user_metadata.role = &quot;admin&quot;</code> in Supabase
-          Auth for authorised operators.
+          Platform administration is restricted. Grant access by inserting the operator&apos;s
+          user id into <code className="text-volt">admin_users</code> from the Supabase dashboard
+          (service role only — this cannot be self-granted from the app).
         </p>
       </main>
     );

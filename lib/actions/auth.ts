@@ -6,11 +6,25 @@ import type { AuthRole } from "@/lib/types";
 
 export type { AuthRole };
 
+// Signup only ever provisions these three self-service roles. "admin" is
+// deliberately excluded — it must never be settable by the client, at
+// signup or otherwise. See getCurrentRole() and admin_users (migration
+// 00000008) for how admin is actually granted.
+const SELF_SERVICE_SIGNUP_ROLES = new Set(["consumer", "creator", "brand"]);
+
+function sanitizeSignupRole(raw: FormDataEntryValue | null): "consumer" | "creator" | "brand" {
+  const value = String(raw ?? "consumer");
+  return (SELF_SERVICE_SIGNUP_ROLES.has(value) ? value : "consumer") as
+    | "consumer"
+    | "creator"
+    | "brand";
+}
+
 export async function signUp(formData: FormData) {
   const email = String(formData.get("email"));
   const password = String(formData.get("password"));
   const handle = String(formData.get("handle") ?? "").trim();
-  const role = String(formData.get("role")) as AuthRole;
+  const role = sanitizeSignupRole(formData.get("role"));
 
   const supabase = createClient();
 
@@ -19,7 +33,7 @@ export async function signUp(formData: FormData) {
     password,
     options: {
       data: {
-        role: role === "brand" ? "brand" : role,
+        role,
         handle: handle || undefined
       }
     }
@@ -54,7 +68,14 @@ export async function logIn(formData: FormData) {
   const user = data.user;
   if (!user) redirect("/discover");
 
-  const role = (user.user_metadata?.role as string) || "consumer";
+  // Redirect target is UX only — resolved from real DB relationships, not
+  // client-controlled metadata. Every destination page re-checks access
+  // itself, so this is not an authorization decision.
+  const role = await getCurrentRole();
+
+  if (role === "admin") {
+    redirect("/admin");
+  }
 
   if (role === "brand") {
     const { data: membership } = await supabase
@@ -68,10 +89,6 @@ export async function logIn(formData: FormData) {
 
   if (role === "creator") {
     redirect("/dashboard");
-  }
-
-  if (role === "admin") {
-    redirect("/admin");
   }
 
   redirect("/discover");
@@ -118,7 +135,15 @@ export async function updatePassword(formData: FormData) {
   redirect("/login?reset=1");
 }
 
-/** Resolve current user role from metadata + membership tables */
+/**
+ * Resolve current user role from real, RLS-protected tables only.
+ *
+ * Deliberately does NOT read auth.users.user_metadata.role: that field is
+ * writable by the client at any time via supabase.auth.updateUser(), so
+ * trusting it for authorization is a privilege-escalation hole (any user
+ * could self-grant "admin"). admin_users, creators, and org_members are
+ * all either service-role-only writes or scoped to the caller's own rows.
+ */
 export async function getCurrentRole(): Promise<AuthRole | null> {
   const supabase = createClient();
   const {
@@ -126,10 +151,12 @@ export async function getCurrentRole(): Promise<AuthRole | null> {
   } = await supabase.auth.getUser();
   if (!user) return null;
 
-  const metaRole = user.user_metadata?.role as string | undefined;
-  if (metaRole === "admin") return "admin";
-  if (metaRole === "brand") return "brand";
-  if (metaRole === "creator") return "creator";
+  const { data: admin } = await supabase
+    .from("admin_users")
+    .select("user_id")
+    .eq("user_id", user.id)
+    .maybeSingle();
+  if (admin) return "admin";
 
   const { data: creator } = await supabase
     .from("creators")
