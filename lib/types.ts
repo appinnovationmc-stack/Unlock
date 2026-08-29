@@ -88,7 +88,12 @@ export interface Reward {
   redeemed_count: number;
 }
 
-export type RewardClaimStatus = "available" | "claimed" | "redeemed" | "expired";
+export type RewardClaimStatus =
+  | "available"
+  | "claimed"
+  | "redeemed"
+  | "expired"
+  | "pending_verification";
 
 export interface RewardClaim {
   id: string;
@@ -99,6 +104,21 @@ export interface RewardClaim {
   claimed_at: string;
   redeemed_at: string | null;
   expires_at: string | null;
+  product_code_id?: string | null;
+  proof_photo_url?: string | null;
+  claim_store_location?: string | null;
+  shared_externally?: boolean;
+}
+
+export interface ProductCode {
+  id: string;
+  campaign_id: string;
+  code: string;
+  store_location: string | null;
+  status: "unclaimed" | "reserved" | "claimed";
+  claimed_by: string | null;
+  claimed_at: string | null;
+  created_at: string;
 }
 
 export interface Product {

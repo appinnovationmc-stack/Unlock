@@ -1,4 +1,5 @@
 import { UnlockClient } from "@/components/campaign/UnlockClient";
+import { ProductHuntClaim } from "@/components/campaign/ProductHuntClaim";
 import { createClient } from "@/lib/supabase/server";
 import { notFound } from "next/navigation";
 import Link from "next/link";
@@ -10,7 +11,7 @@ export default async function CampaignPage({
   searchParams
 }: {
   params: { id: string };
-  searchParams: { ref?: string };
+  searchParams: { ref?: string; code?: string };
 }) {
   const supabase = createClient();
 
@@ -53,6 +54,15 @@ export default async function CampaignPage({
 
   const referrerCreatorId = searchParams.ref || null;
 
+  // Campaigns that have physical per-unit product codes loaded use the
+  // find-the-product claim flow instead of the plain tap-to-unlock one.
+  const { count: productCodeCount } = await supabase
+    .from("product_codes")
+    .select("id", { count: "exact", head: true })
+    .eq("campaign_id", params.id);
+
+  const isProductHunt = (productCodeCount ?? 0) > 0;
+
   return (
     <main className="min-h-screen px-6 py-10 md:px-12 max-w-2xl mx-auto">
       {campaign.status !== "live" && (
@@ -71,11 +81,15 @@ export default async function CampaignPage({
         <p className="text-fog/80 text-sm mb-8 leading-relaxed">{campaign.description}</p>
       )}
 
-      <UnlockClient
-        campaignId={campaign.id}
-        rewardLabel={rewardLabel}
-        referrerCreatorId={referrerCreatorId}
-      />
+      {isProductHunt ? (
+        <ProductHuntClaim campaignId={campaign.id} initialCode={searchParams.code} />
+      ) : (
+        <UnlockClient
+          campaignId={campaign.id}
+          rewardLabel={rewardLabel}
+          referrerCreatorId={referrerCreatorId}
+        />
+      )}
 
       <p className="mt-6 text-center font-mono text-xs text-mute">
         +{campaign.xp_value} XP on unlock
