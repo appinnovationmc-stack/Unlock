@@ -3,7 +3,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 
-export async function unlockCampaign(campaignId: string) {
+export async function unlockCampaign(campaignId: string, referrerCreatorId?: string | null) {
   const supabase = createClient();
   const {
     data: { user }
@@ -18,9 +18,14 @@ export async function unlockCampaign(campaignId: string) {
     };
   }
 
-  const { data, error } = await supabase
-    .rpc("unlock_campaign", { p_campaign_id: campaignId })
-    .single();
+  const args: { p_campaign_id: string; p_referrer_creator_id?: string } = {
+    p_campaign_id: campaignId
+  };
+  if (referrerCreatorId) {
+    args.p_referrer_creator_id = referrerCreatorId;
+  }
+
+  const { data, error } = await supabase.rpc("unlock_campaign", args).single();
 
   if (error) {
     return {
@@ -40,6 +45,8 @@ export async function unlockCampaign(campaignId: string) {
   revalidatePath(`/campaign/${campaignId}`);
   revalidatePath("/discover");
   revalidatePath("/wallet");
+  revalidatePath("/dashboard");
+  revalidatePath("/studio");
 
   return {
     error: null,

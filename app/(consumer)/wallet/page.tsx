@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { XPBadge } from "@/components/ui/XPBadge";
+import { RedeemButton } from "@/components/wallet/RedeemButton";
 
 export const dynamic = "force-dynamic";
 
@@ -24,8 +25,7 @@ export default async function WalletPage() {
       <main className="min-h-screen px-6 py-10 md:px-12">
         <h1 className="font-display text-2xl text-fog mb-4">Wallet</h1>
         <p className="text-mute text-sm">
-          Wallet is for consumer accounts. Switch to a consumer account to collect and redeem
-          rewards.
+          Wallet is for consumer accounts. Use a consumer signup to collect and redeem rewards.
         </p>
       </main>
     );
@@ -70,10 +70,14 @@ export default async function WalletPage() {
             </Link>
           </div>
         ) : (
-          claims.map((claim: any) => (
-            <div key={claim.id} className="flex items-center justify-between px-5 py-4">
-              <div>
-                <p className="font-display text-fog">
+          claims.map((claim: {
+            id: string;
+            status: string;
+            rewards?: { label?: string; value?: string; type?: string } | null;
+          }) => (
+            <div key={claim.id} className="flex items-center justify-between gap-3 px-5 py-4">
+              <div className="min-w-0">
+                <p className="font-display text-fog truncate">
                   {claim.rewards?.label ?? "Reward"}
                 </p>
                 <p className="font-mono text-xs text-mute mt-0.5">
@@ -81,26 +85,28 @@ export default async function WalletPage() {
                   {claim.rewards?.type ? ` · ${claim.rewards.type}` : ""}
                 </p>
               </div>
-              <span
-                className={`font-mono text-[10px] uppercase tracking-widest ${
-                  claim.status === "claimed"
-                    ? "text-volt"
-                    : claim.status === "redeemed"
+              {claim.status === "claimed" ? (
+                <RedeemButton claimId={claim.id} />
+              ) : (
+                <span
+                  className={`font-mono text-[10px] uppercase tracking-widest shrink-0 ${
+                    claim.status === "redeemed"
                       ? "text-gold"
                       : claim.status === "expired"
                         ? "text-mute"
                         : "text-fog"
-                }`}
-              >
-                {claim.status}
-              </span>
+                  }`}
+                >
+                  {claim.status}
+                </span>
+              )}
             </div>
           ))
         )}
       </div>
 
       <p className="mt-8 text-center font-mono text-[10px] text-mute uppercase tracking-widest">
-        Rewards are validated server-side. Duplicate claims are blocked.
+        Redeem is enforced server-side. Duplicate claims are blocked.
       </p>
     </main>
   );

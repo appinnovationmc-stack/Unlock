@@ -5,7 +5,13 @@ import Link from "next/link";
 
 export const dynamic = "force-dynamic";
 
-export default async function CampaignPage({ params }: { params: { id: string } }) {
+export default async function CampaignPage({
+  params,
+  searchParams
+}: {
+  params: { id: string };
+  searchParams: { ref?: string };
+}) {
   const supabase = createClient();
 
   const { data: campaign } = await supabase
@@ -45,6 +51,8 @@ export default async function CampaignPage({ params }: { params: { id: string } 
     ? `${reward.label}${reward.value ? " — " + reward.value : ""}`
     : "Reward pending";
 
+  const referrerCreatorId = searchParams.ref || null;
+
   return (
     <main className="min-h-screen px-6 py-10 md:px-12 max-w-2xl mx-auto">
       {campaign.status !== "live" && (
@@ -63,7 +71,11 @@ export default async function CampaignPage({ params }: { params: { id: string } 
         <p className="text-fog/80 text-sm mb-8 leading-relaxed">{campaign.description}</p>
       )}
 
-      <UnlockClient campaignId={campaign.id} rewardLabel={rewardLabel} />
+      <UnlockClient
+        campaignId={campaign.id}
+        rewardLabel={rewardLabel}
+        referrerCreatorId={referrerCreatorId}
+      />
 
       <p className="mt-6 text-center font-mono text-xs text-mute">
         +{campaign.xp_value} XP on unlock

@@ -7,10 +7,12 @@ import Link from "next/link";
 
 export function UnlockClient({
   campaignId,
-  rewardLabel
+  rewardLabel,
+  referrerCreatorId
 }: {
   campaignId: string;
   rewardLabel: string;
+  referrerCreatorId?: string | null;
 }) {
   const [error, setError] = useState<string | null>(null);
   const [alreadyUnlocked, setAlreadyUnlocked] = useState(false);
@@ -23,7 +25,7 @@ export function UnlockClient({
         label={rewardLabel}
         onRevealed={() => {
           startTransition(async () => {
-            const result = await unlockCampaign(campaignId);
+            const result = await unlockCampaign(campaignId, referrerCreatorId);
             setError(result.error);
             setAlreadyUnlocked(result.alreadyUnlocked);
             if (!result.error && !result.alreadyUnlocked) {
