@@ -41,8 +41,10 @@ $$;
 
 grant execute on function public.redeem_reward_claim(uuid) to authenticated;
 
--- Extend unlock to accept optional referrer creator
-create or replace function public.unlock_campaign(
+drop function if exists public.unlock_campaign(uuid);
+drop function if exists public.unlock_campaign(uuid, uuid);
+
+create function public.unlock_campaign(
   p_campaign_id uuid,
   p_referrer_creator_id uuid default null
 )
@@ -76,7 +78,6 @@ begin
     raise exception 'Campaign is not live';
   end if;
 
-  -- Validate referrer is a real creator (ignore self)
   v_creator := null;
   if p_referrer_creator_id is not null
      and p_referrer_creator_id is distinct from auth.uid() then
@@ -102,8 +103,7 @@ begin
 
   if v_creator is not null then
     insert into referrals (campaign_id, referrer_creator_id, referred_consumer_id, converted)
-    values (p_campaign_id, v_creator, auth.uid(), true)
-    on conflict do nothing;
+    values (p_campaign_id, v_creator, auth.uid(), true);
   end if;
 
   select r.id, r.label into v_reward_id, v_reward_label
