@@ -95,7 +95,7 @@ export async function requestPasswordReset(formData: FormData) {
   const origin = siteUrl || (vercel ? `https://${vercel}` : "http://localhost:3000");
 
   const { error } = await supabase.auth.resetPasswordForEmail(email, {
-    redirectTo: `${origin}/reset-password`
+    redirectTo: `${origin}/auth/callback?next=${encodeURIComponent("/reset-password")}`
   });
 
   if (error) {
@@ -106,8 +106,21 @@ export async function requestPasswordReset(formData: FormData) {
 }
 
 export async function updatePassword(formData: FormData) {
-  const password = String(formData.get("password"));
+  const password = String(formData.get("password") ?? "");
+  if (password.length < 6) {
+    return redirect(`/reset-password?error=${encodeURIComponent("Password must be at least 6 characters")}`);
+  }
+
   const supabase = createClient();
+  const {
+    data: { user }
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return redirect(
+      `/forgot-password?error=${encodeURIComponent("Your password reset session has expired. Please request a new link.")}`
+    );
+  }
 
   const { error } = await supabase.auth.updateUser({ password });
 
@@ -115,6 +128,7 @@ export async function updatePassword(formData: FormData) {
     return redirect(`/reset-password?error=${encodeURIComponent(error.message)}`);
   }
 
+  await supabase.auth.signOut();
   redirect("/login?reset=1");
 }
 
