@@ -164,7 +164,12 @@ export class PaystackPaymentProvider implements PaymentProvider {
       .update(typeof rawBody === "string" ? rawBody : rawBody)
       .digest("hex");
 
-    if (hash !== signatureHeader) {
+    const hashBuf = Buffer.from(hash, "hex");
+    const sigBuf = Buffer.from(signatureHeader, "hex");
+    const validSignature =
+      hashBuf.length === sigBuf.length && crypto.timingSafeEqual(hashBuf, sigBuf);
+
+    if (!validSignature) {
       return { valid: false, eventId: "", eventType: "", payload: null, error: "Invalid signature" };
     }
 

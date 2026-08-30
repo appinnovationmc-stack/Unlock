@@ -11,7 +11,12 @@ import { getPaymentProvider } from "@/lib/payments";
 
 function getServiceClient() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!key) {
+    // Never silently fall back to the anon key for a path that writes
+    // financial data — fail loudly so misconfiguration is caught immediately.
+    throw new Error("SUPABASE_SERVICE_ROLE_KEY is not configured — refusing to process payment webhook");
+  }
   return createClient(url, key, { auth: { persistSession: false } });
 }
 
@@ -28,10 +33,15 @@ export async function POST(req: NextRequest) {
     // still try if configured
   }
 
-  const webhookSecret =
-    process.env.PAYSTACK_WEBHOOK_SECRET ||
-    process.env.PAYMENT_WEBHOOK_SECRET ||
-    "sandbox_webhook_secret";
+  const webhookSecret = process.env.PAYSTACK_WEBHOOK_SECRET || process.env.PAYMENT_WEBHOOK_SECRET;
+
+  if (!webhookSecret) {
+    // A hardcoded fallback here would mean anyone who knows the fallback
+    // string could forge a valid "payment succeeded" signature. Refuse
+    // instead of silently trusting an unverifiable webhook.
+    console.error("[webhook] no webhook secret configured — rejecting request");
+    return NextResponse.json({ error: "Webhook not configured" }, { status: 500 });
+  }
 
   const verification = await provider.verifyWebhook(rawBody, signature, webhookSecret);
 
@@ -140,32 +150,16 @@ async function processWebhookEvent(
       })
       .eq("id", intent.id);
 
-    // Credit org financial account
-    await supabase.rpc("sql", {}).catch(() => null); // no generic sql rpc
+    // Credit org financial account atomically — avoids a lost-update race
+    // when the payment provider retries webhook delivery concurrently.
+    const { error: creditErr } = await supabase.rpc("credit_org_deposit", {
+      p_org_id: intent.org_id,
+      p_amount_cents: intent.amount_cents,
+      p_currency: intent.currency
+    });
 
-    // Ensure account exists + credit
-    const { data: account } = await supabase
-      .from("org_financial_accounts")
-      .select("*")
-      .eq("org_id", intent.org_id)
-      .maybeSingle();
-
-    if (!account) {
-      await supabase.from("org_financial_accounts").insert({
-        org_id: intent.org_id,
-        currency: intent.currency,
-        available_balance_cents: intent.amount_cents,
-        lifetime_deposited_cents: intent.amount_cents
-      });
-    } else {
-      await supabase
-        .from("org_financial_accounts")
-        .update({
-          available_balance_cents: account.available_balance_cents + intent.amount_cents,
-          lifetime_deposited_cents: account.lifetime_deposited_cents + intent.amount_cents,
-          updated_at: new Date().toISOString()
-        })
-        .eq("org_id", intent.org_id);
+    if (creditErr) {
+      throw new Error(`credit_org_deposit failed: ${creditErr.message}`);
     }
 
     await supabase.from("financial_ledger").insert({
