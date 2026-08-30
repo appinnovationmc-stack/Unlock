@@ -34,13 +34,18 @@ export default async function CreatorDashboard() {
 
   return (
     <main className="min-h-screen px-6 py-10 md:px-12">
-      <header className="mb-10">
-        <p className="font-mono text-xs uppercase tracking-widest text-magenta">Creator</p>
-        <h1 className="font-display text-2xl text-fog mt-1">@{creator.handle}</h1>
-        <p className="text-mute text-sm mt-2 max-w-lg">
-          Share a campaign with your referral link. When someone unlocks through it, attribution is
-          recorded for you.
-        </p>
+      <header className="mb-10 flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <p className="font-mono text-xs uppercase tracking-widest text-magenta">Creator</p>
+          <h1 className="font-display text-2xl text-fog mt-1">@{creator.handle}</h1>
+          <p className="text-mute text-sm mt-2 max-w-lg">
+            Share a campaign with your referral link. When someone unlocks through it, attribution is
+            recorded for you.
+          </p>
+        </div>
+        <Link href="/dashboard/wallet" className="font-mono text-xs text-volt hover:underline shrink-0">
+          Wallet →
+        </Link>
       </header>
 
       <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-10">
