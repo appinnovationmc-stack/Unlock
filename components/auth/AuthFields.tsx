@@ -7,6 +7,7 @@ export function AuthFields({ handle }: { handle?: boolean }) {
           name="email"
           type="email"
           required
+          autoComplete="email"
           className="mt-1 w-full bg-ink2 border border-white/10 focus:border-volt px-4 py-3 text-fog outline-none"
         />
       </label>
