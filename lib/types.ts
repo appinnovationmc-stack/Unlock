@@ -185,3 +185,153 @@ export interface Referral {
 }
 
 export type AuthRole = "consumer" | "creator" | "brand" | "admin";
+
+// ── Commercial / finance types ───────────────────────────────────────────
+
+export type MoneyTxStatus =
+  | "pending"
+  | "processing"
+  | "completed"
+  | "failed"
+  | "refunded"
+  | "reversed"
+  | "cancelled";
+
+export type LedgerEntryType =
+  | "brand_deposit"
+  | "campaign_funding"
+  | "platform_fee"
+  | "creator_earning"
+  | "reward_cost"
+  | "refund"
+  | "adjustment"
+  | "withdrawal"
+  | "withdrawal_fee"
+  | "reversal"
+  | "performance_bonus"
+  | "referral_earning";
+
+export type EarningStatus = "pending" | "available" | "paid" | "reversed" | "rejected";
+export type WithdrawalStatus =
+  | "requested"
+  | "processing"
+  | "paid"
+  | "rejected"
+  | "failed"
+  | "cancelled";
+
+export interface OrgFinancialAccount {
+  org_id: string;
+  currency: string;
+  available_balance_cents: number;
+  reserved_balance_cents: number;
+  lifetime_deposited_cents: number;
+  lifetime_spent_cents: number;
+  lifetime_fees_cents: number;
+  lifetime_refunds_cents: number;
+  updated_at: string;
+}
+
+export interface CampaignBudget {
+  campaign_id: string;
+  org_id: string;
+  currency: string;
+  total_budget_cents: number;
+  creator_allocation_cents: number;
+  reward_allocation_cents: number;
+  platform_fee_cents: number;
+  performance_allocation_cents: number;
+  spent_cents: number;
+  reserved_cents: number;
+  status: "active" | "exhausted" | "closed" | "refunded";
+  commercial_rule_id: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface FinancialLedgerEntry {
+  id: string;
+  entry_type: LedgerEntryType;
+  org_id: string | null;
+  campaign_id: string | null;
+  creator_id: string | null;
+  consumer_id: string | null;
+  amount_cents: number;
+  currency: string;
+  status: MoneyTxStatus;
+  description: string;
+  reference_type: string | null;
+  reference_id: string | null;
+  payment_provider: string | null;
+  provider_reference: string | null;
+  metadata: Record<string, unknown>;
+  created_at: string;
+}
+
+export interface CreatorEarning {
+  id: string;
+  creator_id: string;
+  campaign_id: string;
+  org_id: string;
+  attribution_event_id: string | null;
+  earning_type: string;
+  amount_cents: number;
+  currency: string;
+  status: EarningStatus;
+  verification_status: string;
+  description: string;
+  created_at: string;
+  available_at: string | null;
+  paid_at: string | null;
+}
+
+export interface CreatorWallet {
+  creator_id: string;
+  currency: string;
+  pending_cents: number;
+  available_cents: number;
+  lifetime_earned_cents: number;
+  lifetime_paid_cents: number;
+  updated_at: string;
+}
+
+export interface CreatorWithdrawal {
+  id: string;
+  creator_id: string;
+  amount_cents: number;
+  currency: string;
+  status: WithdrawalStatus;
+  payout_destination_masked: string | null;
+  requested_at: string;
+  paid_at: string | null;
+}
+
+export interface PaymentIntent {
+  id: string;
+  org_id: string;
+  campaign_id: string | null;
+  amount_cents: number;
+  currency: string;
+  purpose: string;
+  status: string;
+  provider: string;
+  provider_reference: string | null;
+  idempotency_key: string;
+  created_at: string;
+}
+
+export interface Invoice {
+  id: string;
+  invoice_number: string;
+  org_id: string;
+  campaign_id: string | null;
+  currency: string;
+  subtotal_cents: number;
+  platform_fee_cents: number;
+  tax_cents: number;
+  total_cents: number;
+  status: string;
+  issued_at: string | null;
+  paid_at: string | null;
+  line_items: unknown[];
+}

@@ -96,3 +96,16 @@ npm run dev
 ## License
 
 Private — App Innovation MC
+
+## Commercial money engine
+
+Full financial layer (ledger, campaign budgets, configurable platform fees, brand billing, creator earnings & wallet, withdrawals, payment provider abstraction with Paystack for South Africa + sandbox, invoices schema, finance audit).
+
+See **[docs/COMMERCIAL_ENGINE.md](docs/COMMERCIAL_ENGINE.md)** for schema, RPCs, payment architecture, security, and E2E money path.
+
+```bash
+# Apply migration 00000010_commercial_money_engine.sql
+npm run test:finance
+```
+
+Routes: `/billing` (brand), `/wallet` (creator).
