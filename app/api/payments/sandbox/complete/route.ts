@@ -8,8 +8,14 @@ import { sandboxProvider } from "@/lib/payments/sandbox";
  */
 
 function getServiceClient() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!url) {
+    throw new Error("NEXT_PUBLIC_SUPABASE_URL is not configured");
+  }
+  if (!key) {
+    throw new Error("SUPABASE_SERVICE_ROLE_KEY is not configured");
+  }
   return createClient(url, key, { auth: { persistSession: false } });
 }
 
@@ -49,43 +55,22 @@ export async function GET(req: NextRequest) {
       })
       .eq("id", intent.id);
 
-    const { data: account } = await supabase
-      .from("org_financial_accounts")
-      .select("*")
-      .eq("org_id", intent.org_id)
-      .maybeSingle();
-
-    if (!account) {
-      await supabase.from("org_financial_accounts").insert({
-        org_id: intent.org_id,
-        currency: intent.currency,
-        available_balance_cents: intent.amount_cents,
-        lifetime_deposited_cents: intent.amount_cents
-      });
-    } else {
-      await supabase
-        .from("org_financial_accounts")
-        .update({
-          available_balance_cents: Number(account.available_balance_cents) + Number(intent.amount_cents),
-          lifetime_deposited_cents: Number(account.lifetime_deposited_cents) + Number(intent.amount_cents),
-          updated_at: new Date().toISOString()
-        })
-        .eq("org_id", intent.org_id);
-    }
-
-    await supabase.from("financial_ledger").insert({
-      entry_type: "brand_deposit",
-      org_id: intent.org_id,
-      campaign_id: intent.campaign_id,
-      amount_cents: intent.amount_cents,
-      currency: intent.currency,
-      status: "completed",
-      description: "Sandbox payment completed (TEST)",
-      reference_type: "payment_intent",
-      reference_id: intent.id,
-      payment_provider: "sandbox",
-      provider_reference: ref
+    const { error: creditErr } = await supabase.rpc("credit_org_deposit", {
+      p_org_id: intent.org_id,
+      p_amount_cents: intent.amount_cents,
+      p_currency: intent.currency,
+      p_campaign_id: intent.campaign_id,
+      p_reference_type: "payment_intent",
+      p_reference_id: intent.id,
+      p_payment_provider: "sandbox",
+      p_provider_reference: ref,
+      p_description: "Sandbox payment completed (TEST)"
     });
+
+    if (creditErr) {
+      console.error("[sandbox-complete] credit_org_deposit failed", creditErr);
+      return NextResponse.redirect(new URL("/billing?payment=error", req.url));
+    }
   }
 
   const redirect = new URL("/billing?payment=success&sandbox=1", req.url);

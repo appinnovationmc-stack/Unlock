@@ -10,8 +10,17 @@ import { getPaymentProvider } from "@/lib/payments";
  */
 
 function getServiceClient() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!url) {
+    throw new Error("NEXT_PUBLIC_SUPABASE_URL is not configured");
+  }
+  if (!key) {
+    // Never fall back to the anon key here: writes to financial tables are
+    // only reachable via SECURITY DEFINER RPCs or the service role, and a
+    // silent anon-key fallback should fail loudly, not degrade quietly.
+    throw new Error("SUPABASE_SERVICE_ROLE_KEY is not configured");
+  }
   return createClient(url, key, { auth: { persistSession: false } });
 }
 
@@ -28,12 +37,20 @@ export async function POST(req: NextRequest) {
     // still try if configured
   }
 
-  const webhookSecret =
-    process.env.PAYSTACK_WEBHOOK_SECRET ||
-    process.env.PAYMENT_WEBHOOK_SECRET ||
-    "sandbox_webhook_secret";
+  const webhookSecret = process.env.PAYSTACK_WEBHOOK_SECRET || process.env.PAYMENT_WEBHOOK_SECRET;
 
-  const verification = await provider.verifyWebhook(rawBody, signature, webhookSecret);
+  // The sandbox provider ignores the secret entirely (it just parses JSON),
+  // so it's safe to run without one. Any real provider (Paystack) verifies
+  // an HMAC signature against it — silently falling back to a hardcoded
+  // string here would mean anyone who has ever seen this repo (it's in git
+  // history) could forge a valid "payment succeeded" webhook. Hard-fail
+  // instead.
+  if (!provider.isSandbox && !webhookSecret) {
+    console.error("[webhook] missing webhook secret for non-sandbox provider", providerName);
+    return NextResponse.json({ error: "Webhook secret not configured" }, { status: 500 });
+  }
+
+  const verification = await provider.verifyWebhook(rawBody, signature, webhookSecret || "");
 
   if (!verification.valid) {
     return NextResponse.json({ error: verification.error || "Invalid signature" }, { status: 401 });
@@ -140,55 +157,27 @@ async function processWebhookEvent(
       })
       .eq("id", intent.id);
 
-    // Credit org financial account
-    await supabase.rpc("sql", {}).catch(() => null); // no generic sql rpc
+    // Credit org financial account: single atomic RPC (see migration
+    // 00000011_atomic_deposit_credit.sql). Handles account creation, the
+    // balance increment, the ledger row, and the audit log entry in one
+    // transaction, and is safe against concurrent webhook retries for the
+    // same payment_intent (DB-level unique index, not just the
+    // payment_webhook_events check above).
+    const { error: creditErr } = await supabase.rpc("credit_org_deposit", {
+      p_org_id: intent.org_id,
+      p_amount_cents: intent.amount_cents,
+      p_currency: intent.currency,
+      p_campaign_id: intent.campaign_id,
+      p_reference_type: "payment_intent",
+      p_reference_id: intent.id,
+      p_payment_provider: provider,
+      p_provider_reference: reference,
+      p_description: `Payment received via ${provider}`
+    });
 
-    // Ensure account exists + credit
-    const { data: account } = await supabase
-      .from("org_financial_accounts")
-      .select("*")
-      .eq("org_id", intent.org_id)
-      .maybeSingle();
-
-    if (!account) {
-      await supabase.from("org_financial_accounts").insert({
-        org_id: intent.org_id,
-        currency: intent.currency,
-        available_balance_cents: intent.amount_cents,
-        lifetime_deposited_cents: intent.amount_cents
-      });
-    } else {
-      await supabase
-        .from("org_financial_accounts")
-        .update({
-          available_balance_cents: account.available_balance_cents + intent.amount_cents,
-          lifetime_deposited_cents: account.lifetime_deposited_cents + intent.amount_cents,
-          updated_at: new Date().toISOString()
-        })
-        .eq("org_id", intent.org_id);
+    if (creditErr) {
+      throw new Error(`credit_org_deposit failed: ${creditErr.message}`);
     }
-
-    await supabase.from("financial_ledger").insert({
-      entry_type: "brand_deposit",
-      org_id: intent.org_id,
-      campaign_id: intent.campaign_id,
-      amount_cents: intent.amount_cents,
-      currency: intent.currency,
-      status: "completed",
-      description: `Payment received via ${provider}`,
-      reference_type: "payment_intent",
-      reference_id: intent.id,
-      payment_provider: provider,
-      provider_reference: reference
-    });
-
-    await supabase.from("finance_audit_log").insert({
-      org_id: intent.org_id,
-      action: "payment_received",
-      entity_type: "payment_intent",
-      entity_id: intent.id,
-      metadata: { amount_cents: intent.amount_cents, provider, reference }
-    });
   } else if (failEvents.includes(eventType) || p.data?.status === "failed") {
     await supabase
       .from("payment_intents")
