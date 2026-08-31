@@ -90,8 +90,13 @@ export async function requestPasswordReset(formData: FormData) {
   const vercel = process.env.VERCEL_URL;
   const origin = siteUrl || (vercel ? `https://${vercel}` : "http://localhost:3000");
 
+  // Note: no query string here on purpose. Supabase's redirect allowlist
+  // requires an exact match (or an explicit wildcard entry), and
+  // /auth/callback already defaults to /reset-password when `next` is
+  // absent, so this stays as a plain URL that matches the allowlisted
+  // https://unlock-alpha.vercel.app/auth/callback entry.
   const { error } = await supabase.auth.resetPasswordForEmail(email, {
-    redirectTo: `${origin}/auth/callback?next=${encodeURIComponent("/reset-password")}`
+    redirectTo: `${origin}/auth/callback`
   });
 
   if (error) {
