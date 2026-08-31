@@ -232,6 +232,131 @@ export async function getCreatorWallet() {
   }
 }
 
+/** Real per-campaign analytics for Brand Studio — no placeholders, all from campaign_analytics view */
+export async function getOrgCampaignAnalytics(orgId: string) {
+  try {
+    const { supabase } = await requireOrgMember(orgId);
+
+    const { data, error } = await supabase
+      .from("campaign_analytics")
+      .select("*")
+      .eq("org_id", orgId)
+      .order("campaign_id", { ascending: true });
+
+    if (error) return { error: error.message };
+
+    return { analytics: data || [] };
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : "Failed to load analytics" };
+  }
+}
+
+/** Single-campaign analytics — used on the campaign detail page */
+export async function getCampaignAnalytics(campaignId: string) {
+  try {
+    const { supabase, user } = await requireUser();
+
+    // Confirm the caller has access: either an org member of the owning org, or admin
+    const { data: campaign } = await supabase
+      .from("campaigns")
+      .select("org_id")
+      .eq("id", campaignId)
+      .maybeSingle();
+
+    if (!campaign) return { error: "Campaign not found" };
+
+    const role = await getCurrentRole();
+    if (role !== "admin") {
+      const { data: membership } = await supabase
+        .from("org_members")
+        .select("org_id")
+        .eq("org_id", campaign.org_id)
+        .eq("user_id", user.id)
+        .maybeSingle();
+      if (!membership) return { error: "Not authorised for this campaign" };
+    }
+
+    const { data, error } = await supabase
+      .from("campaign_analytics")
+      .select("*")
+      .eq("campaign_id", campaignId)
+      .maybeSingle();
+
+    if (error) return { error: error.message };
+
+    return { analytics: data };
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : "Failed to load campaign analytics" };
+  }
+}
+
+/** Admin: move a withdrawal from requested -> processing */
+export async function adminStartWithdrawalProcessing(withdrawalId: string) {
+  try {
+    const role = await getCurrentRole();
+    if (role !== "admin") return { error: "Admin only" };
+
+    const { supabase } = await requireUser();
+    const { error } = await supabase.rpc("admin_start_withdrawal_processing", {
+      p_withdrawal_id: withdrawalId
+    });
+
+    if (error) return { error: error.message };
+
+    revalidatePath("/admin");
+    return { success: true };
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : "Failed to start processing" };
+  }
+}
+
+/** Admin: mark a withdrawal paid (requested or processing -> paid) */
+export async function adminCompleteWithdrawal(
+  withdrawalId: string,
+  providerReference?: string,
+  payoutProvider?: string
+) {
+  try {
+    const role = await getCurrentRole();
+    if (role !== "admin") return { error: "Admin only" };
+
+    const { supabase } = await requireUser();
+    const { error } = await supabase.rpc("admin_complete_withdrawal", {
+      p_withdrawal_id: withdrawalId,
+      p_provider_reference: providerReference || null,
+      p_payout_provider: payoutProvider || null
+    });
+
+    if (error) return { error: error.message };
+
+    revalidatePath("/admin");
+    return { success: true };
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : "Failed to complete withdrawal" };
+  }
+}
+
+/** Admin: reject a withdrawal (requested or processing -> rejected), restores creator balance */
+export async function adminRejectWithdrawal(withdrawalId: string, reason?: string) {
+  try {
+    const role = await getCurrentRole();
+    if (role !== "admin") return { error: "Admin only" };
+
+    const { supabase } = await requireUser();
+    const { error } = await supabase.rpc("admin_reject_withdrawal", {
+      p_withdrawal_id: withdrawalId,
+      p_reason: reason || null
+    });
+
+    if (error) return { error: error.message };
+
+    revalidatePath("/admin");
+    return { success: true };
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : "Failed to reject withdrawal" };
+  }
+}
+
 /** Admin / platform revenue — gated by admin_users via getCurrentRole */
 export async function getPlatformRevenueSummary(fromIso?: string, toIso?: string) {
   try {

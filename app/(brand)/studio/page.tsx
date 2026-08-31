@@ -1,6 +1,8 @@
 import { Button } from "@/components/ui/Button";
 import { MechanicPicker } from "@/components/campaign/MechanicPicker";
 import { createCampaign, getMyOrgId, updateCampaignStatus } from "@/lib/actions/campaigns";
+import { getOrgCampaignAnalytics } from "@/lib/actions/finance";
+import { formatMoney } from "@/lib/finance/money";
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import Link from "next/link";
@@ -44,15 +46,31 @@ export default async function StudioPage({
     .eq("org_id", orgId)
     .order("created_at", { ascending: false });
 
-  const campaignIds = (campaigns ?? []).map((c) => c.id);
+  const analyticsResult = await getOrgCampaignAnalytics(orgId);
+  const analyticsRows: any[] =
+    "analytics" in analyticsResult && analyticsResult.analytics ? analyticsResult.analytics : [];
+  const analyticsByCampaign = new Map(analyticsRows.map((a: any) => [a.campaign_id, a]));
 
-  const { count: attributionCount } = campaignIds.length
-    ? await supabase.from("attribution_events").select("id", { count: "exact", head: true }).in("campaign_id", campaignIds)
-    : { count: 0 };
-
-  const { count: unlockCount } = campaignIds.length
-    ? await supabase.from("attribution_events").select("id", { count: "exact", head: true }).in("campaign_id", campaignIds).eq("stage", "conversion")
-    : { count: 0 };
+  const totals = analyticsRows.reduce(
+    (acc: any, a: any) => ({
+      unlocks: acc.unlocks + (a.unlocks ?? 0),
+      uniqueConsumers: acc.uniqueConsumers + (a.unique_consumers ?? 0),
+      rewardClaims: acc.rewardClaims + (a.reward_claims ?? 0),
+      redemptions: acc.redemptions + (a.redemptions ?? 0),
+      creatorReferrals: acc.creatorReferrals + (a.creator_referrals ?? 0),
+      spentCents: acc.spentCents + (a.spent_cents ?? 0),
+      totalAttributionEvents: acc.totalAttributionEvents + (a.total_attribution_events ?? 0)
+    }),
+    {
+      unlocks: 0,
+      uniqueConsumers: 0,
+      rewardClaims: 0,
+      redemptions: 0,
+      creatorReferrals: 0,
+      spentCents: 0,
+      totalAttributionEvents: 0
+    }
+  );
 
   const liveCount = (campaigns ?? []).filter((c) => c.status === "live").length;
   const draftCount = (campaigns ?? []).filter((c) => c.status === "draft").length;
@@ -79,11 +97,17 @@ export default async function StudioPage({
         </p>
       )}
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
         {stat("Total campaigns", String(campaigns?.length ?? 0))}
         {stat("Live", String(liveCount))}
         {stat("Drafts", String(draftCount))}
-        {stat("Unlocks", String(unlockCount ?? 0))}
+        {stat("Unlocks", String(totals.unlocks))}
+      </div>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
+        {stat("Unique consumers", String(totals.uniqueConsumers))}
+        {stat("Reward claims", String(totals.rewardClaims))}
+        {stat("Redemptions", String(totals.redemptions))}
+        {stat("Creator referrals", String(totals.creatorReferrals))}
       </div>
 
       <div className="grid lg:grid-cols-2 gap-10">
@@ -194,6 +218,20 @@ export default async function StudioPage({
                       c.status === "live" ? "text-volt" : c.status === "draft" ? "text-mute" : c.status === "paused" ? "text-gold" : "text-mute"
                     }`}>{c.status}</span>
                   </div>
+                  {(() => {
+                    const a: any = analyticsByCampaign.get(c.id);
+                    if (!a) return null;
+                    return (
+                      <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 font-mono text-[10px] text-mute">
+                        <span>Unlocks <b className="text-fog">{a.unlocks}</b></span>
+                        <span>Consumers <b className="text-fog">{a.unique_consumers}</b></span>
+                        <span>Claims <b className="text-fog">{a.reward_claims}</b></span>
+                        <span>Redeemed <b className="text-fog">{a.redemptions}</b></span>
+                        <span>Referrals <b className="text-fog">{a.creator_referrals}</b></span>
+                        <span>Spent <b className="text-fog">{formatMoney(a.spent_cents)}</b></span>
+                      </div>
+                    );
+                  })()}
                   <div className="flex flex-wrap gap-2">
                     <Link href={`/campaign/${c.id}`} className="font-mono text-[10px] uppercase tracking-widest text-mute hover:text-volt border border-white/10 px-2 py-1">Preview</Link>
                     {c.status === "draft" && (
@@ -240,9 +278,9 @@ export default async function StudioPage({
           <div className="mt-8 border border-white/5 bg-ink2 p-5">
             <h3 className="font-display text-fog mb-2">Performance snapshot</h3>
             <p className="font-mono text-xs text-mute mb-3">Attribution events across your campaigns</p>
-            <p className="font-display text-3xl text-fog">{attributionCount ?? 0}</p>
+            <p className="font-display text-3xl text-fog">{totals.totalAttributionEvents}</p>
             <p className="font-mono text-[10px] uppercase tracking-widest text-mute mt-1">
-              Total recorded events · {unlockCount ?? 0} unlocks
+              Total recorded events · {totals.unlocks} unlocks · {formatMoney(totals.spentCents)} spent
             </p>
           </div>
         </section>

@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { getCurrentRole } from "@/lib/actions/auth";
 import { getPlatformRevenueSummary } from "@/lib/actions/finance";
 import { formatMoney } from "@/lib/finance/money";
+import { WithdrawalActions } from "./WithdrawalActions";
 
 export const dynamic = "force-dynamic";
 
@@ -46,7 +47,7 @@ export default async function AdminPage() {
   const { count: withdrawalCount } = await supabase
     .from("creator_withdrawals")
     .select("id", { count: "exact", head: true })
-    .eq("status", "requested");
+    .in("status", ["requested", "processing"]);
 
   const revenue = await getPlatformRevenueSummary();
 
@@ -58,10 +59,10 @@ export default async function AdminPage() {
 
   const { data: pendingWithdrawals } = await supabase
     .from("creator_withdrawals")
-    .select("id, amount_cents, status, requested_at, creator_id")
-    .eq("status", "requested")
+    .select("id, amount_cents, status, requested_at, creator_id, payout_destination_masked, creators(handle)")
+    .in("status", ["requested", "processing"])
     .order("requested_at", { ascending: false })
-    .limit(10);
+    .limit(20);
 
   return (
     <main className="min-h-screen px-6 py-10 md:px-12">
@@ -115,12 +116,23 @@ export default async function AdminPage() {
         </div>
       )}
 
-      <h2 className="font-display text-lg text-fog mb-4">Pending withdrawals</h2>
+      <h2 className="font-display text-lg text-fog mb-4">Withdrawal queue</h2>
       <div className="border border-white/5 divide-y divide-white/5 mb-10">
-        {(pendingWithdrawals ?? []).map((w) => (
-          <div key={w.id} className="flex items-center justify-between px-5 py-3">
-            <p className="font-mono text-xs text-mute truncate">{w.creator_id}</p>
-            <span className="font-display text-fog">{formatMoney(w.amount_cents)}</span>
+        {(pendingWithdrawals ?? []).map((w: any) => (
+          <div key={w.id} className="flex items-center justify-between px-5 py-3 gap-4">
+            <div className="min-w-0">
+              <p className="font-mono text-xs text-fog truncate">
+                {w.creators?.handle ?? w.creator_id}
+              </p>
+              {w.payout_destination_masked && (
+                <p className="font-mono text-[10px] text-mute truncate">{w.payout_destination_masked}</p>
+              )}
+            </div>
+            <span className="font-display text-fog shrink-0">{formatMoney(w.amount_cents)}</span>
+            <span className="font-mono text-[10px] uppercase tracking-widest text-mute shrink-0">{w.status}</span>
+            <div className="shrink-0">
+              <WithdrawalActions withdrawalId={w.id} status={w.status} />
+            </div>
           </div>
         ))}
         {(!pendingWithdrawals || pendingWithdrawals.length === 0) && (
