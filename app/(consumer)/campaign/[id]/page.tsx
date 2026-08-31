@@ -50,18 +50,25 @@ export default async function CampaignPage({
 
   const rewardLabel = reward
     ? `${reward.label}${reward.value ? " — " + reward.value : ""}`
-    : "Reward pending";
+    : "Something waiting";
 
   const referrerCreatorId = searchParams.ref || null;
 
-  // Campaigns that have physical per-unit product codes loaded use the
-  // find-the-product claim flow instead of the plain tap-to-unlock one.
   const { count: productCodeCount } = await supabase
     .from("product_codes")
     .select("id", { count: "exact", head: true })
     .eq("campaign_id", params.id);
 
   const isProductHunt = (productCodeCount ?? 0) > 0;
+
+  const mechanics = (campaign.mechanics ?? []) as string[];
+  const actionHint = isProductHunt
+    ? "Find the product. Enter the code. Prove it. Unlock."
+    : mechanics.includes("quiz")
+      ? "Face the challenge. Tap through. Claim what you earn."
+      : mechanics.includes("treasure_hunt") || mechanics.includes("qr_scan")
+        ? "Hunt it down. Scan. Unlock."
+        : "Tap the seal. Complete the moment. Take the reward.";
 
   return (
     <main className="min-h-screen px-6 py-10 md:px-12 max-w-2xl mx-auto">
@@ -71,15 +78,46 @@ export default async function CampaignPage({
         </p>
       )}
 
-      <p className="font-mono text-xs uppercase tracking-widest text-volt mb-3">
-        {(campaign.mechanics ?? []).join(" · ") || "experience"}
+      {referrerCreatorId && (
+        <p className="mb-4 font-mono text-[10px] uppercase tracking-widest text-magenta">
+          Opened via creator path
+        </p>
+      )}
+
+      <p className="font-mono text-xs uppercase tracking-[0.25em] text-volt mb-3">
+        Encounter
         {campaign.objective ? ` · ${String(campaign.objective).replace(/_/g, " ")}` : ""}
       </p>
-      <h1 className="font-display text-3xl md:text-4xl text-fog mb-2">{campaign.title}</h1>
-      {campaign.tagline && <p className="text-mute text-lg mb-4">{campaign.tagline}</p>}
-      {campaign.description && (
-        <p className="text-fog/80 text-sm mb-8 leading-relaxed">{campaign.description}</p>
+
+      <h1 className="font-display text-3xl md:text-5xl text-fog mb-3 leading-tight">
+        {campaign.title}
+      </h1>
+      {campaign.tagline && (
+        <p className="text-mute text-lg mb-8 leading-snug">{campaign.tagline}</p>
       )}
+
+      {/* WHAT / DO / GET — encounter clarity */}
+      <div className="grid gap-3 mb-10">
+        <div className="border border-white/10 bg-ink2/50 px-4 py-3">
+          <p className="font-mono text-[10px] uppercase tracking-widest text-mute">What is this</p>
+          <p className="text-fog text-sm mt-1 leading-relaxed">
+            {campaign.description ||
+              campaign.tagline ||
+              "A brand experience. Not a banner — a moment you complete."}
+          </p>
+        </div>
+        <div className="border border-white/10 bg-ink2/50 px-4 py-3">
+          <p className="font-mono text-[10px] uppercase tracking-widest text-mute">What you do</p>
+          <p className="text-fog text-sm mt-1">{actionHint}</p>
+        </div>
+        <div className="border border-volt/20 bg-volt/5 px-4 py-3">
+          <p className="font-mono text-[10px] uppercase tracking-widest text-volt">What you get</p>
+          <p className="text-fog text-sm mt-1">
+            {rewardLabel}
+            <span className="text-mute"> · +{campaign.xp_value} XP</span>
+          </p>
+        </div>
+      </div>
 
       {isProductHunt ? (
         <ProductHuntClaim campaignId={campaign.id} initialCode={searchParams.code} />
@@ -87,20 +125,17 @@ export default async function CampaignPage({
         <UnlockClient
           campaignId={campaign.id}
           rewardLabel={rewardLabel}
+          campaignTitle={campaign.title}
           referrerCreatorId={referrerCreatorId}
         />
       )}
 
-      <p className="mt-6 text-center font-mono text-xs text-mute">
-        +{campaign.xp_value} XP on unlock
-      </p>
-
-      <div className="mt-10 flex justify-center gap-4 font-mono text-[10px] uppercase tracking-widest">
+      <div className="mt-12 flex justify-center gap-6 font-mono text-[10px] uppercase tracking-widest">
         <Link href="/discover" className="text-mute hover:text-volt">
-          ← Discover
+          ← Field
         </Link>
         <Link href="/wallet" className="text-mute hover:text-volt">
-          Wallet →
+          Collection →
         </Link>
       </div>
     </main>

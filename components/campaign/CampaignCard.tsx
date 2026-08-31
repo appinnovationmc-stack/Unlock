@@ -14,16 +14,25 @@ const mechanicLabels: Record<string, string> = {
   referral: "Referral"
 };
 
-export function CampaignCard({ campaign }: { campaign: Campaign }) {
+export function CampaignCard({
+  campaign,
+  kindLabel = "Encounter"
+}: {
+  campaign: Campaign;
+  kindLabel?: string;
+}) {
   return (
     <Link
       href={`/campaign/${campaign.id}`}
       className="group relative block clip-keyhole bg-ink2 noise-overlay overflow-hidden
         border border-white/5 hover:border-volt/40 transition-colors duration-200"
     >
-      <div className="aspect-[4/3] w-full bg-duotone flex items-end p-5">
+      <div className="aspect-[4/3] w-full bg-duotone flex flex-col justify-between p-5 relative">
+        <span className="font-mono text-[10px] uppercase tracking-widest text-volt self-start border border-volt/30 px-2 py-0.5">
+          {kindLabel}
+        </span>
         <div className="flex flex-wrap gap-1.5">
-          {campaign.mechanics.slice(0, 3).map((m) => (
+          {(campaign.mechanics ?? []).slice(0, 3).map((m) => (
             <span
               key={m}
               className="font-mono text-[10px] uppercase tracking-wider text-void bg-fog/90 px-2 py-0.5 rounded-sm"
@@ -38,12 +47,14 @@ export function CampaignCard({ campaign }: { campaign: Campaign }) {
         <h3 className="font-display text-lg leading-tight text-fog group-hover:text-glow-volt transition-all">
           {campaign.title}
         </h3>
-        <p className="mt-1 text-sm text-mute line-clamp-2">{campaign.tagline}</p>
+        <p className="mt-1 text-sm text-mute line-clamp-2">
+          {campaign.tagline || "Step in. Complete it. Unlock what&apos;s inside."}
+        </p>
 
         <div className="mt-4 flex items-center justify-between">
           <span className="font-mono text-xs text-volt">+{campaign.xp_value} XP</span>
           <span className="font-mono text-[10px] uppercase tracking-widest text-mute group-hover:text-fog transition-colors">
-            Unlock →
+            Enter →
           </span>
         </div>
       </div>

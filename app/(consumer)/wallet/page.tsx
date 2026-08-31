@@ -23,9 +23,10 @@ export default async function WalletPage() {
   if (!consumer) {
     return (
       <main className="min-h-screen px-6 py-10 md:px-12">
-        <h1 className="font-display text-2xl text-fog mb-4">Wallet</h1>
+        <h1 className="font-display text-2xl text-fog mb-4">Collection</h1>
         <p className="text-mute text-sm">
-          Wallet is for consumer accounts. Use a consumer signup to collect and redeem rewards.
+          Your collection is for consumer accounts. Sign up as a consumer to gather unlocks
+          and rewards.
         </p>
       </main>
     );
@@ -41,8 +42,9 @@ export default async function WalletPage() {
     <main className="min-h-screen px-6 py-10 md:px-12 max-w-2xl mx-auto">
       <header className="flex items-center justify-between mb-10">
         <div>
-          <p className="font-mono text-xs uppercase tracking-widest text-magenta">Wallet</p>
+          <p className="font-mono text-xs uppercase tracking-widest text-magenta">Collection</p>
           <h1 className="font-display text-2xl text-fog mt-1">@{consumer.handle}</h1>
+          <p className="text-mute text-xs mt-1">Proof of every encounter you finished.</p>
         </div>
         <XPBadge xp={consumer.xp} />
       </header>
@@ -53,60 +55,60 @@ export default async function WalletPage() {
           <p className="font-display text-2xl text-volt mt-1">{consumer.xp}</p>
         </div>
         <div className="clip-keyhole-sm bg-ink2 border border-white/5 px-5 py-4">
-          <p className="font-mono text-[10px] uppercase tracking-widest text-mute">Balance</p>
-          <p className="font-display text-2xl text-gold mt-1">
-            R{(consumer.wallet_balance_cents / 100).toFixed(2)}
-          </p>
+          <p className="font-mono text-[10px] uppercase tracking-widest text-mute">Unlocked</p>
+          <p className="font-display text-2xl text-fog mt-1">{claims?.length ?? 0}</p>
         </div>
       </div>
 
-      <h2 className="font-display text-lg text-fog mb-4">Your rewards</h2>
+      <h2 className="font-display text-lg text-fog mb-4">Rewards</h2>
       <div className="border border-white/5 divide-y divide-white/5">
         {!claims || claims.length === 0 ? (
           <div className="p-6 text-center">
-            <p className="text-mute font-mono text-sm mb-3">No rewards yet.</p>
+            <p className="text-mute font-mono text-sm mb-3">Nothing collected yet.</p>
             <Link href="/discover" className="text-volt font-mono text-xs uppercase tracking-widest">
-              Discover campaigns →
+              Enter the field →
             </Link>
           </div>
         ) : (
-          claims.map((claim: {
-            id: string;
-            status: string;
-            rewards?: { label?: string; value?: string; type?: string } | null;
-          }) => (
-            <div key={claim.id} className="flex items-center justify-between gap-3 px-5 py-4">
-              <div className="min-w-0">
-                <p className="font-display text-fog truncate">
-                  {claim.rewards?.label ?? "Reward"}
-                </p>
-                <p className="font-mono text-xs text-mute mt-0.5">
-                  {claim.rewards?.value}
-                  {claim.rewards?.type ? ` · ${claim.rewards.type}` : ""}
-                </p>
+          claims.map(
+            (claim: {
+              id: string;
+              status: string;
+              rewards?: { label?: string; value?: string; type?: string } | null;
+            }) => (
+              <div key={claim.id} className="flex items-center justify-between gap-3 px-5 py-4">
+                <div className="min-w-0">
+                  <p className="font-display text-fog truncate">
+                    {claim.rewards?.label ?? "Reward"}
+                  </p>
+                  <p className="font-mono text-xs text-mute mt-0.5">
+                    {claim.rewards?.value}
+                    {claim.rewards?.type ? ` · ${claim.rewards.type}` : ""}
+                  </p>
+                </div>
+                {claim.status === "claimed" ? (
+                  <RedeemButton claimId={claim.id} />
+                ) : (
+                  <span
+                    className={`font-mono text-[10px] uppercase tracking-widest shrink-0 ${
+                      claim.status === "redeemed"
+                        ? "text-gold"
+                        : claim.status === "expired"
+                          ? "text-mute"
+                          : "text-fog"
+                    }`}
+                  >
+                    {claim.status}
+                  </span>
+                )}
               </div>
-              {claim.status === "claimed" ? (
-                <RedeemButton claimId={claim.id} />
-              ) : (
-                <span
-                  className={`font-mono text-[10px] uppercase tracking-widest shrink-0 ${
-                    claim.status === "redeemed"
-                      ? "text-gold"
-                      : claim.status === "expired"
-                        ? "text-mute"
-                        : "text-fog"
-                  }`}
-                >
-                  {claim.status}
-                </span>
-              )}
-            </div>
-          ))
+            )
+          )
         )}
       </div>
 
       <p className="mt-8 text-center font-mono text-[10px] text-mute uppercase tracking-widest">
-        Redeem is enforced server-side. Duplicate claims are blocked.
+        Redeem is enforced server-side. Your collection is proof — not a receipt dump.
       </p>
     </main>
   );

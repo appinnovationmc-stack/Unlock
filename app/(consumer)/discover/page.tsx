@@ -6,6 +6,17 @@ import Link from "next/link";
 
 export const dynamic = "force-dynamic";
 
+function encounterKind(mechanics: string[] | null | undefined): string {
+  const m = mechanics ?? [];
+  if (m.includes("treasure_hunt") || m.includes("qr_scan") || m.includes("nfc_tap"))
+    return "Hunt";
+  if (m.includes("geolocation")) return "In the wild";
+  if (m.includes("timed_challenge")) return "Timed drop";
+  if (m.includes("social_action") || m.includes("referral")) return "Relay";
+  if (m.includes("quiz") || m.includes("puzzle") || m.includes("riddle")) return "Challenge";
+  return "Encounter";
+}
+
 export default async function DiscoverPage() {
   const supabase = createClient();
 
@@ -29,48 +40,79 @@ export default async function DiscoverPage() {
     xp = consumer?.xp ?? 0;
   }
 
+  const list = (campaigns as Campaign[]) ?? [];
+
   return (
     <main className="min-h-screen px-6 py-10 md:px-12 bg-duotone">
-      <header className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-10">
+      <header className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-8">
         <div>
-          <h1 className="font-display text-3xl text-fog">Discover</h1>
-          <p className="text-mute text-sm mt-1">
-            Campaigns you play — not scroll past.
+          <p className="font-mono text-[10px] uppercase tracking-[0.3em] text-volt mb-2">
+            Live field
+          </p>
+          <h1 className="font-display text-3xl md:text-4xl text-fog">Encounters</h1>
+          <p className="text-mute text-sm mt-2 max-w-md">
+            Brand experiences in the open. Find one. Complete it. Claim what&apos;s inside.
+            Share it so others can enter.
           </p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 shrink-0">
           {user ? <XPBadge xp={xp} /> : null}
-          {user && (
+          {user ? (
             <Link
               href="/wallet"
               className="font-mono text-[10px] uppercase tracking-widest text-volt border border-volt/30 px-3 py-1.5 hover:bg-volt/10"
             >
-              Wallet
+              Collection
+            </Link>
+          ) : (
+            <Link
+              href="/login"
+              className="font-mono text-[10px] uppercase tracking-widest text-mute border border-white/10 px-3 py-1.5 hover:text-volt"
+            >
+              Log in to collect
             </Link>
           )}
         </div>
       </header>
 
-      {!campaigns || campaigns.length === 0 ? (
+      {list.length > 0 && (
+        <div className="mb-8 flex flex-wrap gap-2">
+          {["All live", "Hunt", "Challenge", "Drop", "Relay"].map((tag) => (
+            <span
+              key={tag}
+              className="font-mono text-[10px] uppercase tracking-widest px-3 py-1 border border-white/10 text-mute"
+            >
+              {tag}
+            </span>
+          ))}
+        </div>
+      )}
+
+      {list.length === 0 ? (
         <div className="border border-white/5 bg-ink2/50 px-6 py-16 text-center clip-keyhole">
-          <p className="font-display text-xl text-fog mb-2">Nothing live yet</p>
+          <p className="font-display text-xl text-fog mb-2">The field is quiet</p>
           <p className="text-mute font-mono text-sm mb-6 max-w-md mx-auto">
-            Brands publish interactive campaigns from Studio. Check back soon or create one.
+            No live encounters right now. Brands plant the next drop from Studio. Creators
+            will open the path when it lands.
           </p>
           <Link
             href="/studio"
             className="inline-flex font-mono text-xs uppercase tracking-widest text-volt border border-volt/40 px-4 py-2 hover:bg-volt/10"
           >
-            Open Brand Studio →
+            Plant an encounter (brands) →
           </Link>
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {(campaigns as Campaign[]).map((c) => (
-            <CampaignCard key={c.id} campaign={c} />
+          {list.map((c) => (
+            <CampaignCard key={c.id} campaign={c} kindLabel={encounterKind(c.mechanics)} />
           ))}
         </div>
       )}
+
+      <p className="mt-12 text-center font-mono text-[10px] uppercase tracking-widest text-mute">
+        Ads you complete. Proof you keep. Reach you pass on.
+      </p>
     </main>
   );
 }
