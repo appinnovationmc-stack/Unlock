@@ -4,6 +4,10 @@ import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 
+/**
+ * Brand onboarding: atomic org + owner membership via SECURITY DEFINER RPC.
+ * Prevents race conditions and enforces one-org-per-user.
+ */
 export async function createOrganization(formData: FormData) {
   const name = String(formData.get("name")).trim();
   const industry = String(formData.get("industry") ?? "general").trim() || "general";
@@ -22,30 +26,23 @@ export async function createOrganization(formData: FormData) {
     return redirect(`/onboarding?error=${encodeURIComponent("Organization name is required")}`);
   }
 
-  const { data: org, error } = await supabase
-    .from("organizations")
-    .insert({
-      name,
-      industry,
-      kind: "brand",
-      description: description || null,
-      website: website || null,
-      logo_url: logoUrl
-    })
-    .select("id")
-    .single();
+  const { data, error } = await supabase.rpc("create_organization", {
+    p_name: name,
+    p_industry: industry,
+    p_description: description || null,
+    p_website: website || null,
+    p_logo_url: logoUrl
+  });
 
-  if (error || !org) {
-    return redirect(
-      `/onboarding?error=${encodeURIComponent(error?.message ?? "Could not create organization")}`
-    );
+  if (error) {
+    return redirect(`/onboarding?error=${encodeURIComponent(error.message)}`);
   }
 
-  await supabase.from("org_members").insert({
-    org_id: org.id,
-    user_id: user.id,
-    role: "owner"
-  });
+  // RPC returns setof — handle array or single
+  const orgId = Array.isArray(data) ? data[0]?.id : (data as { id?: string })?.id;
+  if (!orgId) {
+    return redirect(`/onboarding?error=${encodeURIComponent("Could not create organization")}`);
+  }
 
   revalidatePath("/studio");
   redirect("/studio");
@@ -64,6 +61,17 @@ export async function updateOrganization(formData: FormData) {
     data: { user }
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
+
+  const { data: membership } = await supabase
+    .from("org_members")
+    .select("org_id")
+    .eq("user_id", user.id)
+    .eq("org_id", orgId)
+    .maybeSingle();
+
+  if (!membership) {
+    return redirect(`/studio?error=${encodeURIComponent("Not authorised for this organisation")}`);
+  }
 
   const { error } = await supabase
     .from("organizations")

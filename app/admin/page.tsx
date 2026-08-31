@@ -1,6 +1,8 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { getCurrentRole } from "@/lib/actions/auth";
+import { getPlatformRevenueSummary } from "@/lib/actions/finance";
+import { formatMoney } from "@/lib/finance/money";
 
 export const dynamic = "force-dynamic";
 
@@ -11,15 +13,16 @@ export default async function AdminPage() {
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
+  // Server-side: admin_users table only (not user_metadata)
   const role = await getCurrentRole();
   if (role !== "admin") {
     return (
       <main className="min-h-screen px-6 py-10 md:px-12">
         <h1 className="font-display text-2xl text-fog mb-4">Admin</h1>
         <p className="text-mute text-sm">
-          Platform administration is restricted. Set{" "}
-          <code className="text-volt">user_metadata.role = &quot;admin&quot;</code> in Supabase
-          Auth for authorised operators.
+          Platform administration is restricted. Admins are granted via the{" "}
+          <code className="text-volt">admin_users</code> table (service role only — not
+          user_metadata).
         </p>
       </main>
     );
@@ -40,11 +43,24 @@ export default async function AdminPage() {
   const { count: eventCount } = await supabase
     .from("attribution_events")
     .select("id", { count: "exact", head: true });
+  const { count: withdrawalCount } = await supabase
+    .from("creator_withdrawals")
+    .select("id", { count: "exact", head: true })
+    .eq("status", "requested");
+
+  const revenue = await getPlatformRevenueSummary();
 
   const { data: recentCampaigns } = await supabase
     .from("campaigns")
     .select("id, title, status, created_at")
     .order("created_at", { ascending: false })
+    .limit(10);
+
+  const { data: pendingWithdrawals } = await supabase
+    .from("creator_withdrawals")
+    .select("id, amount_cents, status, requested_at, creator_id")
+    .eq("status", "requested")
+    .order("requested_at", { ascending: false })
     .limit(10);
 
   return (
@@ -54,13 +70,14 @@ export default async function AdminPage() {
         <h1 className="font-display text-3xl text-fog mt-1">Admin console</h1>
       </header>
 
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-10">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-10">
         {[
           ["Organisations", orgCount],
           ["Campaigns", campaignCount],
           ["Consumers", consumerCount],
           ["Creators", creatorCount],
-          ["Events", eventCount]
+          ["Events", eventCount],
+          ["Payout queue", withdrawalCount]
         ].map(([label, value]) => (
           <div key={String(label)} className="clip-keyhole-sm bg-ink2 border border-white/5 px-5 py-4">
             <p className="font-mono text-[10px] uppercase tracking-widest text-mute">{label}</p>
@@ -69,14 +86,54 @@ export default async function AdminPage() {
         ))}
       </div>
 
+      {"platformRevenueCents" in revenue && (
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
+          <div className="clip-keyhole-sm bg-ink2 border border-white/5 px-5 py-4">
+            <p className="font-mono text-[10px] uppercase tracking-widest text-mute">Platform fees</p>
+            <p className="font-display text-xl text-volt mt-1">
+              {formatMoney(revenue.platformRevenueCents ?? 0)}
+            </p>
+          </div>
+          <div className="clip-keyhole-sm bg-ink2 border border-white/5 px-5 py-4">
+            <p className="font-mono text-[10px] uppercase tracking-widest text-mute">Deposits</p>
+            <p className="font-display text-xl text-fog mt-1">
+              {formatMoney(revenue.depositsCents ?? 0)}
+            </p>
+          </div>
+          <div className="clip-keyhole-sm bg-ink2 border border-white/5 px-5 py-4">
+            <p className="font-mono text-[10px] uppercase tracking-widest text-mute">Creator payouts</p>
+            <p className="font-display text-xl text-fog mt-1">
+              {formatMoney(revenue.creatorPayoutsCents ?? 0)}
+            </p>
+          </div>
+          <div className="clip-keyhole-sm bg-ink2 border border-white/5 px-5 py-4">
+            <p className="font-mono text-[10px] uppercase tracking-widest text-mute">Campaign volume</p>
+            <p className="font-display text-xl text-fog mt-1">
+              {formatMoney(revenue.grossCampaignVolumeCents ?? 0)}
+            </p>
+          </div>
+        </div>
+      )}
+
+      <h2 className="font-display text-lg text-fog mb-4">Pending withdrawals</h2>
+      <div className="border border-white/5 divide-y divide-white/5 mb-10">
+        {(pendingWithdrawals ?? []).map((w) => (
+          <div key={w.id} className="flex items-center justify-between px-5 py-3">
+            <p className="font-mono text-xs text-mute truncate">{w.creator_id}</p>
+            <span className="font-display text-fog">{formatMoney(w.amount_cents)}</span>
+          </div>
+        ))}
+        {(!pendingWithdrawals || pendingWithdrawals.length === 0) && (
+          <p className="p-5 text-mute font-mono text-sm">No pending withdrawals.</p>
+        )}
+      </div>
+
       <h2 className="font-display text-lg text-fog mb-4">Recent campaigns</h2>
       <div className="border border-white/5 divide-y divide-white/5">
         {(recentCampaigns ?? []).map((c) => (
           <div key={c.id} className="flex items-center justify-between px-5 py-3">
             <p className="font-display text-fog">{c.title}</p>
-            <span className="font-mono text-xs uppercase tracking-widest text-mute">
-              {c.status}
-            </span>
+            <span className="font-mono text-xs uppercase tracking-widest text-mute">{c.status}</span>
           </div>
         ))}
         {(!recentCampaigns || recentCampaigns.length === 0) && (

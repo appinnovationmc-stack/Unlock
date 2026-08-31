@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { randomUUID } from "crypto";
 import { getPaymentProvider, isProductionPaymentsEnabled } from "@/lib/payments";
 import { assertPositiveCents, formatMoney } from "@/lib/finance/money";
+import { getCurrentRole } from "@/lib/actions/auth";
 
 async function requireUser() {
   const supabase = createClient();
@@ -109,8 +110,9 @@ export async function fundCampaignBudgetAction(params: {
 }) {
   try {
     assertPositiveCents(params.totalBudgetCents);
-    const { supabase, user } = await requireUser();
+    await requireUser();
 
+    const supabase = createClient();
     const { data, error } = await supabase.rpc("fund_campaign_budget", {
       p_campaign_id: params.campaignId,
       p_total_budget_cents: params.totalBudgetCents,
@@ -146,7 +148,7 @@ export async function requestWithdrawalAction(amountCents: number, destinationMa
     if (error) return { error: error.message };
 
     revalidatePath("/dashboard");
-    revalidatePath("/wallet");
+    revalidatePath("/dashboard/wallet");
 
     return { success: true, withdrawalId: data };
   } catch (e) {
@@ -230,16 +232,15 @@ export async function getCreatorWallet() {
   }
 }
 
-/** Admin / platform revenue aggregates (service-role or admin only in practice) */
+/** Admin / platform revenue — gated by admin_users via getCurrentRole */
 export async function getPlatformRevenueSummary(fromIso?: string, toIso?: string) {
   try {
-    const { supabase, user } = await requireUser();
-
-    // Basic admin gate via user_metadata
-    const role = (user.user_metadata as { role?: string })?.role;
+    const role = await getCurrentRole();
     if (role !== "admin") {
       return { error: "Admin only" };
     }
+
+    const { supabase } = await requireUser();
 
     let ledgerQuery = supabase
       .from("financial_ledger")
@@ -252,7 +253,9 @@ export async function getPlatformRevenueSummary(fromIso?: string, toIso?: string
 
     const rows = ledger || [];
     const sum = (type: string) =>
-      rows.filter((r) => r.entry_type === type && r.status === "completed").reduce((a, r) => a + Number(r.amount_cents), 0);
+      rows
+        .filter((r) => r.entry_type === type && r.status === "completed")
+        .reduce((a, r) => a + Number(r.amount_cents), 0);
 
     const platformFees = sum("platform_fee");
     const creatorPayouts = Math.abs(sum("withdrawal"));
@@ -266,7 +269,7 @@ export async function getPlatformRevenueSummary(fromIso?: string, toIso?: string
       creatorPayoutsCents: creatorPayouts,
       rewardExpenditureCents: rewardCosts,
       refundsCents: Math.abs(sum("refund")),
-      netPlatformRevenueCents: platformFees - rewardCosts, // simplified
+      netPlatformRevenueCents: platformFees - rewardCosts,
       depositsCents: deposits,
       transactionCount: rows.length
     };

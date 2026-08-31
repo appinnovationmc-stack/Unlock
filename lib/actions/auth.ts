@@ -14,12 +14,15 @@ export async function signUp(formData: FormData) {
 
   const supabase = createClient();
 
+  // Never accept client-claimed admin on signup
+  const safeRole = role === "admin" ? "consumer" : role;
+
   const { data, error } = await supabase.auth.signUp({
     email,
     password,
     options: {
       data: {
-        role: role === "brand" ? "brand" : role,
+        role: safeRole === "brand" ? "brand" : safeRole,
         handle: handle || undefined
       }
     }
@@ -29,11 +32,11 @@ export async function signUp(formData: FormData) {
     return redirect(`/signup?error=${encodeURIComponent(error.message)}`);
   }
 
-  if (role === "brand" && data.user) {
+  if (safeRole === "brand" && data.user) {
     redirect("/onboarding");
   }
 
-  if (role === "creator") {
+  if (safeRole === "creator") {
     redirect("/dashboard");
   }
 
@@ -54,8 +57,9 @@ export async function logIn(formData: FormData) {
   const user = data.user;
   if (!user) redirect("/discover");
 
-  const role = (user.user_metadata?.role as string) || "consumer";
+  const role = await getCurrentRole();
 
+  if (role === "admin") redirect("/admin");
   if (role === "brand") {
     const { data: membership } = await supabase
       .from("org_members")
@@ -65,15 +69,7 @@ export async function logIn(formData: FormData) {
       .maybeSingle();
     redirect(membership ? "/studio" : "/onboarding");
   }
-
-  if (role === "creator") {
-    redirect("/dashboard");
-  }
-
-  if (role === "admin") {
-    redirect("/admin");
-  }
-
+  if (role === "creator") redirect("/dashboard");
   redirect("/discover");
 }
 
@@ -108,7 +104,9 @@ export async function requestPasswordReset(formData: FormData) {
 export async function updatePassword(formData: FormData) {
   const password = String(formData.get("password") ?? "");
   if (password.length < 6) {
-    return redirect(`/reset-password?error=${encodeURIComponent("Password must be at least 6 characters")}`);
+    return redirect(
+      `/reset-password?error=${encodeURIComponent("Password must be at least 6 characters")}`
+    );
   }
 
   const supabase = createClient();
@@ -118,7 +116,9 @@ export async function updatePassword(formData: FormData) {
 
   if (!user) {
     return redirect(
-      `/forgot-password?error=${encodeURIComponent("Your password reset session has expired. Please request a new link.")}`
+      `/forgot-password?error=${encodeURIComponent(
+        "Your password reset session has expired. Please request a new link."
+      )}`
     );
   }
 
@@ -132,7 +132,11 @@ export async function updatePassword(formData: FormData) {
   redirect("/login?reset=1");
 }
 
-/** Resolve current user role from metadata + membership tables */
+/**
+ * Resolve role from server-side sources only.
+ * Admin is ONLY from admin_users table (service-role writable).
+ * Never trust user_metadata.role for admin.
+ */
 export async function getCurrentRole(): Promise<AuthRole | null> {
   const supabase = createClient();
   const {
@@ -140,10 +144,12 @@ export async function getCurrentRole(): Promise<AuthRole | null> {
   } = await supabase.auth.getUser();
   if (!user) return null;
 
-  const metaRole = user.user_metadata?.role as string | undefined;
-  if (metaRole === "admin") return "admin";
-  if (metaRole === "brand") return "brand";
-  if (metaRole === "creator") return "creator";
+  const { data: adminRow } = await supabase
+    .from("admin_users")
+    .select("user_id")
+    .eq("user_id", user.id)
+    .maybeSingle();
+  if (adminRow) return "admin";
 
   const { data: creator } = await supabase
     .from("creators")
@@ -159,6 +165,10 @@ export async function getCurrentRole(): Promise<AuthRole | null> {
     .limit(1)
     .maybeSingle();
   if (membership) return "brand";
+
+  const metaRole = user.user_metadata?.role as string | undefined;
+  if (metaRole === "brand") return "brand";
+  if (metaRole === "creator") return "creator";
 
   return "consumer";
 }
