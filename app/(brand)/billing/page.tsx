@@ -117,7 +117,9 @@ export default async function BrandBillingPage({
             agreement. Campaign cannot spend beyond this budget.
           </p>
           <FundCampaignForm
-            campaigns={campaigns.map((c) => ({ id: c.id, title: c.title, status: c.status }))}
+            campaigns={campaigns
+              .filter((c) => !budgets.some((b) => b.campaign_id === c.id))
+              .map((c) => ({ id: c.id, title: c.title, status: c.status }))}
           />
         </section>
       </div>

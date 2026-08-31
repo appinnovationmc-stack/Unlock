@@ -51,7 +51,12 @@ export function FundCampaignForm({
   }
 
   if (campaigns.length === 0) {
-    return <p className="text-mute font-mono text-xs">Create a campaign in Studio first.</p>;
+    return (
+      <p className="text-mute font-mono text-xs">
+        No unfunded campaigns. Create a new campaign in Studio, or check the Campaign budgets
+        section below — each campaign can only be funded once.
+      </p>
+    );
   }
 
   return (
