@@ -1,8 +1,8 @@
+@import "maplibre-gl/dist/maplibre-gl.css";
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-
-@import "maplibre-gl/dist/maplibre-gl.css";
 
 @layer base {
   :root {
