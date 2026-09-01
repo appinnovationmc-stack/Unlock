@@ -49,6 +49,18 @@ export default async function StudioPage({
     .eq("org_id", orgId)
     .order("created_at", { ascending: false });
 
+  let locationPins: { id: string; campaign_id: string; label: string; radius_m: number }[] = [];
+  try {
+    const { data: locs } = await supabase
+      .from("campaign_locations")
+      .select("id, campaign_id, label, radius_m")
+      .eq("org_id", orgId)
+      .order("created_at", { ascending: false });
+    locationPins = locs ?? [];
+  } catch {
+    locationPins = [];
+  }
+
   const analyticsResult = await getOrgCampaignAnalytics(orgId);
   const analyticsRows: any[] =
     "analytics" in analyticsResult && analyticsResult.analytics ? analyticsResult.analytics : [];
@@ -204,7 +216,7 @@ export default async function StudioPage({
           </div>
 
           <MissionForm campaigns={(campaigns ?? []).map((c: any) => ({ id: c.id, title: c.title }))} />
-          <LocationForm campaigns={(campaigns ?? []).map((c: any) => ({ id: c.id, title: c.title }))} />
+          <LocationForm campaigns={(campaigns ?? []).map((c: any) => ({ id: c.id, title: c.title }))} existingPins={locationPins} />
 
           <div className="mt-8 border border-white/5 bg-ink2 p-5">
             <h3 className="font-display text-fog mb-2">Performance snapshot</h3>

@@ -30,6 +30,18 @@ export default async function CreatorDashboard() {
     }
   } catch { /* */ }
 
+  let recentAttributed: { event_type: string; created_at: string }[] = [];
+  try {
+    const { data: recent } = await supabase
+      .from("interaction_events")
+      .select("event_type, created_at")
+      .eq("creator_id", user.id)
+      .eq("verification_status", "verified")
+      .order("created_at", { ascending: false })
+      .limit(6);
+    recentAttributed = recent ?? [];
+  } catch { /* */ }
+
   const { count: referralCount } = await supabase.from("referrals").select("id", { count: "exact", head: true })
     .eq("referrer_creator_id", user.id).eq("converted", true);
   const { data: campaigns } = await supabase.from("campaigns").select("id, title").eq("status", "live").order("created_at", { ascending: false });
@@ -93,6 +105,21 @@ export default async function CreatorDashboard() {
           </div>
         ))}
       </div>
+
+      {recentAttributed.length > 0 && (
+        <section className="mb-10">
+          <h2 className="font-display text-lg text-fog mb-4">Attributed activity</h2>
+          <div className="border border-white/8 divide-y divide-white/5">
+            {recentAttributed.map((e, i) => (
+              <div key={i} className="flex justify-between px-4 py-2.5 font-mono text-xs">
+                <span className="text-fog">{e.event_type}</span>
+                <span className="text-mute">{new Date(e.created_at).toLocaleString()}</span>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
       <p className="mt-10 text-center font-mono text-[10px] uppercase tracking-[0.3em] text-mute">
         A small creator who drives 50 verified visits outperforms a famous one who drives 10.
       </p>
