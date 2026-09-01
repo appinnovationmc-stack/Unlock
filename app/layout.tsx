@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Unbounded, Inter, IBM_Plex_Mono } from "next/font/google";
 import "./globals.css";
 import { Nav } from "@/components/Nav";
@@ -20,12 +20,15 @@ export const metadata: Metadata = {
   description:
     "The interaction economy — verified actions, not followers. Brands create experiences. People participate. UNLOCK proves what happened.",
   manifest: "/manifest.webmanifest",
-  themeColor: "#0B0A14",
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
     title: "UNLOCK"
   }
+};
+
+export const viewport: Viewport = {
+  themeColor: "#0B0A14"
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
