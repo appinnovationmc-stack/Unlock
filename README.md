@@ -147,3 +147,15 @@ Apply both in order after prior migrations.
 
 - `/studio` — Intent-first ExperienceBuilder + mission form + LIVE links
 - `/studio/live/[campaignId]` — Live command centre
+
+| `00000020_verify_location_checkin.sql` | PostGIS radius verification |
+| `00000021_add_campaign_location_rpc.sql` | Add map pins from Studio |
+
+### Definition of done (2.0)
+
+- Consumer opens app → sees live map surface of experiences
+- Completes hold-to-unlock → server event + Impact + reward
+- Check-in verifies against store pins when configured
+- Brand builds via intent, sees LIVE metrics, adds missions & pins
+- Creator ranked by Impact, not followers
+- All metrics from interaction_events (no client-side Impact)

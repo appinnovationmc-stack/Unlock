@@ -183,3 +183,55 @@ export async function publishCampaign(formData: FormData) {
   formData.set("status", "live");
   return createCampaign(formData);
 }
+
+/** Add a map pin / store location to a campaign (PostGIS point). */
+export async function addCampaignLocation(formData: FormData) {
+  const supabase = createClient();
+  const orgId = await getMyOrgId();
+  if (!orgId) redirect("/onboarding");
+
+  const campaignId = String(formData.get("campaign_id") ?? "").trim();
+  const label = String(formData.get("label") ?? "").trim();
+  const lat = Number(formData.get("lat"));
+  const lng = Number(formData.get("lng"));
+  const radiusM = Number(formData.get("radius_m") ?? 150);
+
+  if (!campaignId || !label || !Number.isFinite(lat) || !Number.isFinite(lng)) {
+    redirect(`/studio?error=${encodeURIComponent("Location needs label, lat, and lng")}`);
+  }
+
+  const { data: campaign } = await supabase
+    .from("campaigns")
+    .select("id")
+    .eq("id", campaignId)
+    .eq("org_id", orgId)
+    .maybeSingle();
+
+  if (!campaign) {
+    redirect(`/studio?error=${encodeURIComponent("Campaign not found")}`);
+  }
+
+  // PostGIS geography point via raw SQL RPC-friendly insert
+  const { error } = await supabase.rpc("add_campaign_location_point", {
+    p_org_id: orgId,
+    p_campaign_id: campaignId,
+    p_label: label,
+    p_lng: lng,
+    p_lat: lat,
+    p_radius_m: Number.isFinite(radiusM) ? Math.max(25, Math.min(5000, radiusM)) : 150
+  });
+
+  // Fallback if RPC missing: try direct insert with WKT-style via from
+  if (error) {
+    // Store as metadata-only fallback using a text workaround isn't ideal;
+    // require migration 00000021 for the RPC.
+    redirect(
+      `/studio?error=${encodeURIComponent(error.message || "Could not add location — apply migration 00000021")}`
+    );
+  }
+
+  revalidatePath("/studio");
+  revalidatePath(`/studio/live/${campaignId}`);
+  revalidatePath(`/campaign/${campaignId}`);
+  redirect("/studio?created=location");
+}
