@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { recordInteraction } from "@/lib/unlock/interactions/record";
 
 /**
  * Post-unlock social beat — native share or copy link.
@@ -27,20 +28,33 @@ export function ShareMoment({
     : `I just unlocked “${title}”. Don't just see the ad. Unlock it.`;
 
   async function share() {
+    let didShare = false;
     if (typeof navigator !== "undefined" && navigator.share) {
       try {
         await navigator.share({ title, text, url: path });
-        return;
+        didShare = true;
       } catch {
         /* user cancelled or unsupported */
       }
     }
-    try {
-      await navigator.clipboard.writeText(`${text}\n${path}`);
-      setCopied(true);
-      window.setTimeout(() => setCopied(false), 2000);
-    } catch {
-      setCopied(false);
+    if (!didShare) {
+      try {
+        await navigator.clipboard.writeText(`${text}\n${path}`);
+        setCopied(true);
+        window.setTimeout(() => setCopied(false), 2000);
+        didShare = true;
+      } catch {
+        setCopied(false);
+      }
+    }
+    if (didShare) {
+      void recordInteraction({
+        eventType: "SHARE",
+        campaignId,
+        verificationMethod: "authenticated_session",
+        metadata: { source: "share_moment" },
+        idempotencyKey: `share:${campaignId}:${Date.now().toString(36)}`
+      });
     }
   }
 

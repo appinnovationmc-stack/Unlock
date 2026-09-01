@@ -50,7 +50,10 @@ export default async function DiscoverPage() {
               </div>
             ) : user ? <XPBadge xp={xp} /> : null}
             {user ? (
-              <Link href="/wallet" className="font-mono text-[10px] uppercase tracking-widest text-gold border border-gold/30 px-3 py-1.5 hover:bg-gold/10">Wallet</Link>
+              <>
+                <Link href="/impact" className="font-mono text-[10px] uppercase tracking-widest text-volt border border-volt/30 px-3 py-1.5 hover:bg-volt/10">Impact</Link>
+                <Link href="/wallet" className="font-mono text-[10px] uppercase tracking-widest text-gold border border-gold/30 px-3 py-1.5 hover:bg-gold/10">Wallet</Link>
+              </>
             ) : (
               <Link href="/login" className="font-mono text-[10px] uppercase tracking-widest text-mute border border-white/10 px-3 py-1.5 hover:text-volt">Log in</Link>
             )}

@@ -1,4 +1,6 @@
 import { UnlockClient } from "@/components/campaign/UnlockClient";
+import { RecordCampaignView } from "@/components/unlock/interactions/RecordView";
+import { RecordReferralClick } from "@/components/unlock/interactions/RecordReferralClick";
 import { ProductHuntClaim } from "@/components/campaign/ProductHuntClaim";
 import { createClient } from "@/lib/supabase/server";
 import { notFound } from "next/navigation";
@@ -72,6 +74,12 @@ export default async function CampaignPage({
 
   return (
     <main className="min-h-screen px-6 py-10 md:px-12 max-w-2xl mx-auto">
+      {user && campaign.status === "live" && (
+        <RecordCampaignView campaignId={campaign.id} creatorId={referrerCreatorId} />
+      )}
+      {user && campaign.status === "live" && referrerCreatorId && (
+        <RecordReferralClick campaignId={campaign.id} creatorId={referrerCreatorId} />
+      )}
       {campaign.status !== "live" && (
         <p className="mb-4 font-mono text-xs uppercase tracking-widest text-gold border border-gold/30 px-3 py-2 inline-block">
           Preview · {campaign.status}
