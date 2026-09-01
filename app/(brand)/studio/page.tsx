@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/Button";
 import { MechanicPicker } from "@/components/campaign/MechanicPicker";
+import { ExperienceBuilder } from "@/components/unlock/brand-studio/ExperienceBuilder";
 import { createCampaign, getMyOrgId, updateCampaignStatus } from "@/lib/actions/campaigns";
 import { getOrgCampaignAnalytics } from "@/lib/actions/finance";
 import { formatMoney } from "@/lib/finance/money";
@@ -110,93 +111,15 @@ export default async function StudioPage({
         {stat("Creator referrals", String(totals.creatorReferrals))}
       </div>
 
-      <div className="grid lg:grid-cols-2 gap-10">
-        <section>
-          <h2 className="font-display text-lg text-fog mb-1">Create campaign</h2>
-          <p className="text-mute text-sm mb-5">Draft → publish. Title required to go live.</p>
+      
+      <section className="mb-12">
+        <ExperienceBuilder />
+      </section>
 
-          <form action={createCampaign} className="border border-white/5 bg-ink2 p-5 space-y-4">
-            <label className="block">
-              <span className="font-mono text-xs uppercase tracking-widest text-mute">Title *</span>
-              <input name="title" required placeholder="e.g. Unlock the drop"
-                className="mt-1 w-full bg-void border border-white/10 focus:border-volt px-3 py-2 text-fog outline-none" />
-            </label>
-            <label className="block">
-              <span className="font-mono text-xs uppercase tracking-widest text-mute">Tagline</span>
-              <input name="tagline" placeholder="One line that hooks participation"
-                className="mt-1 w-full bg-void border border-white/10 focus:border-volt px-3 py-2 text-fog outline-none" />
-            </label>
-            <label className="block">
-              <span className="font-mono text-xs uppercase tracking-widest text-mute">Description</span>
-              <textarea name="description" rows={3} placeholder="What should people do and why?"
-                className="mt-1 w-full bg-void border border-white/10 focus:border-volt px-3 py-2 text-fog outline-none resize-none" />
-            </label>
-            <div className="grid grid-cols-2 gap-4">
-              <label className="block">
-                <span className="font-mono text-xs uppercase tracking-widest text-mute">Objective</span>
-                <select name="objective" className="mt-1 w-full bg-void border border-white/10 focus:border-volt px-3 py-2 text-fog outline-none">
-                  <option value="">Select…</option>
-                  {OBJECTIVES.map((o) => (
-                    <option key={o} value={o}>{o.replace(/_/g, " ")}</option>
-                  ))}
-                </select>
-              </label>
-              <label className="block">
-                <span className="font-mono text-xs uppercase tracking-widest text-mute">Target audience</span>
-                <input name="target_audience" placeholder="e.g. 18–34 urban"
-                  className="mt-1 w-full bg-void border border-white/10 focus:border-volt px-3 py-2 text-fog outline-none" />
-              </label>
-            </div>
-            <label className="block">
-              <span className="font-mono text-xs uppercase tracking-widest text-mute">Mechanics</span>
-              <div className="mt-2"><MechanicPicker /></div>
-            </label>
-            <div className="grid grid-cols-2 gap-4">
-              <label className="block">
-                <span className="font-mono text-xs uppercase tracking-widest text-mute">Starts at</span>
-                <input name="starts_at" type="datetime-local"
-                  className="mt-1 w-full bg-void border border-white/10 focus:border-volt px-3 py-2 text-fog outline-none" />
-              </label>
-              <label className="block">
-                <span className="font-mono text-xs uppercase tracking-widest text-mute">Ends at</span>
-                <input name="ends_at" type="datetime-local"
-                  className="mt-1 w-full bg-void border border-white/10 focus:border-volt px-3 py-2 text-fog outline-none" />
-              </label>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <label className="block">
-                <span className="font-mono text-xs uppercase tracking-widest text-mute">XP value</span>
-                <input name="xp_value" type="number" defaultValue={100} min={0}
-                  className="mt-1 w-full bg-void border border-white/10 focus:border-volt px-3 py-2 text-fog outline-none" />
-              </label>
-              <label className="block">
-                <span className="font-mono text-xs uppercase tracking-widest text-mute">Hero image URL</span>
-                <input name="hero_image_url" type="url" placeholder="https://…"
-                  className="mt-1 w-full bg-void border border-white/10 focus:border-volt px-3 py-2 text-fog outline-none" />
-              </label>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <label className="block">
-                <span className="font-mono text-xs uppercase tracking-widest text-mute">Reward label</span>
-                <input name="reward_label" placeholder="20% OFF + early access"
-                  className="mt-1 w-full bg-void border border-white/10 focus:border-volt px-3 py-2 text-fog outline-none" />
-              </label>
-              <label className="block">
-                <span className="font-mono text-xs uppercase tracking-widest text-mute">Reward value</span>
-                <input name="reward_value" placeholder="20%, R150…"
-                  className="mt-1 w-full bg-void border border-white/10 focus:border-volt px-3 py-2 text-fog outline-none" />
-              </label>
-            </div>
-            <div className="flex flex-col sm:flex-row gap-3 pt-2">
-              <Button type="submit" name="status" value="draft" variant="ghost" className="flex-1 justify-center">
-                Save draft
-              </Button>
-              <Button type="submit" name="status" value="live" variant="volt" className="flex-1 justify-center">
-                Publish live
-              </Button>
-            </div>
-          </form>
-        </section>
+      <div className="grid lg:grid-cols-1 gap-10">
+
+                {/* legacy form replaced by ExperienceBuilder */}
+
 
         <section>
           <h2 className="font-display text-lg text-fog mb-4">Your campaigns</h2>
