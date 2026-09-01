@@ -38,6 +38,15 @@ export default async function AdminPage() {
   const { count: consumerCount } = await supabase
     .from("consumers")
     .select("id", { count: "exact", head: true });
+
+  let interactionCount = 0;
+  let impactSum = 0;
+  try {
+    const { count: ic } = await supabase.from("interaction_events").select("id", { count: "exact", head: true });
+    interactionCount = ic ?? 0;
+    const { data: scores } = await supabase.from("impact_scores").select("total_impact");
+    impactSum = (scores ?? []).reduce((a: number, s: any) => a + Number(s.total_impact ?? 0), 0);
+  } catch { /* migration may not be applied */ }
   const { count: creatorCount } = await supabase
     .from("creators")
     .select("id", { count: "exact", head: true });
@@ -131,7 +140,18 @@ export default async function AdminPage() {
             <span className="font-display text-fog shrink-0">{formatMoney(w.amount_cents)}</span>
             <span className="font-mono text-[10px] uppercase tracking-widest text-mute shrink-0">{w.status}</span>
             <div className="shrink-0">
-              <WithdrawalActions withdrawalId={w.id} status={w.status} />
+              <section className="mb-10 grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="border border-white/8 bg-ink2 px-4 py-3">
+          <p className="font-mono text-[10px] uppercase tracking-widest text-mute">Interaction events</p>
+          <p className="font-display text-2xl text-volt tabular-nums">{interactionCount.toLocaleString()}</p>
+        </div>
+        <div className="border border-white/8 bg-ink2 px-4 py-3">
+          <p className="font-mono text-[10px] uppercase tracking-widest text-mute">Total Impact awarded</p>
+          <p className="font-display text-2xl text-fog tabular-nums">{impactSum.toLocaleString()}</p>
+        </div>
+      </section>
+
+      <WithdrawalActions withdrawalId={w.id} status={w.status} />
             </div>
           </div>
         ))}
