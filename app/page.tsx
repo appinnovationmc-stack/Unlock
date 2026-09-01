@@ -26,10 +26,15 @@ export default function Home() {
         <Link href="/discover">
           <Button variant="volt">Enter the field</Button>
         </Link>
-        <Link href="/signup">
-          <Button variant="ghost">Create account</Button>
+        <Link href="/for-brands">
+          <Button variant="ghost">For brands</Button>
         </Link>
       </div>
+      <p className="mt-4 font-mono text-[10px] uppercase tracking-widest text-mute relative">
+        <Link href="/signup" className="hover:text-volt">
+          Create account
+        </Link>
+      </p>
 
       <div className="mt-16 grid grid-cols-1 sm:grid-cols-3 gap-6 max-w-3xl text-left relative w-full">
         {[

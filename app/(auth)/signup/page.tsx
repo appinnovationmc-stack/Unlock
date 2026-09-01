@@ -12,8 +12,18 @@ const roles = [
   { value: "brand", label: "Brand" }
 ] as const;
 
-export default function SignupPage({ searchParams }: { searchParams: { error?: string } }) {
-  const [role, setRole] = useState<(typeof roles)[number]["value"]>("consumer");
+type RoleValue = (typeof roles)[number]["value"];
+
+function initialRole(raw?: string): RoleValue {
+  return roles.some((r) => r.value === raw) ? (raw as RoleValue) : "consumer";
+}
+
+export default function SignupPage({
+  searchParams
+}: {
+  searchParams: { error?: string; role?: string };
+}) {
+  const [role, setRole] = useState<RoleValue>(initialRole(searchParams.role));
 
   return (
     <main className="min-h-screen flex items-center justify-center px-6 bg-duotone">

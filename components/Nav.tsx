@@ -42,6 +42,9 @@ export async function Nav() {
         <Link href="/discover" className="hover:text-volt">
           Discover
         </Link>
+        <Link href="/for-brands" className="hover:text-volt">
+          For brands
+        </Link>
         {(role === "brand" || !user) && (
           <Link href="/studio" className="hover:text-volt">
             Studio
