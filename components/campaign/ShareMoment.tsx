@@ -1,79 +1,97 @@
 "use client";
 
-import { useState } from "react";
-import { recordInteraction } from "@/lib/unlock/interactions/record";
+import { useEffect, useMemo, useState } from "react";
+
+function resolveShareUrl(campaignId: string, shareUrl?: string) {
+  if (shareUrl && /^https?:\/\//i.test(shareUrl)) return shareUrl;
+  const origin = typeof window !== "undefined" ? window.location.origin : "";
+  return `${origin}/campaign/${campaignId}`;
+}
 
 /**
- * Post-unlock social beat — native share or copy link.
- * Designed as the "broadcast" step after the encounter.
+ * WhatsApp-first broadcast — pass a live encounter in one tap. No login.
  */
 export function ShareMoment({
   campaignId,
   title,
-  rewardHint
+  shareUrl
 }: {
   campaignId: string;
   title: string;
-  rewardHint?: string;
+  shareUrl?: string;
 }) {
   const [copied, setCopied] = useState(false);
+  const [canNativeShare, setCanNativeShare] = useState(false);
 
-  const path =
-    typeof window !== "undefined"
-      ? `${window.location.origin}/campaign/${campaignId}`
-      : `/campaign/${campaignId}`;
+  const url = useMemo(
+    () => resolveShareUrl(campaignId, shareUrl),
+    [campaignId, shareUrl]
+  );
 
-  const text = rewardHint
-    ? `I just unlocked “${title}” — ${rewardHint}. Don't just see the ad. Unlock it.`
-    : `I just unlocked “${title}”. Don't just see the ad. Unlock it.`;
+  const message = `${title}\n${url}`;
+  const whatsappHref = `https://wa.me/?text=${encodeURIComponent(message)}`;
 
-  async function share() {
-    let didShare = false;
-    if (typeof navigator !== "undefined" && navigator.share) {
-      try {
-        await navigator.share({ title, text, url: path });
-        didShare = true;
-      } catch {
-        /* user cancelled or unsupported */
-      }
+  useEffect(() => {
+    setCanNativeShare(
+      typeof navigator !== "undefined" && typeof navigator.share === "function"
+    );
+  }, []);
+
+  async function nativeShare() {
+    try {
+      await navigator.share({ title, text: title, url });
+    } catch {
+      /* user cancelled */
     }
-    if (!didShare) {
-      try {
-        await navigator.clipboard.writeText(`${text}\n${path}`);
-        setCopied(true);
-        window.setTimeout(() => setCopied(false), 2000);
-        didShare = true;
-      } catch {
-        setCopied(false);
-      }
-    }
-    if (didShare) {
-      void recordInteraction({
-        eventType: "SHARE",
-        campaignId,
-        verificationMethod: "authenticated_session",
-        metadata: { source: "share_moment" },
-        idempotencyKey: `share:${campaignId}:${Date.now().toString(36)}`
-      });
+  }
+
+  async function copyLink() {
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 2000);
+    } catch {
+      setCopied(false);
     }
   }
 
   return (
-    <div className="border border-magenta/30 bg-magenta/5 px-4 py-4 text-center">
-      <p className="font-mono text-[10px] uppercase tracking-widest text-magenta mb-2">
+    <section className="mt-10 border border-volt/25 bg-void clip-keyhole px-4 py-5">
+      <p className="font-mono text-[10px] uppercase tracking-[0.3em] text-volt mb-2">
         Broadcast
       </p>
-      <p className="text-fog text-sm mb-3">
-        Experiences go viral when people pass them on — not when brands buy another
-        impression.
+      <h2 className="font-display text-xl text-fog uppercase tracking-wide mb-2">
+        Share this encounter
+      </h2>
+      <p className="text-mute text-sm mb-5 leading-relaxed">
+        Pass it on in one tap. WhatsApp first — no login.
       </p>
-      <button
-        type="button"
-        onClick={share}
-        className="font-mono text-xs uppercase tracking-widest text-void bg-volt px-4 py-2 hover:brightness-110"
-      >
-        {copied ? "Link copied" : "Share this encounter"}
-      </button>
-    </div>
+      <div className="flex flex-col gap-2">
+        <a
+          href={whatsappHref}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center justify-center gap-2 px-6 py-3 font-display text-sm uppercase tracking-wide clip-keyhole-sm bg-volt text-void hover:bg-fog transition-colors duration-150"
+        >
+          WhatsApp
+        </a>
+        {canNativeShare && (
+          <button
+            type="button"
+            onClick={nativeShare}
+            className="inline-flex items-center justify-center gap-2 px-6 py-3 font-display text-sm uppercase tracking-wide clip-keyhole-sm bg-transparent text-fog border border-mute/40 hover:border-volt hover:text-volt transition-colors duration-150"
+          >
+            Share
+          </button>
+        )}
+        <button
+          type="button"
+          onClick={copyLink}
+          className="inline-flex items-center justify-center gap-2 px-6 py-3 font-display text-sm uppercase tracking-wide clip-keyhole-sm bg-transparent text-fog border border-mute/40 hover:border-volt hover:text-volt transition-colors duration-150"
+        >
+          {copied ? "Link copied" : "Copy link"}
+        </button>
+      </div>
+    </section>
   );
 }

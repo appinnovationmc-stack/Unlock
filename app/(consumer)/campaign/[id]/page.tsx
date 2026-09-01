@@ -1,4 +1,5 @@
 import { UnlockClient } from "@/components/campaign/UnlockClient";
+import { ShareMoment } from "@/components/campaign/ShareMoment";
 import { RecordCampaignView } from "@/components/unlock/interactions/RecordView";
 import { RecordReferralClick } from "@/components/unlock/interactions/RecordReferralClick";
 import { LocationCheckin } from "@/components/unlock/experiences/LocationCheckin";
@@ -7,6 +8,7 @@ import { MissionProgress } from "@/components/unlock/missions/MissionProgress";
 import { MissionProgressRefresh } from "@/components/unlock/missions/MissionProgressClient";
 import { ProductHuntClaim } from "@/components/campaign/ProductHuntClaim";
 import { createClient } from "@/lib/supabase/server";
+import { publicCampaignUrl } from "@/lib/siteUrl";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 
@@ -86,6 +88,8 @@ export default async function CampaignPage({
       : mechanics.includes("treasure_hunt") || mechanics.includes("qr_scan")
         ? "Hunt it down. Scan. Unlock."
         : "Tap the seal. Complete the moment. Take the reward.";
+
+  const shareUrl = publicCampaignUrl(campaign.id);
 
   return (
     <main className="min-h-screen px-6 py-10 md:px-12 max-w-2xl mx-auto">
@@ -169,6 +173,14 @@ export default async function CampaignPage({
           rewardLabel={rewardLabel}
           campaignTitle={campaign.title}
           referrerCreatorId={referrerCreatorId}
+        />
+      )}
+
+      {campaign.status === "live" && (
+        <ShareMoment
+          campaignId={campaign.id}
+          title={campaign.title}
+          shareUrl={shareUrl}
         />
       )}
 
