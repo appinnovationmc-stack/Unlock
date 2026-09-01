@@ -38,6 +38,17 @@ export default async function WalletPage() {
     .eq("consumer_id", user.id)
     .order("claimed_at", { ascending: false });
 
+  let recentEvents: { event_type: string; created_at: string; verification_status: string }[] = [];
+  try {
+    const { data: ev } = await supabase
+      .from("interaction_events")
+      .select("event_type, created_at, verification_status")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false })
+      .limit(8);
+    recentEvents = ev ?? [];
+  } catch { /* */ }
+
   let impactTotal = 0;
   let impactVisits = 0;
   try {
@@ -78,6 +89,24 @@ export default async function WalletPage() {
           <p className="font-display text-2xl text-fog mt-1">{impactVisits}</p>
         </div>
       </div>
+
+      {recentEvents.length > 0 && (
+        <section className="mb-10">
+          <h2 className="font-display text-lg text-fog mb-4">Recent activity</h2>
+          <div className="border border-white/8 divide-y divide-white/5">
+            {recentEvents.map((e, i) => (
+              <div key={i} className="flex items-center justify-between px-4 py-2.5 font-mono text-xs">
+                <span className="text-fog">{e.event_type}</span>
+                <span className="text-mute">
+                  {e.verification_status === "verified" ? "verified" : e.verification_status}
+                  {" · "}
+                  {new Date(e.created_at).toLocaleString()}
+                </span>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
 
       <h2 className="font-display text-lg text-fog mb-4">Rewards</h2>
       <div className="border border-white/5 divide-y divide-white/5">
