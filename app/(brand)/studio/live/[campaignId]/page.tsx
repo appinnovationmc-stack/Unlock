@@ -5,6 +5,7 @@ import { getMyOrgId } from "@/lib/actions/campaigns";
 import { redirect, notFound } from "next/navigation";
 
 export const dynamic = "force-dynamic";
+export const revalidate = 30;
 
 export default async function LiveCampaignPage({ params }: { params: { campaignId: string } }) {
   const supabase = createClient();

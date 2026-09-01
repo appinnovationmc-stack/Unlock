@@ -103,6 +103,9 @@ export default async function StudioPage({
         <p className="font-mono text-xs text-mute uppercase tracking-widest">{org?.industry ?? "general"}</p>
       </header>
 
+      {searchParams.created === "location" && (
+        <p className="mb-4 font-mono text-xs text-volt border border-volt/30 px-3 py-2">Location pin added. Check-ins will verify against its radius.</p>
+      )}
       {searchParams.error && (
         <p className="mb-6 text-sm text-magenta border border-magenta/30 bg-magenta/5 px-4 py-3">{searchParams.error}</p>
       )}

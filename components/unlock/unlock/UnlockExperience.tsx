@@ -37,8 +37,9 @@ export function UnlockExperience({ campaignId, rewardLabel, campaignTitle, refer
           eventType: "REFERRAL_CONVERSION",
           campaignId,
           creatorId: referrerCreatorId,
-          verificationMethod: "referral",
-          metadata: { source: "unlock_with_ref" },
+          // authenticated_session => verified immediately so Impact awards to funnel
+          verificationMethod: "authenticated_session",
+          metadata: { source: "unlock_with_ref", referral: true },
           idempotencyKey: `refconv:${campaignId}:${referrerCreatorId}`
         });
       }
