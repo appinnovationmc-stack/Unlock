@@ -64,6 +64,18 @@ export default async function LiveCampaignPage({ params }: { params: { campaignI
     stats.interactions = (partCount ?? 0) + (unlockCount ?? 0);
   }
 
+
+  let recentEvents: { event_type: string; created_at: string; verification_status: string }[] = [];
+  try {
+    const { data: recent } = await supabase
+      .from("interaction_events")
+      .select("event_type, created_at, verification_status")
+      .eq("campaign_id", params.campaignId)
+      .order("created_at", { ascending: false })
+      .limit(12);
+    recentEvents = recent ?? [];
+  } catch { /* */ }
+
   let pinCount = 0;
   let primaryType: string | null = null;
   try {
@@ -106,6 +118,21 @@ export default async function LiveCampaignPage({ params }: { params: { campaignI
           Open as consumer
         </a>
       </p>
+      {recentEvents.length > 0 && (
+        <section className="max-w-2xl mx-auto">
+          <p className="font-mono text-[10px] uppercase tracking-[0.3em] text-mute mb-3">Recent interactions</p>
+          <div className="border border-white/8 divide-y divide-white/5">
+            {recentEvents.map((e, i) => (
+              <div key={i} className="flex justify-between px-4 py-2 font-mono text-xs">
+                <span className="text-fog">{e.event_type}</span>
+                <span className="text-mute">
+                  {e.verification_status} · {new Date(e.created_at).toLocaleString()}
+                </span>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
       <section className="max-w-md mx-auto">
         <PlayExperience title={campaign.title} rewardLabel={rewardLabel} impact={50} />
       </section>

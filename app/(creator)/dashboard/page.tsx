@@ -120,7 +120,13 @@ export default async function CreatorDashboard() {
         </section>
       )}
 
-      <p className="mt-10 text-center font-mono text-[10px] uppercase tracking-[0.3em] text-mute">
+      <section className="mt-10 mb-6 border border-white/5 bg-ink2/40 px-5 py-4">
+        <p className="font-mono text-[10px] uppercase tracking-widest text-mute mb-2">Impact weights (platform defaults)</p>
+        <p className="font-mono text-[10px] text-mute leading-relaxed">
+          VIEW 1 · SHARE 5 · CHECK-IN 25 · QR/PRODUCT 15 · UNLOCK 10 · REFERRAL CONV 50 · PURCHASE 100
+        </p>
+      </section>
+      <p className="mt-6 text-center font-mono text-[10px] uppercase tracking-[0.3em] text-mute">
         A small creator who drives 50 verified visits outperforms a famous one who drives 10.
       </p>
     </main>
