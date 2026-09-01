@@ -32,6 +32,16 @@ export function UnlockExperience({ campaignId, rewardLabel, campaignTitle, refer
       });
       const res = await unlockCampaign(campaignId, referrerCreatorId);
       if (res.error && !res.alreadyUnlocked) { setError(res.error); setPhase("error"); return; }
+      if (!res.alreadyUnlocked) {
+        void recordInteraction({
+          eventType: "CHALLENGE_COMPLETE",
+          campaignId,
+          creatorId: referrerCreatorId ?? undefined,
+          verificationMethod: "authenticated_session",
+          metadata: { source: "unlock_moment" },
+          idempotencyKey: `complete:${campaignId}:${Date.now().toString(36)}`
+        });
+      }
       setResult({ xp: res.xpAwarded, reward: res.rewardLabel ?? rewardLabel, already: res.alreadyUnlocked });
       setPhase("revealed");
     });
