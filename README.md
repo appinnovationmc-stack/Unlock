@@ -109,3 +109,20 @@ npm run test:finance
 ```
 
 Routes: `/billing` (brand), `/wallet` (creator).
+
+---
+
+## UNLOCK 2.0 — Interaction Economy
+
+**Core principle:** Followers are not value. Verified actions are value. Outcomes are highest value.
+
+| Piece | Location |
+|-------|----------|
+| Interaction event engine | `supabase/migrations/00000018_interaction_economy.sql` |
+| Server-only Impact awarding | `record_interaction_event` + `lib/unlock/` |
+| Hold-to-unlock | `components/unlock/unlock/` |
+| World / Live Map | `app/(consumer)/discover/page.tsx` |
+| Brand LIVE | `app/(brand)/studio/live/[campaignId]/page.tsx` |
+| Creator Impact-first | `app/(creator)/dashboard/page.tsx` |
+
+Apply migration `00000018_interaction_economy.sql` on Supabase after prior migrations.

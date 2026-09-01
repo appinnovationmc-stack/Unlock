@@ -335,3 +335,39 @@ export interface Invoice {
   paid_at: string | null;
   line_items: unknown[];
 }
+
+// ── UNLOCK 2.0 Interaction Economy ───────────────────────────────────────
+export type InteractionEventType =
+  | "CAMPAIGN_VIEW" | "CHALLENGE_START" | "CHALLENGE_COMPLETE" | "LOCATION_CHECKIN"
+  | "QR_SCAN" | "NFC_SCAN" | "PRODUCT_INTERACTION" | "REVIEW_SUBMITTED" | "CONTENT_SUBMITTED"
+  | "SHARE" | "REFERRAL_CLICK" | "REFERRAL_CONVERSION" | "REWARD_UNLOCK" | "REWARD_CLAIM"
+  | "REWARD_REDEEM" | "PURCHASE";
+export type VerificationMethod =
+  | "authenticated_session" | "qr" | "nfc" | "location" | "campaign_state" | "product"
+  | "time_window" | "unique_interaction" | "referral" | "purchase_integration"
+  | "manual_approval" | "rate_limit_ok";
+export type VerificationStatus = "pending" | "verified" | "rejected" | "suspicious" | "duplicate";
+export type ExperienceType =
+  | "DISCOVER" | "VISIT" | "PLAY" | "SOLVE" | "REVIEW" | "SHARE" | "COLLECT" | "BUY" | "MYSTERY";
+export interface InteractionEvent {
+  id: string; user_id: string; organisation_id: string | null; campaign_id: string | null;
+  mission_id: string | null; challenge_id: string | null; creator_id: string | null;
+  location_id: string | null; product_id: string | null; event_type: InteractionEventType;
+  event_value: number; verification_method: VerificationMethod | null;
+  verification_status: VerificationStatus; metadata: Record<string, unknown>;
+  idempotency_key: string | null; created_at: string;
+}
+export interface ImpactScore {
+  user_id: string; total_impact: number; verified_interactions: number;
+  store_visits: number; conversions: number; last_updated_at: string;
+}
+export interface Mission {
+  id: string; campaign_id: string; organisation_id: string; title: string;
+  description: string | null; experience_type: ExperienceType; sort_order: number;
+  is_required: boolean; created_at: string;
+}
+export interface ExperienceConfig {
+  id: string; campaign_id: string; organisation_id: string; primary_type: ExperienceType;
+  verification_required: VerificationMethod[]; reward_preview: Record<string, unknown>;
+  map_visible: boolean; config: Record<string, unknown>;
+}

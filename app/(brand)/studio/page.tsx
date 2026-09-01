@@ -234,6 +234,9 @@ export default async function StudioPage({
                   })()}
                   <div className="flex flex-wrap gap-2">
                     <Link href={`/campaign/${c.id}`} className="font-mono text-[10px] uppercase tracking-widest text-mute hover:text-volt border border-white/10 px-2 py-1">Preview</Link>
+                    {(c.status === "live" || c.status === "paused") && (
+                      <Link href={`/studio/live/${c.id}`} className="font-mono text-[10px] uppercase tracking-widest text-volt border border-volt/40 px-2 py-1 hover:bg-volt/10">LIVE</Link>
+                    )}
                     {c.status === "draft" && (
                       <form action={updateCampaignStatus}>
                         <input type="hidden" name="campaign_id" value={c.id} />
