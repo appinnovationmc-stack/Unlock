@@ -3,6 +3,7 @@ import { XPBadge } from "@/components/ui/XPBadge";
 import { createClient } from "@/lib/supabase/server";
 import type { Campaign, ImpactScore } from "@/lib/types";
 import Link from "next/link";
+import { LiveMapSection } from "@/components/unlock/map/LiveMapSection";
 
 export const dynamic = "force-dynamic";
 
@@ -49,10 +50,6 @@ export default async function DiscoverPage() {
   }
   const list = (campaigns as Campaign[]) ?? [];
   const count = list.length;
-  const positions = [
-    { top: "22%", left: "18%" }, { top: "35%", left: "55%" }, { top: "58%", left: "28%" }, { top: "28%", left: "72%" },
-    { top: "65%", left: "62%" }, { top: "45%", left: "40%" }, { top: "70%", left: "15%" }, { top: "18%", left: "48%" }
-  ];
   return (
     <main className="min-h-screen bg-void">
       <header className="relative px-6 pt-10 pb-6 md:px-12 border-b border-white/5">
@@ -81,29 +78,21 @@ export default async function DiscoverPage() {
       </header>
       <section className="relative px-6 py-8 md:px-12">
         <div className="relative aspect-[16/9] md:aspect-[21/9] max-h-[420px] w-full overflow-hidden border border-white/8 bg-ink2 clip-keyhole">
-          <div className="absolute inset-0 opacity-60" style={{ background: "radial-gradient(ellipse at 30% 40%, rgba(198,255,61,0.12), transparent 50%), radial-gradient(ellipse at 70% 60%, rgba(255,61,203,0.08), transparent 45%), radial-gradient(circle at 50% 50%, rgba(11,10,20,0.9), #0B0A14)" }} />
           <div className="absolute inset-0">
-            {list.slice(0, 8).map((c, i) => (
-              <Link key={c.id} href={`/campaign/${c.id}`} className="absolute group" style={positions[i % positions.length]}>
-                <span className="relative flex h-3 w-3">
-                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-volt opacity-40" />
-                  <span className="relative inline-flex h-3 w-3 rounded-full bg-volt border border-void shadow-[0_0_12px_rgba(198,255,61,0.6)]" />
-                </span>
-                <span className="absolute left-5 top-1/2 -translate-y-1/2 whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity font-mono text-[10px] text-fog bg-void/90 border border-white/10 px-2 py-1 pointer-events-none">{c.title}</span>
-              </Link>
-            ))}
-            {list.length === 0 && (
-              <div className="absolute inset-0 flex items-center justify-center">
-                <p className="font-mono text-xs text-mute tracking-widest uppercase">No live pins yet</p>
-              </div>
-            )}
+            <LiveMapSection pins={mapPins} />
           </div>
-          <div className="absolute bottom-4 left-4 right-4 flex items-end justify-between">
-            <div>
+          <div className="absolute bottom-4 left-4 right-4 flex items-end justify-between pointer-events-none z-10">
+            <div className="bg-void/80 border border-white/10 px-3 py-2">
               <p className="font-mono text-[10px] uppercase tracking-[0.3em] text-volt">Live map</p>
-              <p className="font-display text-lg text-fog mt-0.5">{count} experience{count === 1 ? "" : "s"} near you</p>
+              <p className="font-display text-lg text-fog mt-0.5">
+                {mapPins.length > 0
+                  ? `${mapPins.length} pin${mapPins.length === 1 ? "" : "s"} · ${count} experience${count === 1 ? "" : "s"}`
+                  : `${count} experience${count === 1 ? "" : "s"} near you`}
+              </p>
             </div>
-            <p className="font-mono text-[9px] text-mute max-w-[140px] text-right hidden sm:block">Location used only when you join a place-based challenge</p>
+            <p className="font-mono text-[9px] text-mute max-w-[140px] text-right hidden sm:block bg-void/80 border border-white/10 px-2 py-1">
+              Location used only when you join a place-based challenge
+            </p>
           </div>
         </div>
       </section>

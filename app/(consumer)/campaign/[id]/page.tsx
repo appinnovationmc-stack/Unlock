@@ -3,6 +3,7 @@ import { RecordCampaignView } from "@/components/unlock/interactions/RecordView"
 import { RecordReferralClick } from "@/components/unlock/interactions/RecordReferralClick";
 import { LocationCheckin } from "@/components/unlock/experiences/LocationCheckin";
 import { MissionProgress } from "@/components/unlock/missions/MissionProgress";
+import { MissionProgressRefresh } from "@/components/unlock/missions/MissionProgressClient";
 import { ProductHuntClaim } from "@/components/campaign/ProductHuntClaim";
 import { createClient } from "@/lib/supabase/server";
 import { notFound } from "next/navigation";
@@ -145,6 +146,7 @@ export default async function CampaignPage({
         </div>
       </div>
 
+      <MissionProgressRefresh />
       <MissionProgress campaignId={campaign.id} userId={user?.id} />
 
       {(mechanics.includes("geolocation") || mechanics.includes("treasure_hunt")) && campaign.status === "live" && (

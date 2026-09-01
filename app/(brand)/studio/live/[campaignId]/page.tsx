@@ -114,6 +114,10 @@ export default async function LiveCampaignPage({ params }: { params: { campaignI
       <p className="font-mono text-[10px] uppercase tracking-widest text-mute text-center">
         {primaryType ? <>Type · {primaryType} · </> : null}
         {pinCount} location pin{pinCount === 1 ? "" : "s"} ·{" "}
+        <a href={`/studio/live/${campaign.id}/play`} className="text-volt hover:underline">
+          Play demo
+        </a>
+        {" · "}
         <a href={`/campaign/${campaign.id}`} className="text-volt hover:underline">
           Open as consumer
         </a>

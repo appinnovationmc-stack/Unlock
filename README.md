@@ -159,3 +159,13 @@ Apply both in order after prior migrations.
 - Brand builds via intent, sees LIVE metrics, adds missions & pins
 - Creator ranked by Impact, not followers
 - All metrics from interaction_events (no client-side Impact)
+
+| `00000024_geofence_hardening.sql` | Accuracy + min interval for check-ins |
+
+### Map
+
+Discover uses **MapLibre GL** + OpenStreetMap tiles (no API key). Pins from `get_live_map_pins()`.
+
+### Play demo
+
+`/studio/live/[campaignId]/play` — hold-to-unlock without writing events.

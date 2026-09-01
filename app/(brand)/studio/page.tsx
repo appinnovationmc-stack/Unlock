@@ -3,6 +3,7 @@ import { MechanicPicker } from "@/components/campaign/MechanicPicker";
 import { ExperienceBuilder } from "@/components/unlock/brand-studio/ExperienceBuilder";
 import { MissionForm } from "@/components/unlock/brand-studio/MissionForm";
 import { LocationForm } from "@/components/unlock/brand-studio/LocationForm";
+import { ImpactRulesForm } from "@/components/unlock/brand-studio/ImpactRulesForm";
 import { createCampaign, getMyOrgId, updateCampaignStatus } from "@/lib/actions/campaigns";
 import { getOrgCampaignAnalytics } from "@/lib/actions/finance";
 import { formatMoney } from "@/lib/finance/money";
@@ -249,6 +250,7 @@ export default async function StudioPage({
           )}
           <MissionForm campaigns={(campaigns ?? []).map((c: any) => ({ id: c.id, title: c.title }))} />
           <LocationForm campaigns={(campaigns ?? []).map((c: any) => ({ id: c.id, title: c.title }))} existingPins={locationPins} />
+          <ImpactRulesForm campaigns={(campaigns ?? []).map((c: any) => ({ id: c.id, title: c.title }))} />
 
           <div className="mt-8 border border-white/5 bg-ink2 p-5">
             <h3 className="font-display text-fog mb-2">Performance snapshot</h3>

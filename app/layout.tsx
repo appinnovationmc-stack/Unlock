@@ -18,7 +18,14 @@ const mono = IBM_Plex_Mono({
 export const metadata: Metadata = {
   title: "UNLOCK — Don't just see the ad. Unlock it.",
   description:
-    "The infrastructure for interactive marketing — brands, creators and consumers, connected through campaigns you play."
+    "The interaction economy — verified actions, not followers. Brands create experiences. People participate. UNLOCK proves what happened.",
+  manifest: "/manifest.webmanifest",
+  themeColor: "#0B0A14",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "UNLOCK"
+  }
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
