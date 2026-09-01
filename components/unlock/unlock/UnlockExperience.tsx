@@ -3,7 +3,7 @@ import { useState, useTransition } from "react";
 import { UnlockButton } from "./UnlockButton";
 import { recordInteraction } from "@/lib/unlock/interactions/record";
 import { unlockCampaign } from "@/lib/actions/unlock";
-import Link from "next/link";
+import { UnlockReveal } from "./UnlockReveal";
 
 export function UnlockExperience({ campaignId, rewardLabel, campaignTitle, referrerCreatorId, impactHint = 10 }: {
   campaignId: string; rewardLabel: string; campaignTitle?: string; referrerCreatorId?: string | null; impactHint?: number;
@@ -60,15 +60,12 @@ export function UnlockExperience({ campaignId, rewardLabel, campaignTitle, refer
 
   if (phase === "revealed" && result) {
     return (
-      <div className="relative overflow-hidden clip-keyhole border border-gold/40 bg-ink2 p-8 text-center">
-        <p className="font-mono text-[10px] uppercase tracking-[0.35em] text-gold mb-3">{result.already ? "Already unlocked" : "UNLOCKED"}</p>
-        <h2 className="font-display text-3xl text-fog text-glow-volt mb-2">{result.reward ?? rewardLabel}</h2>
-        {!result.already && <p className="font-mono text-volt text-sm tracking-widest mb-6">+{result.xp || impactHint} IMPACT</p>}
-        <div className="flex flex-col sm:flex-row gap-3 justify-center">
-          <Link href="/wallet" className="font-mono text-[10px] uppercase tracking-widest border border-gold/50 text-gold px-4 py-2 hover:bg-gold/10">View in wallet</Link>
-          <Link href="/discover" className="font-mono text-[10px] uppercase tracking-widest border border-white/15 text-mute px-4 py-2 hover:text-fog">More experiences</Link>
-        </div>
-      </div>
+      <UnlockReveal
+        reward={result.reward ?? rewardLabel}
+        impact={result.xp || impactHint}
+        already={result.already}
+        campaignId={campaignId}
+      />
     );
   }
   if (phase === "error") {

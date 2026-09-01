@@ -2,6 +2,7 @@ import { UnlockClient } from "@/components/campaign/UnlockClient";
 import { RecordCampaignView } from "@/components/unlock/interactions/RecordView";
 import { RecordReferralClick } from "@/components/unlock/interactions/RecordReferralClick";
 import { LocationCheckin } from "@/components/unlock/experiences/LocationCheckin";
+import { NfcScan } from "@/components/unlock/experiences/NfcScan";
 import { MissionProgress } from "@/components/unlock/missions/MissionProgress";
 import { MissionProgressRefresh } from "@/components/unlock/missions/MissionProgressClient";
 import { ProductHuntClaim } from "@/components/campaign/ProductHuntClaim";
@@ -152,6 +153,11 @@ export default async function CampaignPage({
       {(mechanics.includes("geolocation") || mechanics.includes("treasure_hunt")) && campaign.status === "live" && (
         <div className="mb-6">
           <LocationCheckin campaignId={campaign.id} />
+        </div>
+      )}
+      {mechanics.includes("nfc_tap") && campaign.status === "live" && (
+        <div className="mb-6">
+          <NfcScan campaignId={campaign.id} />
         </div>
       )}
 

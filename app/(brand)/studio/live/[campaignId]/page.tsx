@@ -79,6 +79,38 @@ export default async function LiveCampaignPage({ params }: { params: { campaignI
     recentEvents = recent ?? [];
   } catch { /* */ }
 
+
+  let locationStats: { location_id: string; label: string; interactions: number; visits: number; rewards: number; conversions: number }[] = [];
+  try {
+    const byLoc = new Map<string, { interactions: number; visits: number; rewards: number; conversions: number }>();
+    const { data: locEvents } = await supabase
+      .from("interaction_events")
+      .select("event_type, location_id")
+      .eq("campaign_id", params.campaignId)
+      .eq("verification_status", "verified")
+      .not("location_id", "is", null);
+    for (const e of locEvents ?? []) {
+      if (!e.location_id) continue;
+      const cur = byLoc.get(e.location_id) ?? { interactions: 0, visits: 0, rewards: 0, conversions: 0 };
+      cur.interactions += 1;
+      if (e.event_type === "LOCATION_CHECKIN") cur.visits += 1;
+      if (["REWARD_UNLOCK", "REWARD_CLAIM"].includes(e.event_type)) cur.rewards += 1;
+      if (["REFERRAL_CONVERSION", "PURCHASE"].includes(e.event_type)) cur.conversions += 1;
+      byLoc.set(e.location_id, cur);
+    }
+    const locIds = Array.from(byLoc.keys());
+    let labels = new Map<string, string>();
+    if (locIds.length) {
+      const { data: locs } = await supabase.from("campaign_locations").select("id, label").in("id", locIds);
+      for (const l of locs ?? []) labels.set(l.id, l.label);
+    }
+    locationStats = Array.from(byLoc.entries()).map(([id, v]) => ({
+      location_id: id,
+      label: labels.get(id) ?? id.slice(0, 8),
+      ...v
+    })).sort((a, b) => b.interactions - a.interactions);
+  } catch { /* */ }
+
   let pinCount = 0;
   let primaryType: string | null = null;
   try {
@@ -116,6 +148,8 @@ export default async function LiveCampaignPage({ params }: { params: { campaignI
         status={campaign.status}
         stats={stats}
         creators={creators}
+        locations={locationStats}
+        recentEvents={recentEvents}
       />
       <p className="font-mono text-[10px] uppercase tracking-widest text-mute text-center">
         {primaryType ? <>Type · {primaryType} · </> : null}
