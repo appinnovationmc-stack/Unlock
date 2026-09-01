@@ -20,6 +20,14 @@ export default async function DiscoverPage() {
   const supabase = createClient();
   const { data: { user } } = await supabase.auth.getUser();
   const { data: campaigns } = await supabase.from("campaigns").select("*").eq("status", "live").order("created_at", { ascending: false });
+
+  let mapPins: { location_id: string; campaign_id: string; campaign_title: string; label: string; lat: number; lng: number; radius_m: number }[] = [];
+  try {
+    const { data: pins } = await supabase.rpc("get_live_map_pins");
+    mapPins = (pins as typeof mapPins) ?? [];
+  } catch {
+    mapPins = [];
+  }
   let xp = 0;
   let impact: ImpactScore | null = null;
   if (user) {
