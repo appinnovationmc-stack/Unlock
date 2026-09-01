@@ -1,7 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useMemo, useRef, useState } from "react";
 import * as maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 
@@ -19,11 +18,11 @@ const JOBURG = { lat: -26.2041, lng: 28.0473 };
 const CITY_ZOOM = 11;
 
 /** Carto dark tiles. Do not use Leaflet `{r}` retina tokens — MapLibre leaves them literal and tiles 404. */
-const CARTO_DARK_STYLE: maplibregl.StyleSpecification = {
-  version: 8,
+const CARTO_DARK_STYLE = {
+  version: 8 as const,
   sources: {
     "unlock-void": {
-      type: "raster",
+      type: "raster" as const,
       tiles: [
         "https://a.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png",
         "https://b.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png",
@@ -37,7 +36,7 @@ const CARTO_DARK_STYLE: maplibregl.StyleSpecification = {
   layers: [
     {
       id: "unlock-void-base",
-      type: "raster",
+      type: "raster" as const,
       source: "unlock-void",
       paint: {
         "raster-brightness-max": 0.7,
@@ -60,7 +59,7 @@ function isValidPin(pin: MapPin): boolean {
 
 /**
  * Real map surface for UNLOCK World discovery.
- * Carto dark / OSM raster tiles — no API key required.
+ * Carto dark raster tiles — no API key required.
  */
 export function LiveMap({
   pins,
@@ -69,18 +68,22 @@ export function LiveMap({
   pins: MapPin[];
   fallbackCenter?: { lat: number; lng: number };
 }) {
-  const router = useRouter();
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
   const [failed, setFailed] = useState(false);
-  const validPins = pins.filter(isValidPin);
+  const validPins = useMemo(() => pins.filter(isValidPin), [pins]);
+  const pinKey = useMemo(
+    () => validPins.map((p) => `${p.location_id}:${p.lat}:${p.lng}:${p.campaign_id}`).join("|"),
+    [validPins]
+  );
 
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
+    const currentPins = pins.filter(isValidPin);
 
     const center: [number, number] =
-      validPins.length > 0
-        ? [validPins[0].lng, validPins[0].lat]
+      currentPins.length > 0
+        ? [currentPins[0].lng, currentPins[0].lat]
         : [fallbackCenter.lng, fallbackCenter.lat];
 
     let map: maplibregl.Map;
@@ -111,14 +114,13 @@ export function LiveMap({
 
     map.on("load", () => {
       resize();
-      validPins.forEach((pin) => {
-        const wrap = document.createElement("div");
+      currentPins.forEach((pin) => {
+        const wrap = document.createElement("a");
+        wrap.href = `/campaign/${pin.campaign_id}`;
         wrap.className = "unlock-map-pin-wrap";
         wrap.style.cssText =
-          "display:flex;align-items:center;gap:6px;cursor:pointer;max-width:180px;";
+          "display:flex;align-items:center;gap:6px;cursor:pointer;max-width:180px;text-decoration:none;";
         wrap.title = pin.label || pin.campaign_title;
-        wrap.setAttribute("role", "link");
-        wrap.tabIndex = 0;
 
         const el = document.createElement("span");
         el.className = "unlock-map-pin";
@@ -132,42 +134,23 @@ export function LiveMap({
 
         wrap.append(el, caption);
 
-        const go = () => router.push(`/campaign/${pin.campaign_id}`);
-        wrap.addEventListener("click", (ev) => {
-          ev.preventDefault();
-          ev.stopPropagation();
-          go();
-        });
-        wrap.addEventListener("keydown", (ev) => {
-          if (ev.key === "Enter" || ev.key === " ") {
-            ev.preventDefault();
-            go();
-          }
-        });
-
         new maplibregl.Marker({ element: wrap, anchor: "left" })
           .setLngLat([pin.lng, pin.lat])
           .addTo(map);
       });
 
-      if (validPins.length > 1) {
+      if (currentPins.length > 1) {
         const bounds = new maplibregl.LngLatBounds();
-        validPins.forEach((p) => bounds.extend([p.lng, p.lat]));
+        currentPins.forEach((p) => bounds.extend([p.lng, p.lat]));
         map.fitBounds(bounds, { padding: 56, maxZoom: 14, duration: 0 });
-      } else if (validPins.length === 1) {
-        map.setCenter([validPins[0].lng, validPins[0].lat]);
+      } else if (currentPins.length === 1) {
+        map.setCenter([currentPins[0].lng, currentPins[0].lat]);
         map.setZoom(13);
       }
     });
 
-    map.on("error", () => {
-      /* tile 404s should not unmount the map */
-    });
-
     const ro =
-      typeof ResizeObserver !== "undefined"
-        ? new ResizeObserver(() => resize())
-        : null;
+      typeof ResizeObserver !== "undefined" ? new ResizeObserver(() => resize()) : null;
     if (containerRef.current && ro) ro.observe(containerRef.current);
     requestAnimationFrame(resize);
 
@@ -177,7 +160,9 @@ export function LiveMap({
       map.remove();
       mapRef.current = null;
     };
-  }, [validPins, fallbackCenter.lat, fallbackCenter.lng, router]);
+    // pinKey captures coordinate/id changes without a new array identity each render
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pinKey, fallbackCenter.lat, fallbackCenter.lng]);
 
   if (failed) {
     return (
