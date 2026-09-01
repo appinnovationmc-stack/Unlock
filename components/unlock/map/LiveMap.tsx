@@ -93,8 +93,7 @@ export function LiveMap({
         style: CARTO_DARK_STYLE,
         center,
         zoom: CITY_ZOOM,
-        attributionControl: false,
-        failIfMajorPerformanceCaveat: false
+        attributionControl: false
       });
     } catch {
       setFailed(true);
