@@ -38,6 +38,14 @@ export default async function WalletPage() {
     .eq("consumer_id", user.id)
     .order("claimed_at", { ascending: false });
 
+  let impactTotal = 0;
+  let impactVisits = 0;
+  try {
+    const { data: score } = await supabase.from("impact_scores").select("total_impact, store_visits").eq("user_id", user.id).maybeSingle();
+    impactTotal = score?.total_impact ?? 0;
+    impactVisits = score?.store_visits ?? 0;
+  } catch { /* migration may not be applied */ }
+
   return (
     <main className="min-h-screen px-6 py-10 md:px-12 max-w-2xl mx-auto">
       <header className="flex items-center justify-between mb-10">
@@ -46,17 +54,28 @@ export default async function WalletPage() {
           <h1 className="font-display text-2xl text-fog mt-1">@{consumer.handle}</h1>
           <p className="text-mute text-xs mt-1">Proof of every encounter you finished.</p>
         </div>
-        <XPBadge xp={consumer.xp} />
+        <div className="flex items-center gap-3">
+          <Link href="/impact" className="font-mono text-[10px] uppercase tracking-widest text-volt border border-volt/30 px-2 py-1 hover:bg-volt/10">Impact board</Link>
+          <XPBadge xp={consumer.xp} />
+        </div>
       </header>
 
-      <div className="grid grid-cols-2 gap-4 mb-10">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
+        <div className="clip-keyhole-sm bg-ink2 border border-volt/20 px-5 py-4">
+          <p className="font-mono text-[10px] uppercase tracking-widest text-mute">Impact</p>
+          <p className="font-display text-2xl text-volt mt-1 tabular-nums">{impactTotal.toLocaleString()}</p>
+        </div>
         <div className="clip-keyhole-sm bg-ink2 border border-white/5 px-5 py-4">
           <p className="font-mono text-[10px] uppercase tracking-widest text-mute">XP</p>
-          <p className="font-display text-2xl text-volt mt-1">{consumer.xp}</p>
+          <p className="font-display text-2xl text-fog mt-1">{consumer.xp}</p>
         </div>
         <div className="clip-keyhole-sm bg-ink2 border border-white/5 px-5 py-4">
           <p className="font-mono text-[10px] uppercase tracking-widest text-mute">Unlocked</p>
           <p className="font-display text-2xl text-fog mt-1">{claims?.length ?? 0}</p>
+        </div>
+        <div className="clip-keyhole-sm bg-ink2 border border-white/5 px-5 py-4">
+          <p className="font-mono text-[10px] uppercase tracking-widest text-mute">Visits</p>
+          <p className="font-display text-2xl text-fog mt-1">{impactVisits}</p>
         </div>
       </div>
 

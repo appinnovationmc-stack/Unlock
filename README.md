@@ -126,3 +126,24 @@ Routes: `/billing` (brand), `/wallet` (creator).
 | Creator Impact-first | `app/(creator)/dashboard/page.tsx` |
 
 Apply migration `00000018_interaction_economy.sql` on Supabase after prior migrations.
+
+### Migrations (2.0)
+
+| File | Purpose |
+|------|---------|
+| `00000018_interaction_economy.sql` | Events, Impact, missions, record_interaction_event |
+| `00000019_anti_farming_rate_limits.sql` | Hourly rate policies + hardened RPC |
+
+Apply both in order after prior migrations.
+
+### Consumer routes (2.0)
+
+- `/discover` — World / live map surface
+- `/campaign/[id]` — Hold-to-unlock, missions, location check-in, product hunt events
+- `/impact` — Impact leaderboard
+- `/wallet` — Collection + Impact
+
+### Brand routes (2.0)
+
+- `/studio` — Intent-first ExperienceBuilder + mission form + LIVE links
+- `/studio/live/[campaignId]` — Live command centre
