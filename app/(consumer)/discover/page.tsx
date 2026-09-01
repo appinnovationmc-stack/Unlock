@@ -28,6 +28,17 @@ export default async function DiscoverPage() {
   } catch {
     mapPins = [];
   }
+
+  const expByCampaign = new Map<string, string>();
+  try {
+    const { data: exps } = await supabase
+      .from("experience_configs")
+      .select("campaign_id, primary_type")
+      .eq("map_visible", true);
+    for (const e of exps ?? []) {
+      expByCampaign.set(e.campaign_id, e.primary_type);
+    }
+  } catch { /* */ }
   let xp = 0;
   let impact: ImpactScore | null = null;
   if (user) {
@@ -119,7 +130,7 @@ export default async function DiscoverPage() {
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {list.map((c) => <CampaignCard key={c.id} campaign={c} kindLabel={encounterKind(c.mechanics)} />)}
+            {list.map((c) => <CampaignCard key={c.id} campaign={c} kindLabel={expByCampaign.get(c.id) ?? encounterKind(c.mechanics)} />)}
           </div>
         )}
       </section>

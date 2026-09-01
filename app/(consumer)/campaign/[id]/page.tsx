@@ -52,6 +52,17 @@ export default async function CampaignPage({
     .limit(1)
     .maybeSingle();
 
+
+  let experienceType: string | null = null;
+  try {
+    const { data: exp } = await supabase
+      .from("experience_configs")
+      .select("primary_type")
+      .eq("campaign_id", params.id)
+      .maybeSingle();
+    experienceType = (exp as { primary_type?: string } | null)?.primary_type ?? null;
+  } catch { /* */ }
+
   const rewardLabel = reward
     ? `${reward.label}${reward.value ? " — " + reward.value : ""}`
     : "Something waiting";
@@ -88,6 +99,11 @@ export default async function CampaignPage({
         </p>
       )}
 
+      {experienceType && (
+        <p className="mb-3 font-mono text-[10px] uppercase tracking-[0.3em] text-volt">
+          {experienceType}
+        </p>
+      )}
       {referrerCreatorId && (
         <p className="mb-4 font-mono text-[10px] uppercase tracking-widest text-magenta">
           Opened via creator path
