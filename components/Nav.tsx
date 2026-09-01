@@ -53,6 +53,9 @@ export async function Nav() {
           </Link>
         )}
         {role === "consumer" && (
+          <Link href="/impact" className="hover:text-volt">
+            Impact
+          </Link>
           <Link href="/wallet" className="hover:text-volt">
             Wallet
           </Link>

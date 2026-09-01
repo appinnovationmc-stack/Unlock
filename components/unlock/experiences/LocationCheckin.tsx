@@ -2,10 +2,12 @@
 
 import { useState, useTransition } from "react";
 import { recordInteraction } from "@/lib/unlock/interactions/record";
+import { verifyLocationCheckin } from "@/lib/unlock/verification/location";
 
 /**
  * Location-based verification for VISIT / geolocation mechanics.
- * Requests browser geolocation with clear purpose, then records LOCATION_CHECKIN.
+ * 1) Record LOCATION_CHECKIN (pending)
+ * 2) Call verify_location_checkin with coords (PostGIS radius check)
  */
 export function LocationCheckin({
   campaignId,
@@ -16,7 +18,7 @@ export function LocationCheckin({
   locationId?: string | null;
   label?: string;
 }) {
-  const [status, setStatus] = useState<"idle" | "locating" | "done" | "error">("idle");
+  const [status, setStatus] = useState<"idle" | "locating" | "done" | "error" | "rejected">("idle");
   const [message, setMessage] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
@@ -30,27 +32,40 @@ export function LocationCheckin({
     setStatus("locating");
     navigator.geolocation.getCurrentPosition(
       (pos) => {
+        const lat = pos.coords.latitude;
+        const lng = pos.coords.longitude;
         startTransition(async () => {
-          const result = await recordInteraction({
+          const recorded = await recordInteraction({
             eventType: "LOCATION_CHECKIN",
             campaignId,
             locationId: locationId ?? undefined,
             verificationMethod: "location",
-            metadata: {
-              lat: pos.coords.latitude,
-              lng: pos.coords.longitude,
-              accuracy: pos.coords.accuracy,
-              source: "browser_geolocation"
-            },
+            metadata: { lat, lng, accuracy: pos.coords.accuracy, source: "browser_geolocation" },
             idempotencyKey: `checkin:${campaignId}:${new Date().toISOString().slice(0, 13)}`
           });
-          if (result.error) {
+
+          if (recorded.error || !recorded.eventId) {
             setStatus("error");
-            setMessage(result.error);
+            setMessage(recorded.error ?? "Could not record check-in");
             return;
           }
+
+          const verified = await verifyLocationCheckin(recorded.eventId, lat, lng, campaignId);
+          if (verified.error) {
+            setStatus("error");
+            setMessage(verified.error);
+            return;
+          }
+          if (!verified.verified) {
+            setStatus("rejected");
+            setMessage("You are outside the experience radius. Move closer to the location pin.");
+            return;
+          }
+
           setStatus("done");
-          setMessage("Checked in. +25 Impact when verified.");
+          const dist =
+            verified.distanceM != null ? ` (${Math.round(verified.distanceM)}m from pin)` : "";
+          setMessage(`Checked in and verified${dist}. Impact awarded.`);
         });
       },
       (err) => {
@@ -78,17 +93,25 @@ export function LocationCheckin({
         className={`w-full font-mono text-[10px] uppercase tracking-widest py-3 border ${
           status === "done"
             ? "border-gold text-gold bg-gold/10"
-            : "border-volt text-volt hover:bg-volt/10"
+            : status === "rejected"
+              ? "border-magenta text-magenta"
+              : "border-volt text-volt hover:bg-volt/10"
         } disabled:opacity-50`}
       >
         {status === "locating" || isPending
-          ? "Locating…"
+          ? "Locating & verifying…"
           : status === "done"
             ? "Checked in"
-            : label}
+            : status === "rejected"
+              ? "Outside radius — try again"
+              : label}
       </button>
       {message && (
-        <p className={`text-xs text-center ${status === "error" ? "text-magenta" : "text-mute"}`}>
+        <p
+          className={`text-xs text-center ${
+            status === "error" || status === "rejected" ? "text-magenta" : "text-mute"
+          }`}
+        >
           {message}
         </p>
       )}
