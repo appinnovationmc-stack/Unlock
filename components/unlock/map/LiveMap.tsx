@@ -39,17 +39,54 @@ export function LiveMap({
 
     const map = new maplibregl.Map({
       container: containerRef.current,
+      // UNLOCK "void" map style — Carto dark-matter basemap (no API key required),
+      // recolored via raster-* paint props to sit inside the void/volt palette
+      // instead of shipping a generic light/OSM look.
       style: {
         version: 8,
         sources: {
-          osm: {
+          "unlock-void": {
             type: "raster",
-            tiles: ["https://tile.openstreetmap.org/{z}/{x}/{y}.png"],
+            tiles: [
+              "https://a.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png",
+              "https://b.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png",
+              "https://c.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png"
+            ],
             tileSize: 256,
-            attribution: "© OpenStreetMap"
+            attribution: "© OpenStreetMap © CARTO"
+          },
+          "unlock-labels": {
+            type: "raster",
+            tiles: [
+              "https://a.basemaps.cartocdn.com/dark_only_labels/{z}/{x}/{y}{r}.png",
+              "https://b.basemaps.cartocdn.com/dark_only_labels/{z}/{x}/{y}{r}.png",
+              "https://c.basemaps.cartocdn.com/dark_only_labels/{z}/{x}/{y}{r}.png"
+            ],
+            tileSize: 256
           }
         },
-        layers: [{ id: "osm", type: "raster", source: "osm" }]
+        layers: [
+          {
+            id: "unlock-void-base",
+            type: "raster",
+            source: "unlock-void",
+            paint: {
+              // Push the base map further into "void" — darker, slightly
+              // desaturated, so it recedes and pins/UI stay the focus.
+              "raster-brightness-max": 0.55,
+              "raster-contrast": 0.15,
+              "raster-saturation": -0.3
+            }
+          },
+          {
+            id: "unlock-void-labels",
+            type: "raster",
+            source: "unlock-labels",
+            paint: {
+              "raster-opacity": 0.75
+            }
+          }
+        ]
       },
       center,
       zoom: pins.length ? 12 : 5,

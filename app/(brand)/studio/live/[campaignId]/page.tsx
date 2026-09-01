@@ -1,10 +1,13 @@
 import { LiveCommandCentre } from "@/components/unlock/analytics/LiveCommandCentre";
+import { LiveRealtimeListener } from "@/components/unlock/analytics/LiveRealtimeListener";
 import { PlayExperience } from "@/components/unlock/brand-studio/PlayExperience";
 import { createClient } from "@/lib/supabase/server";
 import { getMyOrgId } from "@/lib/actions/campaigns";
 import { redirect, notFound } from "next/navigation";
 
 export const dynamic = "force-dynamic";
+// Realtime websocket subscription now drives refreshes instantly; the 30s
+// revalidate stays only as a fallback for the initial/no-JS render.
 export const revalidate = 30;
 
 export default async function LiveCampaignPage({ params }: { params: { campaignId: string } }) {
@@ -104,6 +107,9 @@ export default async function LiveCampaignPage({ params }: { params: { campaignI
 
   return (
     <main className="min-h-screen px-6 py-10 md:px-12 bg-void space-y-12">
+      <div className="flex justify-end">
+        <LiveRealtimeListener campaignId={campaign.id} />
+      </div>
       <LiveCommandCentre
         campaignTitle={campaign.title}
         campaignId={campaign.id}
