@@ -61,6 +61,19 @@ export default async function StudioPage({
     locationPins = [];
   }
 
+  let missionRows: { id: string; title: string; campaign_id: string }[] = [];
+  try {
+    const { data: ms } = await supabase
+      .from("missions")
+      .select("id, title, campaign_id")
+      .eq("organisation_id", orgId)
+      .order("created_at", { ascending: false })
+      .limit(20);
+    missionRows = ms ?? [];
+  } catch {
+    missionRows = [];
+  }
+
   const analyticsResult = await getOrgCampaignAnalytics(orgId);
   const analyticsRows: any[] =
     "analytics" in analyticsResult && analyticsResult.analytics ? analyticsResult.analytics : [];
@@ -218,6 +231,22 @@ export default async function StudioPage({
             )}
           </div>
 
+          {(missionRows.length > 0) && (
+            <div className="mt-8 border border-white/8 bg-ink2/30 p-4">
+              <p className="font-mono text-[10px] uppercase tracking-[0.3em] text-mute mb-3">Missions ({missionRows.length})</p>
+              <ul className="space-y-2">
+                {missionRows.map((m) => {
+                  const camp = (campaigns ?? []).find((c: any) => c.id === m.campaign_id);
+                  return (
+                    <li key={m.id} className="font-mono text-xs flex justify-between border border-white/5 px-3 py-2">
+                      <span className="text-fog">{m.title}</span>
+                      <span className="text-mute">{camp?.title ?? m.campaign_id.slice(0, 8)}</span>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          )}
           <MissionForm campaigns={(campaigns ?? []).map((c: any) => ({ id: c.id, title: c.title }))} />
           <LocationForm campaigns={(campaigns ?? []).map((c: any) => ({ id: c.id, title: c.title }))} existingPins={locationPins} />
 
