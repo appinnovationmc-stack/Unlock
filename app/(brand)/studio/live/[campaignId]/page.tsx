@@ -63,9 +63,51 @@ export default async function LiveCampaignPage({ params }: { params: { campaignI
     stats.interactions = (partCount ?? 0) + (unlockCount ?? 0);
   }
 
+  let pinCount = 0;
+  let primaryType: string | null = null;
+  try {
+    const { count } = await supabase
+      .from("campaign_locations")
+      .select("id", { count: "exact", head: true })
+      .eq("campaign_id", params.campaignId);
+    pinCount = count ?? 0;
+    const { data: exp } = await supabase
+      .from("experience_configs")
+      .select("primary_type")
+      .eq("campaign_id", params.campaignId)
+      .maybeSingle();
+    primaryType = (exp as { primary_type?: string } | null)?.primary_type ?? null;
+  } catch { /* */ }
+
+  const { data: reward } = await supabase
+    .from("rewards")
+    .select("label, value")
+    .eq("campaign_id", params.campaignId)
+    .limit(1)
+    .maybeSingle();
+  const rewardLabel = reward
+    ? `${reward.label}${reward.value ? " — " + reward.value : ""}`
+    : "Demo reward";
+
   return (
-    <main className="min-h-screen px-6 py-10 md:px-12 bg-void">
-      <LiveCommandCentre campaignTitle={campaign.title} campaignId={campaign.id} status={campaign.status} stats={stats} creators={creators} />
+    <main className="min-h-screen px-6 py-10 md:px-12 bg-void space-y-12">
+      <LiveCommandCentre
+        campaignTitle={campaign.title}
+        campaignId={campaign.id}
+        status={campaign.status}
+        stats={stats}
+        creators={creators}
+      />
+      <p className="font-mono text-[10px] uppercase tracking-widest text-mute text-center">
+        {primaryType ? <>Type · {primaryType} · </> : null}
+        {pinCount} location pin{pinCount === 1 ? "" : "s"} ·{" "}
+        <a href={`/campaign/${campaign.id}`} className="text-volt hover:underline">
+          Open as consumer
+        </a>
+      </p>
+      <section className="max-w-md mx-auto">
+        <PlayExperience title={campaign.title} rewardLabel={rewardLabel} impact={50} />
+      </section>
     </main>
   );
 }

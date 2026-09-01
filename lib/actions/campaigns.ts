@@ -115,6 +115,56 @@ export async function createCampaign(formData: FormData) {
     });
   }
 
+  // UNLOCK 2.0 — experience config from intent/objective
+  const objectiveToType: Record<string, string> = {
+    discover: "DISCOVER",
+    visit: "VISIT",
+    play: "PLAY",
+    solve: "SOLVE",
+    review: "REVIEW",
+    share: "SHARE",
+    collect: "COLLECT",
+    buy: "BUY",
+    store_visits: "VISIT",
+    product_discovery: "DISCOVER",
+    engagement: "PLAY",
+    awareness: "DISCOVER",
+    customer_acquisition: "BUY",
+    promotions: "COLLECT",
+    competitions: "PLAY",
+    loyalty: "COLLECT",
+    product_launch: "DISCOVER",
+    creator_campaign: "SHARE",
+    lead_generation: "SHARE"
+  };
+  const primaryType =
+    objectiveToType[(f.objective ?? "").toLowerCase()] ??
+    (f.mechanics.includes("geolocation" as any) ? "VISIT" :
+     f.mechanics.includes("qr_scan" as any) || f.mechanics.includes("treasure_hunt" as any) ? "COLLECT" :
+     f.mechanics.includes("quiz" as any) || f.mechanics.includes("puzzle" as any) ? "SOLVE" :
+     "PLAY");
+
+  try {
+    await supabase.from("experience_configs").insert({
+      campaign_id: campaign.id,
+      organisation_id: orgId,
+      primary_type: primaryType,
+      verification_required: ["authenticated_session"],
+      reward_preview: {
+        label: f.rewardLabel || null,
+        value: f.rewardValue || null
+      },
+      map_visible: true,
+      config: {
+        objective: f.objective,
+        mechanics: f.mechanics,
+        source: "experience_builder"
+      }
+    });
+  } catch {
+    // table may not exist yet on older envs
+  }
+
   revalidatePath("/studio");
   revalidatePath("/discover");
 
