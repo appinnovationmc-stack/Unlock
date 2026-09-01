@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { Campaign } from "@/lib/types";
+import { unescapeHtmlEntities } from "@/lib/unlock/display-text";
 
 const mechanicLabels: Record<string, string> = {
   quiz: "Quiz",
@@ -14,6 +15,18 @@ const mechanicLabels: Record<string, string> = {
   referral: "Referral"
 };
 
+function campaignArtUrl(campaign: Campaign): string | null {
+  const raw = campaign.cover_image_url || campaign.hero_image_url;
+  if (!raw) return null;
+  try {
+    const url = new URL(raw);
+    if (url.protocol !== "https:" && url.protocol !== "http:") return null;
+    return raw;
+  } catch {
+    return raw.startsWith("/") ? raw : null;
+  }
+}
+
 export function CampaignCard({
   campaign,
   kindLabel = "Encounter"
@@ -21,6 +34,11 @@ export function CampaignCard({
   campaign: Campaign;
   kindLabel?: string;
 }) {
+  const title = unescapeHtmlEntities(campaign.title) || "Untitled encounter";
+  const tagline =
+    unescapeHtmlEntities(campaign.tagline) || "Step in. Complete it. Unlock what's inside.";
+  const art = campaignArtUrl(campaign);
+
   return (
     <Link
       href={`/campaign/${campaign.id}`}
@@ -28,10 +46,18 @@ export function CampaignCard({
         border border-white/5 hover:border-volt/40 transition-colors duration-200"
     >
       <div className="aspect-[4/3] w-full bg-duotone flex flex-col justify-between p-5 relative">
-        <span className="font-mono text-[10px] uppercase tracking-widest text-volt self-start border border-volt/30 px-2 py-0.5">
+        {art ? (
+          // eslint-disable-next-line @next/next/no-img-element -- optional user-supplied campaign art, not a brand asset we ship
+          <img
+            src={art}
+            alt=""
+            className="absolute inset-0 w-full h-full object-cover opacity-70"
+          />
+        ) : null}
+        <span className="relative z-[1] font-mono text-[10px] uppercase tracking-widest text-volt self-start border border-volt/30 px-2 py-0.5 bg-void/50">
           {kindLabel}
         </span>
-        <div className="flex flex-wrap gap-1.5">
+        <div className="relative z-[1] flex flex-wrap gap-1.5">
           {(campaign.mechanics ?? []).slice(0, 3).map((m) => (
             <span
               key={m}
@@ -45,11 +71,9 @@ export function CampaignCard({
 
       <div className="p-5 border-t border-white/5">
         <h3 className="font-display text-lg leading-tight text-fog group-hover:text-glow-volt transition-all">
-          {campaign.title}
+          {title}
         </h3>
-        <p className="mt-1 text-sm text-mute line-clamp-2">
-          {campaign.tagline || "Step in. Complete it. Unlock what&apos;s inside."}
-        </p>
+        <p className="mt-1 text-sm text-mute line-clamp-2">{tagline}</p>
 
         <div className="mt-4 flex items-center justify-between">
           <span className="font-mono text-xs text-volt">+{campaign.xp_value} XP</span>
