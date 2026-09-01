@@ -106,7 +106,7 @@ export default async function WalletPage() {
                   </p>
                 </div>
                 {claim.status === "claimed" ? (
-                  <RedeemButton claimId={claim.id} />
+                  <RedeemButton claimId={claim.id} campaignId={(claim as { campaign_id?: string }).campaign_id} />
                 ) : (
                   <span
                     className={`font-mono text-[10px] uppercase tracking-widest shrink-0 ${
