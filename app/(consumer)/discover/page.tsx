@@ -88,6 +88,20 @@ export default async function DiscoverPage() {
           </div>
         </div>
       </section>
+      {!user && list.length > 0 && (
+        <section className="px-6 md:px-12 pb-4">
+          <div className="border border-volt/25 bg-volt/5 px-5 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div>
+              <p className="font-mono text-[10px] uppercase tracking-widest text-volt">First time?</p>
+              <p className="text-fog text-sm mt-1">Open an experience. Hold to unlock. That is UNLOCK.</p>
+            </div>
+            <Link href={`/campaign/${list[0].id}`} className="font-mono text-[10px] uppercase tracking-widest border border-volt text-volt px-4 py-2 hover:bg-volt/10 shrink-0">
+              Try one experience
+            </Link>
+          </div>
+        </section>
+      )}
+
       <section className="px-6 md:px-12 pb-16">
         {list.length === 0 ? (
           <div className="border border-white/5 bg-ink2/50 px-6 py-16 text-center clip-keyhole">

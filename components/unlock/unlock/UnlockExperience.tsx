@@ -17,6 +17,15 @@ export function UnlockExperience({ campaignId, rewardLabel, campaignTitle, refer
     setPhase("confirming");
     startTransition(async () => {
       await recordInteraction({
+        eventType: "CHALLENGE_START",
+        campaignId,
+        creatorId: referrerCreatorId ?? undefined,
+        verificationMethod: "authenticated_session",
+        metadata: { source: "unlock_moment" },
+        idempotencyKey: `start:${campaignId}:${Date.now().toString(36)}`
+      });
+
+      await recordInteraction({
         eventType: "REWARD_UNLOCK", campaignId, creatorId: referrerCreatorId ?? undefined,
         verificationMethod: "authenticated_session", metadata: { source: "unlock_moment" },
         idempotencyKey: `unlock:${campaignId}:${Date.now().toString(36)}`

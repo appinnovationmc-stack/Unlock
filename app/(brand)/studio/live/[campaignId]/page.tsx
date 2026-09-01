@@ -1,4 +1,5 @@
 import { LiveCommandCentre } from "@/components/unlock/analytics/LiveCommandCentre";
+import { PlayExperience } from "@/components/unlock/brand-studio/PlayExperience";
 import { createClient } from "@/lib/supabase/server";
 import { getMyOrgId } from "@/lib/actions/campaigns";
 import { redirect, notFound } from "next/navigation";
