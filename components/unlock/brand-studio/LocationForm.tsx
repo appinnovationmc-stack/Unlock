@@ -1,6 +1,6 @@
 "use client";
 
-import { addCampaignLocation } from "@/lib/actions/campaigns";
+import { addCampaignLocation, removeCampaignLocation } from "@/lib/actions/campaigns";
 
 type Pin = {
   id: string;
@@ -31,13 +31,22 @@ export function LocationForm({
               return (
                 <li
                   key={p.id}
-                  className="flex items-center justify-between font-mono text-xs border border-white/5 px-3 py-2"
+                  className="flex items-center justify-between gap-2 font-mono text-xs border border-white/5 px-3 py-2"
                 >
-                  <span className="text-fog truncate">
+                  <span className="text-fog truncate min-w-0">
                     {p.label}
                     <span className="text-mute"> · {camp?.title ?? p.campaign_id.slice(0, 8)}</span>
+                    <span className="text-mute"> · {p.radius_m}m</span>
                   </span>
-                  <span className="text-mute shrink-0">{p.radius_m}m</span>
+                  <form action={removeCampaignLocation} className="shrink-0">
+                    <input type="hidden" name="location_id" value={p.id} />
+                    <button
+                      type="submit"
+                      className="text-magenta/80 hover:text-magenta uppercase tracking-widest text-[9px]"
+                    >
+                      Remove
+                    </button>
+                  </form>
                 </li>
               );
             })}

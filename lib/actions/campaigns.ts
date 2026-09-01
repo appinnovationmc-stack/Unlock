@@ -285,3 +285,26 @@ export async function addCampaignLocation(formData: FormData) {
   revalidatePath(`/campaign/${campaignId}`);
   redirect("/studio?created=location");
 }
+
+export async function removeCampaignLocation(formData: FormData) {
+  const supabase = createClient();
+  const orgId = await getMyOrgId();
+  if (!orgId) redirect("/onboarding");
+
+  const locationId = String(formData.get("location_id") ?? "").trim();
+  if (!locationId) redirect("/studio?error=" + encodeURIComponent("Missing location"));
+
+  const { error } = await supabase
+    .from("campaign_locations")
+    .delete()
+    .eq("id", locationId)
+    .eq("org_id", orgId);
+
+  if (error) {
+    redirect(`/studio?error=${encodeURIComponent(error.message)}`);
+  }
+
+  revalidatePath("/studio");
+  revalidatePath("/discover");
+  redirect("/studio?created=location_removed");
+}
