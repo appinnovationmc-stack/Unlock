@@ -1,5 +1,6 @@
 import { CampaignCard } from "@/components/campaign/CampaignCard";
 import { XPBadge } from "@/components/ui/XPBadge";
+import { Button } from "@/components/ui/Button";
 import { createClient } from "@/lib/supabase/server";
 import type { Campaign, ImpactScore } from "@/lib/types";
 import Link from "next/link";
@@ -61,7 +62,6 @@ export default async function DiscoverPage() {
   }
 
   let xp = 0;
-  let impact: ImpactScore | null = null;
   if (user) {
     const { data: consumer } = await supabase
       .from("consumers")
@@ -69,12 +69,6 @@ export default async function DiscoverPage() {
       .eq("id", user.id)
       .maybeSingle();
     xp = consumer?.xp ?? 0;
-    const { data: score } = await supabase
-      .from("impact_scores")
-      .select("*")
-      .eq("user_id", user.id)
-      .maybeSingle();
-    impact = score as ImpactScore | null;
   }
 
   const list = uniqueLiveCampaigns((campaigns as Campaign[]) ?? []);
@@ -82,98 +76,56 @@ export default async function DiscoverPage() {
 
   return (
     <main className="min-h-screen bg-void">
-      <header className="relative px-6 pt-10 pb-6 md:px-12 border-b border-white/5">
+      <header className="page-shell-wide pt-10 pb-6">
         <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
           <div>
-            <p className="font-mono text-[10px] uppercase tracking-[0.35em] text-volt mb-2">UNLOCK</p>
+            <p className="section-kicker mb-2">Field</p>
             <h1 className="font-display text-3xl md:text-5xl text-fog tracking-tight">
-              What&apos;s happening
+              What&apos;s <span className="text-volt">happening</span>
               <br />
-              <span className="text-mute">around you?</span>
+              around you?
             </h1>
           </div>
-          <div className="flex items-center gap-3 shrink-0">
-            {user && impact ? (
-              <div className="text-right">
-                <p className="font-mono text-[9px] uppercase tracking-widest text-mute">Impact</p>
-                <p className="font-display text-xl text-volt">{impact.total_impact.toLocaleString()}</p>
-              </div>
-            ) : user ? (
-              <XPBadge xp={xp} />
-            ) : null}
-            {user ? (
-              <>
-                <Link
-                  href="/impact"
-                  className="font-mono text-[10px] uppercase tracking-widest text-volt border border-volt/30 px-3 py-1.5 hover:bg-volt/10"
-                >
-                  Impact
-                </Link>
-                <Link
-                  href="/wallet"
-                  className="font-mono text-[10px] uppercase tracking-widest text-gold border border-gold/30 px-3 py-1.5 hover:bg-gold/10"
-                >
-                  Wallet
-                </Link>
-              </>
-            ) : (
-              <Link
-                href="/login"
-                className="font-mono text-[10px] uppercase tracking-widest text-mute border border-white/10 px-3 py-1.5 hover:text-volt"
-              >
-                Log in
-              </Link>
-            )}
-          </div>
+          {user && xp > 0 ? <XPBadge xp={xp} /> : null}
         </div>
       </header>
-      <section className="relative px-6 py-8 md:px-12">
-        <div className="relative aspect-[16/9] md:aspect-[21/9] max-h-[420px] w-full min-h-[280px] overflow-hidden border border-white/8 bg-ink2 clip-keyhole">
+      <section className="page-shell-wide py-0 pb-8">
+        <div className="relative aspect-[16/9] md:aspect-[21/9] max-h-[420px] w-full min-h-[280px] overflow-hidden border border-white/8 bg-ink2">
           <div className="absolute inset-0 min-h-[280px]">
             <LiveMapSection pins={mapPins} />
           </div>
-          <div className="absolute bottom-4 left-4 right-4 flex items-end justify-between pointer-events-none z-10">
-            <div className="bg-void/80 border border-white/10 px-3 py-2">
-              <p className="font-mono text-[10px] uppercase tracking-[0.3em] text-volt">Live map</p>
-              <p className="font-display text-lg text-fog mt-0.5">
-                {mapPins.length > 0
-                  ? `${mapPins.length} pin${mapPins.length === 1 ? "" : "s"} · ${count} experience${count === 1 ? "" : "s"}`
-                  : `${count} experience${count === 1 ? "" : "s"} · Johannesburg`}
-              </p>
-            </div>
-            <p className="font-mono text-[9px] text-mute max-w-[140px] text-right hidden sm:block bg-void/80 border border-white/10 px-2 py-1">
-              Location used only when you join a place-based challenge
+          <div className="absolute bottom-3 left-3 pointer-events-none z-10">
+            <p className="text-sm text-fog bg-void/80 px-3 py-1.5">
+              {mapPins.length > 0
+                ? `${mapPins.length} pin${mapPins.length === 1 ? "" : "s"} · ${count} experience${count === 1 ? "" : "s"}`
+                : count > 0
+                  ? `${count} experience${count === 1 ? "" : "s"}`
+                  : "No live pins yet"}
             </p>
           </div>
         </div>
       </section>
       {!user && list.length > 0 && (
-        <section className="px-6 md:px-12 pb-4">
-          <div className="border border-volt/25 bg-volt/5 px-5 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <section className="page-shell-wide pb-8">
+          <div className="border border-white/10 px-5 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <div>
-              <p className="font-mono text-[10px] uppercase tracking-widest text-volt">First time?</p>
-              <p className="text-fog text-sm mt-1">Open an experience. Hold to unlock. That is UNLOCK.</p>
+              <p className="section-kicker">First time</p>
+              <p className="text-fog text-sm mt-1">Get close. Check in. Hold to unlock.</p>
             </div>
-            <Link
-              href={`/campaign/${list[0].id}`}
-              className="font-mono text-[10px] uppercase tracking-widest border border-volt text-volt px-4 py-2 hover:bg-volt/10 shrink-0"
-            >
-              Try one experience
+            <Link href={`/campaign/${list[0].id}`}>
+              <Button variant="volt">Try one experience</Button>
             </Link>
           </div>
         </section>
       )}
 
-      <section className="px-6 md:px-12 pb-16">
+      <section className="page-shell-wide pb-16">
         {list.length === 0 ? (
-          <div className="border border-white/5 bg-ink2/50 px-6 py-16 text-center clip-keyhole">
+          <div className="border border-white/10 px-6 py-16 text-center">
             <p className="font-display text-xl text-fog mb-2">The world is quiet</p>
-            <p className="text-mute font-mono text-sm mb-6 max-w-md mx-auto">No live experiences right now.</p>
-            <Link
-              href="/studio"
-              className="inline-flex font-mono text-xs uppercase tracking-widest text-volt border border-volt/40 px-4 py-2 hover:bg-volt/10"
-            >
-              Plant an experience
+            <p className="text-mute text-base mb-6 max-w-md mx-auto">No live experiences right now.</p>
+            <Link href="/studio">
+              <Button variant="ghost">Plant an experience</Button>
             </Link>
           </div>
         ) : (
@@ -189,9 +141,7 @@ export default async function DiscoverPage() {
         )}
       </section>
       <footer className="px-6 pb-10 text-center">
-        <p className="font-mono text-[10px] uppercase tracking-[0.3em] text-mute">
-          Actions are value. Verified actions are higher value.
-        </p>
+        <p className="text-sm text-mute">Actions are value. Verified actions are higher value.</p>
       </footer>
     </main>
   );

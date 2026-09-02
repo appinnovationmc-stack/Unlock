@@ -7,7 +7,7 @@ const LiveMap = dynamic(() => import("./LiveMap").then((m) => m.LiveMap), {
   ssr: false,
   loading: () => (
     <div className="absolute inset-0 flex items-center justify-center bg-ink2 min-h-[280px]">
-      <p className="font-mono text-xs text-mute tracking-widest uppercase">Loading map…</p>
+      <p className="text-sm text-mute">Loading map…</p>
     </div>
   )
 });
