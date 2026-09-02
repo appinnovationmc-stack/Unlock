@@ -65,7 +65,7 @@ export function ShareMoment({
 
   return (
     <div className="border border-magenta/30 bg-magenta/5 px-4 py-4 text-center space-y-3">
-      <p className="section-kicker text-magenta">Broadcast</p>
+      <p className="text-xs text-volt">Share</p>
       <p className="text-fog text-sm">Pass this encounter on.</p>
       <div className="flex flex-col sm:flex-row gap-2 justify-center">
         <a href={waHref} target="_blank" rel="noopener noreferrer">
