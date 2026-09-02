@@ -49,13 +49,22 @@ export default async function WalletPage() {
     recentEvents = ev ?? [];
   } catch { /* */ }
 
-  let impactTotal = 0;
-  let impactVisits = 0;
+  let impactTotal: number | null = null;
+  let impactVisits: number | null = null;
+  let impactError = false;
   try {
-    const { data: score } = await supabase.from("impact_scores").select("total_impact, store_visits").eq("user_id", user.id).maybeSingle();
-    impactTotal = score?.total_impact ?? 0;
-    impactVisits = score?.store_visits ?? 0;
-  } catch { /* migration may not be applied */ }
+    const { data: score, error } = await supabase.from("impact_scores").select("total_impact, store_visits").eq("user_id", user.id).maybeSingle();
+    if (error) impactError = true;
+    else if (score) {
+      impactTotal = score.total_impact;
+      impactVisits = score.store_visits;
+    }
+  } catch {
+    impactError = true;
+  }
+
+  const impactLabel = impactError ? "Unavailable" : impactTotal == null ? "Pending" : impactTotal.toLocaleString();
+  const visitsLabel = impactError ? "—" : impactVisits == null ? "Pending" : String(impactVisits);
 
   return (
     <main className="min-h-screen px-6 py-10 md:px-12 max-w-2xl mx-auto">
@@ -74,7 +83,7 @@ export default async function WalletPage() {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
         <div className="clip-keyhole-sm bg-ink2 border border-volt/20 px-5 py-4">
           <p className="font-mono text-[10px] uppercase tracking-widest text-mute">Impact</p>
-          <p className="font-display text-2xl text-volt mt-1 tabular-nums">{impactTotal.toLocaleString()}</p>
+          <p className="font-display text-2xl text-volt mt-1 tabular-nums">{impactLabel}</p>
         </div>
         <div className="clip-keyhole-sm bg-ink2 border border-white/5 px-5 py-4">
           <p className="font-mono text-[10px] uppercase tracking-widest text-mute">XP</p>
@@ -86,7 +95,7 @@ export default async function WalletPage() {
         </div>
         <div className="clip-keyhole-sm bg-ink2 border border-white/5 px-5 py-4">
           <p className="font-mono text-[10px] uppercase tracking-widest text-mute">Visits</p>
-          <p className="font-display text-2xl text-fog mt-1">{impactVisits}</p>
+          <p className="font-display text-2xl text-fog mt-1">{visitsLabel}</p>
         </div>
       </div>
 
