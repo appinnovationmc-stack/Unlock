@@ -2,12 +2,15 @@ import Link from "next/link";
 import { logIn } from "@/lib/actions/auth";
 import { AuthFields } from "@/components/auth/AuthFields";
 import { Button } from "@/components/ui/Button";
+import { safeNextPath } from "@/lib/auth/safe-next";
 
 export default function LoginPage({
   searchParams
 }: {
-  searchParams: { error?: string; reset?: string };
+  searchParams: { error?: string; reset?: string; next?: string; redirect?: string };
 }) {
+  const next = safeNextPath(searchParams.next ?? searchParams.redirect, "");
+
   return (
     <main className="min-h-screen flex items-center justify-center px-6 py-16 bg-void">
       <form action={logIn} className="w-full max-w-sm">
@@ -19,6 +22,7 @@ export default function LoginPage({
         {searchParams.reset && (
           <p className="text-sm text-fog mb-4">Password updated. You can log in now.</p>
         )}
+        {next ? <input type="hidden" name="next" value={next} /> : null}
         <AuthFields />
         <Button type="submit" variant="volt" className="w-full mt-2">
           Log in

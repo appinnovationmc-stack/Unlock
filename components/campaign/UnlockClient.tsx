@@ -6,13 +6,15 @@ export function UnlockClient({
   rewardLabel,
   campaignTitle,
   referrerCreatorId,
-  requireVisit = false
+  requireVisit = false,
+  authenticated = false
 }: {
   campaignId: string;
   rewardLabel: string;
   campaignTitle?: string;
   referrerCreatorId?: string | null;
   requireVisit?: boolean;
+  authenticated?: boolean;
 }) {
   return (
     <UnlockExperience
@@ -21,6 +23,7 @@ export function UnlockClient({
       campaignTitle={campaignTitle}
       referrerCreatorId={referrerCreatorId}
       requireVisit={requireVisit}
+      authenticated={authenticated}
     />
   );
 }

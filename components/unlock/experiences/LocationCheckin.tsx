@@ -1,20 +1,24 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import Link from "next/link";
 import { recordInteraction } from "@/lib/unlock/interactions/record";
 import { verifyLocationCheckin } from "@/lib/unlock/verification/location";
+import { campaignLoginHref } from "@/lib/auth/safe-next";
 
 export function LocationCheckin({
   campaignId,
   locationId,
   creatorId,
   label = "Check in here",
+  authenticated = false,
   onVerified
 }: {
   campaignId: string;
   locationId?: string | null;
   creatorId?: string | null;
   label?: string;
+  authenticated?: boolean;
   onVerified?: () => void;
 }) {
   const [status, setStatus] = useState<"idle" | "locating" | "done" | "error" | "rejected">("idle");
@@ -23,6 +27,10 @@ export function LocationCheckin({
 
   function handleCheckin() {
     setMessage(null);
+    if (!authenticated) {
+      window.location.assign(campaignLoginHref(campaignId));
+      return;
+    }
     if (!navigator.geolocation) {
       setStatus("error");
       setMessage("Location is not available on this device.");
@@ -77,19 +85,31 @@ export function LocationCheckin({
     );
   }
 
+  const buttonClass = `w-full font-mono text-[10px] tracking-widest py-2.5 border ${
+    status === "done"
+      ? "border-gold/40 text-gold"
+      : status === "rejected"
+        ? "border-white/20 text-mute"
+        : "border-white/15 text-mute hover:text-fog hover:border-white/30"
+  } disabled:opacity-50`;
+
+  if (!authenticated) {
+    return (
+      <div className="space-y-2">
+        <Link href={campaignLoginHref(campaignId)} className={`${buttonClass} block text-center`}>
+          {label}
+        </Link>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-2">
       <button
         type="button"
         onClick={handleCheckin}
         disabled={isPending || status === "locating" || status === "done"}
-        className={`w-full font-mono text-[10px] tracking-widest py-2.5 border ${
-          status === "done"
-            ? "border-gold/40 text-gold"
-            : status === "rejected"
-              ? "border-white/20 text-mute"
-              : "border-white/15 text-mute hover:text-fog hover:border-white/30"
-        } disabled:opacity-50`}
+        className={buttonClass}
       >
         {status === "locating" || isPending
           ? "Checking in…"
