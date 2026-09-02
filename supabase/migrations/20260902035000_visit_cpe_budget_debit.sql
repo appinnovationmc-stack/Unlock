@@ -2,6 +2,7 @@
 -- Brand money is for store visits, not couch unlocks or XP.
 -- Filename is timestamped — never reuse 00000008 / 00000013.
 -- Grant only real catalog signatures (no grant on a 1-arg overload that does not exist).
+-- CREATE OR REPLACE does not drop inherited EXECUTE FROM PUBLIC; revoke anon/public explicitly.
 
 -- Idempotency: one visit-spend ledger row per interaction event.
 create unique index if not exists financial_ledger_visit_spend_event_uidx
@@ -256,6 +257,8 @@ begin
 end;
 $$;
 
+revoke all on function public.verify_location_checkin(uuid, double precision, double precision) from public;
+revoke all on function public.verify_location_checkin(uuid, double precision, double precision) from anon;
 grant execute on function public.verify_location_checkin(uuid, double precision, double precision) to authenticated;
 
 -- Analytics: expose verified visits + visit CPE spend on the existing view.
