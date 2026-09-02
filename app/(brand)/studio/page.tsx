@@ -128,12 +128,16 @@ export default async function StudioPage({
       <header className="mb-10">
         <p className="section-kicker">{org?.name ?? "Brand"}</p>
         <h1 className="font-display text-3xl text-fog mt-1">
-          Campaign <span className="text-volt">Studio</span>
+          Build an <span className="text-volt">experience</span>
         </h1>
-        {org?.description && <p className="text-mute text-base mt-2 max-w-xl">{org.description}</p>}
+        <p className="text-mute text-base mt-2 max-w-xl">
+          {org?.description
+            ? org.description
+            : "Name what people should do. Drop a pin. Name the reward. Then publish. LIVE is for watching — this page is for building."}
+        </p>
         {hasCampaigns && (
           <p className="text-sm text-mute mt-3">
-            {liveCount} live · {draftCount} drafts
+            {liveCount} live · {draftCount} still building
             {totals.unlocks > 0 ? ` · ${totals.unlocks} unlocks` : ""}
           </p>
         )}
@@ -171,7 +175,9 @@ export default async function StudioPage({
       </section>
 
       <section>
-        <h2 className="font-display text-lg text-fog mb-4">Your campaigns</h2>
+        <h2 className="font-display text-lg text-fog mb-4">
+          {hasCampaigns ? "Your experiences" : "Nothing in the field yet"}
+        </h2>
         <div className="border border-white/10 divide-y divide-white/10">
           {!hasCampaigns ? (
             <div className="px-5 py-12">
@@ -235,28 +241,37 @@ export default async function StudioPage({
           )}
         </div>
 
-        {missionRows.length > 0 && (
-          <div className="mt-8 border border-white/10 p-4">
-            <p className="section-kicker mb-3">Missions ({missionRows.length})</p>
-            <ul className="space-y-2">
-              {missionRows.map((m) => {
-                const camp = (campaigns ?? []).find((c: any) => c.id === m.campaign_id);
-                return (
-                  <li key={m.id} className="text-sm flex justify-between border border-white/5 px-3 py-2">
-                    <span className="text-fog">{m.title}</span>
-                    <span className="text-mute">{camp?.title ?? m.campaign_id.slice(0, 8)}</span>
-                  </li>
-                );
-              })}
-            </ul>
-          </div>
+        {hasCampaigns && (
+          <>
+            <LocationForm campaigns={campaignOptions} existingPins={locationPins} defaultCampaignId={createdId} />
+            {missingReward.length > 0 && (
+              <RewardForm campaigns={missingReward} defaultCampaignId={createdId} />
+            )}
+            <details className="mt-8 border border-white/10 p-4">
+              <summary className="cursor-pointer text-sm text-mute hover:text-fog">
+                Advanced — missions and Impact weights
+              </summary>
+              {missionRows.length > 0 && (
+                <div className="mt-4">
+                  <p className="section-kicker mb-3">Missions ({missionRows.length})</p>
+                  <ul className="space-y-2">
+                    {missionRows.map((m) => {
+                      const camp = (campaigns ?? []).find((c: any) => c.id === m.campaign_id);
+                      return (
+                        <li key={m.id} className="text-sm flex justify-between border border-white/5 px-3 py-2">
+                          <span className="text-fog">{m.title}</span>
+                          <span className="text-mute">{camp?.title ?? m.campaign_id.slice(0, 8)}</span>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </div>
+              )}
+              <MissionForm campaigns={campaignOptions} />
+              <ImpactRulesForm campaigns={campaignOptions} />
+            </details>
+          </>
         )}
-        <MissionForm campaigns={campaignOptions} />
-        <LocationForm campaigns={campaignOptions} existingPins={locationPins} defaultCampaignId={createdId} />
-        {missingReward.length > 0 && (
-          <RewardForm campaigns={missingReward} defaultCampaignId={createdId} />
-        )}
-        <ImpactRulesForm campaigns={campaignOptions} />
 
         {totals.totalAttributionEvents > 0 && (
           <div className="mt-8 border border-white/10 p-5">
