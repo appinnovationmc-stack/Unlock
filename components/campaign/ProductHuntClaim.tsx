@@ -5,6 +5,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { claimProductCode, confirmProductClaim } from "@/lib/actions/product-hunt";
 import { recordInteraction } from "@/lib/unlock/interactions/record";
+import { Button } from "@/components/ui/Button";
 
 type Stage = "find" | "pending" | "confirmed";
 
@@ -122,14 +123,13 @@ export function ProductHuntClaim({
 
   if (stage === "confirmed") {
     return (
-      <div className="mt-4 text-center space-y-2">
+      <div className="mt-4 text-center space-y-3">
         <p className="font-display text-gold text-lg">Claim confirmed</p>
         {rewardLabel && <p className="text-sm text-fog">Reward: {rewardLabel}</p>}
-        <Link
-          href="/wallet"
-          className="inline-block mt-2 font-mono text-xs uppercase tracking-widest text-volt border border-volt/40 px-3 py-1.5 hover:bg-volt/10"
-        >
-          Open wallet →
+        <Link href="/wallet">
+          <Button variant="ghost" className="border-gold/50 text-gold">
+            Open wallet
+          </Button>
         </Link>
       </div>
     );
@@ -138,23 +138,20 @@ export function ProductHuntClaim({
   if (stage === "pending") {
     return (
       <div className="mt-4 space-y-4">
-        <div className="border border-gold/30 px-4 py-3 text-center">
-          <p className="font-mono text-xs uppercase tracking-widest text-gold mb-1">
-            Found it — pending verification
-          </p>
+        <div className="border border-white/15 px-4 py-3 text-center">
+          <p className="section-kicker mb-1">Found it — pending verification</p>
           {rewardLabel && <p className="text-sm text-fog">{rewardLabel}</p>}
         </div>
-        <p className="text-xs text-mute text-center">
-          Share your find to unlock the reward.
-        </p>
-        <button
+        <p className="text-sm text-mute text-center">Share your find to unlock the reward.</p>
+        <Button
           type="button"
           onClick={handleShareAndConfirm}
           disabled={isPending}
-          className="w-full font-mono text-xs uppercase tracking-widest text-void bg-volt px-4 py-3 hover:bg-volt/90 disabled:opacity-50"
+          variant="volt"
+          className="w-full"
         >
           {isPending ? "Confirming…" : "I shared it — confirm claim"}
-        </button>
+        </Button>
         {error && <p className="text-center text-sm text-magenta">{error}</p>}
       </div>
     );
@@ -163,52 +160,47 @@ export function ProductHuntClaim({
   return (
     <div className="mt-4 space-y-3">
       <div>
-        <label className="font-mono text-[10px] uppercase tracking-widest text-mute block mb-1">
-          Code on the product
-        </label>
+        <label className="text-sm text-mute block mb-1">Code on the product</label>
         <input
           type="text"
           value={code}
           onChange={(e) => setCode(e.target.value)}
           placeholder="e.g. MRPRIZE-7F3K9Q"
-          className="w-full bg-ink2 border border-white/10 px-3 py-2 text-sm text-fog font-mono focus:border-volt outline-none"
+          className="w-full bg-ink2 border border-white/10 px-3 py-2 text-base text-fog focus:border-volt outline-none"
         />
       </div>
 
       <div>
-        <label className="font-mono text-[10px] uppercase tracking-widest text-mute block mb-1">
-          Proof photo (optional but recommended)
-        </label>
+        <label className="text-sm text-mute block mb-1">Proof photo (optional but recommended)</label>
         <input
           type="file"
           accept="image/*"
           capture="environment"
           onChange={(e) => setFile(e.target.files?.[0] ?? null)}
-          className="w-full text-xs text-mute file:mr-3 file:font-mono file:text-[10px] file:uppercase file:tracking-widest file:bg-ink2 file:border file:border-white/10 file:px-3 file:py-1.5 file:text-fog"
+          className="w-full text-sm text-mute file:mr-3 file:text-sm file:bg-ink2 file:border file:border-white/10 file:px-3 file:py-1.5 file:text-fog"
         />
       </div>
 
       <div>
-        <label className="font-mono text-[10px] uppercase tracking-widest text-mute block mb-1">
-          Where'd you find it?
-        </label>
+        <label className="text-sm text-mute block mb-1">Where'd you find it?</label>
         <input
           type="text"
           value={storeLocation}
           onChange={(e) => setStoreLocation(e.target.value)}
           placeholder="e.g. Sandton City"
-          className="w-full bg-ink2 border border-white/10 px-3 py-2 text-sm text-fog focus:border-volt outline-none"
+          className="w-full bg-ink2 border border-white/10 px-3 py-2 text-base text-fog focus:border-volt outline-none"
         />
       </div>
 
-      <button
+      <Button
         type="button"
         onClick={handleSubmitFind}
         disabled={isPending || uploading}
-        className="w-full font-mono text-xs uppercase tracking-widest text-void bg-volt px-4 py-3 hover:bg-volt/90 disabled:opacity-50"
+        variant="volt"
+        className="w-full"
       >
         {uploading ? "Uploading photo…" : isPending ? "Claiming…" : "Claim this find"}
-      </button>
+      </Button>
 
       {error && <p className="text-center text-sm text-magenta">{error}</p>}
     </div>
