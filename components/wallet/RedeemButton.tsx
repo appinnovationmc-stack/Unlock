@@ -16,9 +16,7 @@ export function RedeemButton({
   const [pending, startTransition] = useTransition();
 
   if (done) {
-    return (
-      <span className="font-mono text-[10px] uppercase tracking-widest text-gold">Redeemed</span>
-    );
+    return <span className="font-mono text-[10px] text-gold">Redeemed</span>;
   }
 
   return (
@@ -41,7 +39,7 @@ export function RedeemButton({
             } else setError(r.error);
           });
         }}
-        className="font-mono text-[10px] uppercase tracking-widest text-volt border border-volt/40 px-2 py-1 hover:bg-volt/10 disabled:opacity-50"
+        className="font-mono text-[10px] text-volt border border-white/20 px-2 py-1 disabled:opacity-50"
       >
         {pending ? "…" : "Redeem"}
       </button>
