@@ -10,24 +10,22 @@ import { UnlockButton } from "@/components/unlock/unlock/UnlockButton";
 export function PlayExperience({
   title,
   tagline,
-  rewardLabel,
-  impact = 50
+  rewardLabel
 }: {
   title: string;
   tagline?: string | null;
   rewardLabel?: string | null;
-  impact?: number;
 }) {
   const [phase, setPhase] = useState<"ready" | "unlocked">("ready");
 
   if (phase === "unlocked") {
     return (
       <div className="border border-gold/40 bg-ink2 p-8 text-center clip-keyhole">
-        <p className="font-mono text-[10px] uppercase tracking-[0.35em] text-gold mb-3">UNLOCKED · DEMO</p>
-        <h2 className="font-display text-2xl text-fog text-glow-volt mb-2">
+        <p className="font-mono text-[10px] uppercase tracking-[0.35em] text-gold mb-3">Unlocked · demo</p>
+        <h2 className="font-display text-2xl text-fog mb-2">
           {rewardLabel || "Reward"}
         </h2>
-        <p className="font-mono text-volt text-sm tracking-widest mb-6">+{impact} IMPACT</p>
+        <p className="text-mute text-sm mb-6">Demo only — no Impact awarded</p>
         <button
           type="button"
           onClick={() => setPhase("ready")}
@@ -52,7 +50,6 @@ export function PlayExperience({
           await new Promise((r) => setTimeout(r, 400));
           setPhase("unlocked");
         }}
-        label="HOLD TO UNLOCK"
       />
       <p className="text-center text-mute text-xs">Same interaction consumers feel — for demos and QA.</p>
     </div>
