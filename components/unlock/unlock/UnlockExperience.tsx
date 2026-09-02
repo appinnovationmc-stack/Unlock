@@ -14,7 +14,8 @@ export function UnlockExperience({
   campaignTitle,
   referrerCreatorId,
   requireVisit = false,
-  authenticated = false
+  authenticated = false,
+  pinLocationIds = []
 }: {
   campaignId: string;
   rewardLabel: string;
@@ -22,6 +23,7 @@ export function UnlockExperience({
   referrerCreatorId?: string | null;
   requireVisit?: boolean;
   authenticated?: boolean;
+  pinLocationIds?: string[];
 }) {
   const [phase, setPhase] = useState<"ready" | "confirming" | "revealed" | "error">("ready");
   const [checkedIn, setCheckedIn] = useState(false);
@@ -33,6 +35,10 @@ export function UnlockExperience({
   } | null>(null);
   const [isPending, startTransition] = useTransition();
   const inFlightRef = useRef(false);
+
+  // Single public pin → pin-explicit record. Multiple pins → omit locationId;
+  // verify_location_checkin matches GPS to any campaign pin server-side.
+  const locationId = pinLocationIds.length === 1 ? pinLocationIds[0] : null;
 
   const handleUnlock = () => {
     if (!authenticated) {
@@ -67,6 +73,7 @@ export function UnlockExperience({
   const checkin = requireVisit && !checkedIn && (
     <LocationCheckin
       campaignId={campaignId}
+      locationId={locationId}
       creatorId={referrerCreatorId}
       authenticated={authenticated}
       onVerified={() => {
@@ -115,6 +122,7 @@ export function UnlockExperience({
         {requireVisit && (
           <LocationCheckin
             campaignId={campaignId}
+            locationId={locationId}
             creatorId={referrerCreatorId}
             authenticated={false}
           />
@@ -143,6 +151,7 @@ export function UnlockExperience({
       {requireVisit && !checkedIn && (
         <LocationCheckin
           campaignId={campaignId}
+          locationId={locationId}
           creatorId={referrerCreatorId}
           authenticated
           onVerified={() => setCheckedIn(true)}

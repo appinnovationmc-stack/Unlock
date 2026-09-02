@@ -58,7 +58,13 @@ export function LocationCheckin({
             return;
           }
 
-          const verified = await verifyLocationCheckin(recorded.eventId, lat, lng, campaignId);
+          const verified = await verifyLocationCheckin(
+            recorded.eventId,
+            lat,
+            lng,
+            campaignId,
+            locationId ?? undefined
+          );
           if (verified.error) {
             setStatus("error");
             setMessage(verified.error);

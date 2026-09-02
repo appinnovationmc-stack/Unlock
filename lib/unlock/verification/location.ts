@@ -3,11 +3,23 @@
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 
+/**
+ * Client wrapper for verify_location_checkin.
+ * Live RPC contract (latest: 20260902042500): (p_event_id, p_lat, p_lng) only.
+ * No p_location_id. When location_id on the event is null, the RPC still
+ * geofences GPS against every campaign_locations row for that campaign,
+ * picks the nearest pin within that pin's radius_m, and writes location_id.
+ * Also: reject GPS accuracy > 250m; 10 min rate limit between verified
+ * check-ins on the same campaign. Do not weaken those checks here.
+ * Optional locationId is the intended public pin (recorded on the pending
+ * event). It is not sent as an RPC argument — the catalog has no such param.
+ */
 export async function verifyLocationCheckin(
   eventId: string,
   lat: number,
   lng: number,
-  campaignId?: string
+  campaignId?: string,
+  _locationId?: string | null
 ) {
   const supabase = createClient();
   const {

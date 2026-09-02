@@ -10,6 +10,11 @@ import Link from "next/link";
 
 export const dynamic = "force-dynamic";
 
+type LiveMapPinRow = {
+  location_id: string;
+  campaign_id: string;
+};
+
 export default async function CampaignPage({
   params,
   searchParams
@@ -62,10 +67,15 @@ export default async function CampaignPage({
     experienceType = (exp as { primary_type?: string } | null)?.primary_type ?? null;
   } catch { /* */ }
 
-  const { count: pinCount } = await supabase
-    .from("campaign_locations")
-    .select("id", { count: "exact", head: true })
-    .eq("campaign_id", params.id);
+  // Public pin ids only — same surface as Discover (get_live_map_pins).
+  // Do not read campaign_locations from the consumer page.
+  let campaignPinIds: string[] = [];
+  const { data: livePins, error: pinError } = await supabase.rpc("get_live_map_pins");
+  if (!pinError && Array.isArray(livePins)) {
+    campaignPinIds = (livePins as LiveMapPinRow[])
+      .filter((p) => p.campaign_id === params.id && p.location_id)
+      .map((p) => p.location_id);
+  }
 
   const rewardLabel = reward?.label
     ? `${reward.label}${reward.value ? " — " + reward.value : ""}`
@@ -82,7 +92,7 @@ export default async function CampaignPage({
 
   const mechanics = (campaign.mechanics ?? []) as string[];
   const requireVisit =
-    (pinCount ?? 0) > 0 ||
+    campaignPinIds.length > 0 ||
     mechanics.includes("geolocation") ||
     mechanics.includes("treasure_hunt") ||
     experienceType === "VISIT";
@@ -172,6 +182,7 @@ export default async function CampaignPage({
           referrerCreatorId={referrerCreatorId}
           requireVisit={requireVisit && campaign.status === "live"}
           authenticated={!!user}
+          pinLocationIds={campaignPinIds}
         />
       )}
 
