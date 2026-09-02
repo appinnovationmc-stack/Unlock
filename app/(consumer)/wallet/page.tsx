@@ -26,6 +26,28 @@ type ImpactTrailRow = {
   interaction_events: Nested<InteractionRef>;
 };
 
+type RewardRef = {
+  label?: string | null;
+  value?: string | null;
+  type?: string | null;
+};
+
+type ClaimRow = {
+  id: string;
+  status: string;
+  campaign_id?: string | null;
+  rewards?: Nested<RewardRef>;
+};
+
+const REWARD_GROUPS: { title: string; statuses: string[] }[] = [
+  { title: "Claimed", statuses: ["claimed"] },
+  { title: "Redeemed", statuses: ["redeemed"] },
+  { title: "Expired", statuses: ["expired"] },
+  { title: "Pending", statuses: ["pending_verification", "pending"] },
+  { title: "Available", statuses: ["available"] },
+  { title: "Reversed", statuses: ["reversed"] }
+];
+
 function one<T>(value: Nested<T>): T | null {
   if (!value) return null;
   return Array.isArray(value) ? (value[0] ?? null) : value;
@@ -59,6 +81,41 @@ function formatTrailTime(iso: string): string {
   }).format(new Date(iso));
 }
 
+function statusLabel(status: string): string {
+  if (status === "pending_verification") return "Pending";
+  return status.replace(/_/g, " ");
+}
+
+function ClaimCard({ claim }: { claim: ClaimRow }) {
+  const reward = one(claim.rewards);
+  return (
+    <div className="flex items-center justify-between gap-3 px-5 py-4">
+      <div className="min-w-0">
+        <p className="font-display text-fog truncate">{reward?.label ?? "Reward"}</p>
+        <p className="font-mono text-xs text-mute mt-0.5">
+          {reward?.value}
+          {reward?.type ? ` · ${reward.type}` : ""}
+        </p>
+      </div>
+      {claim.status === "claimed" ? (
+        <RedeemButton claimId={claim.id} campaignId={claim.campaign_id} />
+      ) : (
+        <span
+          className={`font-mono text-[10px] shrink-0 ${
+            claim.status === "redeemed"
+              ? "text-gold"
+              : claim.status === "expired" || claim.status === "reversed"
+                ? "text-mute"
+                : "text-fog"
+          }`}
+        >
+          {statusLabel(claim.status)}
+        </span>
+      )}
+    </div>
+  );
+}
+
 export default async function WalletPage() {
   const supabase = createClient();
   const {
@@ -69,7 +126,7 @@ export default async function WalletPage() {
 
   const { data: consumer } = await supabase
     .from("consumers")
-    .select("*")
+    .select("id, handle, xp")
     .eq("id", user.id)
     .maybeSingle();
 
@@ -87,9 +144,11 @@ export default async function WalletPage() {
 
   const { data: claims } = await supabase
     .from("reward_claims")
-    .select("*, rewards(label, value, type)")
+    .select("id, status, campaign_id, rewards(label, value, type)")
     .eq("consumer_id", user.id)
     .order("claimed_at", { ascending: false });
+
+  const claimRows = (claims ?? []) as ClaimRow[];
 
   let impactTotal: number | null = null;
   let impactVisits: number | null = null;
@@ -156,6 +215,14 @@ export default async function WalletPage() {
       : impactTotal.toLocaleString();
   const visitsLabel = impactError ? "—" : impactVisits == null ? "Pending" : String(impactVisits);
 
+  const grouped = REWARD_GROUPS.map((group) => ({
+    ...group,
+    items: claimRows.filter((c) => group.statuses.includes(c.status))
+  })).filter((group) => group.items.length > 0);
+
+  const known = new Set(REWARD_GROUPS.flatMap((g) => g.statuses));
+  const other = claimRows.filter((c) => !known.has(c.status));
+
   return (
     <main className="page-shell min-h-screen bg-void">
       <header className="flex items-center justify-between mb-10">
@@ -176,7 +243,7 @@ export default async function WalletPage() {
       </header>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
-        <div className="clip-keyhole-sm bg-ink2 border border-volt/20 px-5 py-4">
+        <div className="clip-keyhole-sm bg-ink2 border border-white/8 px-5 py-4">
           <p className="font-mono text-[10px] text-mute">Impact</p>
           <p className="font-display text-2xl text-volt mt-1 tabular-nums">{impactLabel}</p>
         </div>
@@ -186,7 +253,7 @@ export default async function WalletPage() {
         </div>
         <div className="clip-keyhole-sm bg-ink2 border border-white/5 px-5 py-4">
           <p className="font-mono text-[10px] text-mute">Unlocked</p>
-          <p className="font-display text-2xl text-fog mt-1">{claims?.length ?? 0}</p>
+          <p className="font-display text-2xl text-fog mt-1">{claimRows.length}</p>
         </div>
         <div className="clip-keyhole-sm bg-ink2 border border-white/5 px-5 py-4">
           <p className="font-mono text-[10px] text-mute">Visits</p>
@@ -220,57 +287,40 @@ export default async function WalletPage() {
       </section>
 
       <h2 className="font-display text-lg text-fog mb-4">Rewards</h2>
-      <div className="border border-white/5 divide-y divide-white/5">
-        {!claims || claims.length === 0 ? (
-          <div className="p-6 text-center">
-            <p className="text-mute font-mono text-sm mb-3">Nothing collected yet.</p>
-            <Link href="/discover" className="text-volt font-mono text-[10px]">
-              Enter the field →
-            </Link>
-          </div>
-        ) : (
-          claims.map(
-            (claim: {
-              id: string;
-              status: string;
-              rewards?: { label?: string; value?: string; type?: string } | null;
-            }) => (
-              <div key={claim.id} className="flex items-center justify-between gap-3 px-5 py-4">
-                <div className="min-w-0">
-                  <p className="font-display text-fog truncate">
-                    {claim.rewards?.label ?? "Reward"}
-                  </p>
-                  <p className="font-mono text-xs text-mute mt-0.5">
-                    {claim.rewards?.value}
-                    {claim.rewards?.type ? ` · ${claim.rewards.type}` : ""}
-                  </p>
-                </div>
-                {claim.status === "claimed" ? (
-                  <RedeemButton
-                    claimId={claim.id}
-                    campaignId={(claim as { campaign_id?: string }).campaign_id}
-                  />
-                ) : (
-                  <span
-                    className={`font-mono text-[10px] shrink-0 ${
-                      claim.status === "redeemed"
-                        ? "text-gold"
-                        : claim.status === "expired"
-                          ? "text-mute"
-                          : "text-fog"
-                    }`}
-                  >
-                    {claim.status}
-                  </span>
-                )}
+      {claimRows.length === 0 ? (
+        <div className="border border-white/5 p-6 text-center">
+          <p className="text-mute font-mono text-sm mb-3">Nothing collected yet.</p>
+          <Link href="/discover" className="text-volt font-mono text-[10px]">
+            Enter the field →
+          </Link>
+        </div>
+      ) : (
+        <div className="space-y-8">
+          {grouped.map((group) => (
+            <section key={group.title}>
+              <p className="font-mono text-[10px] text-mute mb-3">{group.title}</p>
+              <div className="border border-white/5 divide-y divide-white/5">
+                {group.items.map((claim) => (
+                  <ClaimCard key={claim.id} claim={claim} />
+                ))}
               </div>
-            )
-          )
-        )}
-      </div>
+            </section>
+          ))}
+          {other.length > 0 && (
+            <section>
+              <p className="font-mono text-[10px] text-mute mb-3">Other</p>
+              <div className="border border-white/5 divide-y divide-white/5">
+                {other.map((claim) => (
+                  <ClaimCard key={claim.id} claim={claim} />
+                ))}
+              </div>
+            </section>
+          )}
+        </div>
+      )}
 
       <p className="mt-8 text-center font-mono text-[10px] text-mute">
-        Redeem is enforced server-side. Your collection is proof — not a receipt dump.
+        Redeem is enforced server-side. Your collection is proof — not a cash wallet.
       </p>
     </main>
   );

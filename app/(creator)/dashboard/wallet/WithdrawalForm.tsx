@@ -44,7 +44,7 @@ export function WithdrawalForm({ availableCents }: { availableCents: number }) {
   return (
     <form onSubmit={onSubmit} className="space-y-3 max-w-sm">
       <label className="block">
-        <span className="font-mono text-[10px] uppercase tracking-widest text-mute">
+        <span className="font-mono text-[10px] text-mute">
           Amount (ZAR) — available {formatMoney(availableCents)}
         </span>
         <input
@@ -59,7 +59,7 @@ export function WithdrawalForm({ availableCents }: { availableCents: number }) {
       {error && <p className="text-magenta font-mono text-xs">{error}</p>}
       {ok && (
         <p className="text-volt font-mono text-xs">
-          Withdrawal requested. Status: Requested → Processing → Paid.
+          Withdrawal requested. Status: requested → processing → paid.
         </p>
       )}
       <button
