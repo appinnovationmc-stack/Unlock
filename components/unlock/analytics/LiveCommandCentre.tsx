@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { formatMoney } from "@/lib/finance/money";
+import type { LiveDrilldownEvent } from "@/lib/actions/live";
 
 export interface LiveStats {
   participating: number;
@@ -12,6 +13,9 @@ export interface LiveStats {
   rewards: number;
   redemptions: number;
   conversions: number;
+  discover: number;
+  interact: number;
+  pending: number;
 }
 export interface CreatorImpactRow {
   creator_id: string;
@@ -29,20 +33,83 @@ export interface LocationStat {
   rewards: number;
   conversions: number;
 }
-export interface FunnelEvent {
-  event_type: string;
-  created_at: string;
-  verification_status: string;
-}
 
 const STAGE_EVENTS: Record<string, string[]> = {
-  DISCOVER: ["CAMPAIGN_VIEW"],
-  INTERACT: ["CHALLENGE_START", "CHALLENGE_COMPLETE", "SHARE", "CONTENT_SUBMITTED", "REVIEW_SUBMITTED"],
-  VISIT: ["LOCATION_CHECKIN"],
-  UNLOCK: ["REWARD_UNLOCK", "REWARD_CLAIM"],
-  REDEEM: ["REWARD_REDEEM"],
-  CONVERT: ["REFERRAL_CONVERSION", "PURCHASE"]
+  discover: ["CAMPAIGN_VIEW"],
+  interact: ["CHALLENGE_START", "CHALLENGE_COMPLETE", "SHARE", "CONTENT_SUBMITTED", "REVIEW_SUBMITTED"],
+  visit: ["LOCATION_CHECKIN"],
+  unlock: ["REWARD_UNLOCK", "REWARD_CLAIM"],
+  redeem: ["REWARD_REDEEM"],
+  convert: ["REFERRAL_CONVERSION", "PURCHASE"]
 };
+
+const SCAN_TYPES = ["QR_SCAN", "PRODUCT_INTERACTION", "NFC_SCAN"];
+
+type Slice =
+  | { kind: "all" }
+  | {
+      kind: "metric";
+      key:
+        | "people"
+        | "interactions"
+        | "store_visits"
+        | "product_scans"
+        | "rewards"
+        | "redemptions"
+        | "conversions"
+        | "pending";
+    }
+  | { kind: "stage"; stage: keyof typeof STAGE_EVENTS }
+  | { kind: "location"; id: string; label: string }
+  | { kind: "creator"; id: string; label: string };
+
+function eventLabel(type: string) {
+  return type.toLowerCase().replaceAll("_", " ");
+}
+
+function matchesSlice(e: LiveDrilldownEvent, slice: Slice) {
+  if (slice.kind === "all") return true;
+  if (slice.kind === "location") return e.location_id === slice.id;
+  if (slice.kind === "creator") return e.creator_id === slice.id;
+  if (slice.kind === "stage") return STAGE_EVENTS[slice.stage].includes(e.event_type);
+  switch (slice.key) {
+    case "people":
+    case "interactions":
+      return e.verification_status === "verified";
+    case "store_visits":
+      return e.event_type === "LOCATION_CHECKIN";
+    case "product_scans":
+      return SCAN_TYPES.includes(e.event_type);
+    case "rewards":
+      return STAGE_EVENTS.unlock.includes(e.event_type);
+    case "redemptions":
+      return e.event_type === "REWARD_REDEEM";
+    case "conversions":
+      return STAGE_EVENTS.convert.includes(e.event_type);
+    case "pending":
+      return e.verification_status === "pending";
+    default:
+      return true;
+  }
+}
+
+function sliceCaption(slice: Slice) {
+  if (slice.kind === "all") return "all events";
+  if (slice.kind === "location") return slice.label;
+  if (slice.kind === "creator") return slice.label;
+  if (slice.kind === "stage") return slice.stage;
+  const labels: Record<typeof slice.key, string> = {
+    people: "people (verified)",
+    interactions: "verified interactions",
+    store_visits: "store visits",
+    product_scans: "product scans",
+    rewards: "rewards",
+    redemptions: "redeemed",
+    conversions: "conversions",
+    pending: "pending verification"
+  };
+  return labels[slice.key];
+}
 
 export function LiveCommandCentre({
   campaignTitle,
@@ -51,7 +118,8 @@ export function LiveCommandCentre({
   stats,
   creators = [],
   locations = [],
-  recentEvents = [],
+  events = [],
+  truncated = false,
   spendCents = null,
   remainingCents = null
 }: {
@@ -61,130 +129,220 @@ export function LiveCommandCentre({
   stats: LiveStats;
   creators?: CreatorImpactRow[];
   locations?: LocationStat[];
-  recentEvents?: FunnelEvent[];
+  events?: LiveDrilldownEvent[];
+  truncated?: boolean;
   spendCents?: number | null;
   remainingCents?: number | null;
 }) {
-  const [stage, setStage] = useState<string | null>(null);
+  const [slice, setSlice] = useState<Slice>({ kind: "all" });
   const funnel = [
-    { stage: "DISCOVER", count: stats.interactions },
-    { stage: "INTERACT", count: stats.interactions },
-    { stage: "VISIT", count: stats.store_visits },
-    { stage: "UNLOCK", count: stats.rewards },
-    { stage: "REDEEM", count: stats.redemptions },
-    { stage: "CONVERT", count: stats.conversions }
+    { stage: "discover" as const, count: stats.discover },
+    { stage: "interact" as const, count: stats.interact },
+    { stage: "visit" as const, count: stats.store_visits },
+    { stage: "unlock" as const, count: stats.rewards },
+    { stage: "redeem" as const, count: stats.redemptions },
+    { stage: "convert" as const, count: stats.conversions }
   ];
-  const stageEvents = useMemo(() => {
-    if (!stage) return [];
-    const types = STAGE_EVENTS[stage] ?? [];
-    return recentEvents.filter((e) => types.includes(e.event_type)).slice(0, 20);
-  }, [stage, recentEvents]);
 
-  const metric = (label: string, value: number, accent?: string) => (
-    <div className="border border-white/8 bg-ink2/80 px-5 py-4 clip-keyhole-sm">
-      <p className="font-mono text-[10px] uppercase tracking-widest text-mute">{label}</p>
-      <p className={`font-display text-3xl mt-1 tabular-nums ${accent ?? "text-fog"}`}>{value.toLocaleString()}</p>
-    </div>
-  );
+  const visible = useMemo(() => events.filter((e) => matchesSlice(e, slice)), [events, slice]);
+  const peopleInView = useMemo(() => new Set(visible.map((e) => e.user_id)).size, [visible]);
+
+  const toggleMetric = (key: Extract<Slice, { kind: "metric" }> ["key"]) => {
+    setSlice((cur) => (cur.kind === "metric" && cur.key === key ? { kind: "all" } : { kind: "metric", key }));
+  };
+
+  const metric = (
+    label: string,
+    value: number,
+    key: Extract<Slice, { kind: "metric" }> ["key"]
+  ) => {
+    const active = slice.kind === "metric" && slice.key === key;
+    return (
+      <button
+        type="button"
+        onClick={() => toggleMetric(key)}
+        aria-pressed={active}
+        className={`text-left border px-5 py-4 ${active ? "border-fog" : "border-white/10 hover:border-white/25"}`}
+      >
+        <p className="text-sm text-mute">{label}</p>
+        <p className="font-display text-3xl mt-1 tabular-nums text-fog">{value.toLocaleString()}</p>
+      </button>
+    );
+  };
 
   return (
     <div className="space-y-10">
       <header className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
         <div>
-          <div className="flex items-center gap-3 mb-2">
-            <span className={`inline-flex h-2 w-2 rounded-full ${status === "live" ? "bg-volt animate-pulse" : "bg-mute"}`} />
-            <p className="font-mono text-[10px] uppercase tracking-[0.35em] text-volt">UNLOCK LIVE</p>
-          </div>
-          <h1 className="font-display text-3xl md:text-4xl text-fog">{campaignTitle}</h1>
+          <p className="section-kicker">Studio</p>
+          <h1 className="font-display text-3xl md:text-4xl text-fog mt-1">
+            {campaignTitle} <span className="text-volt">Live</span>
+          </h1>
+          <p className="text-sm text-mute mt-2">
+            {status}. Tap a number to see the rows behind it.
+          </p>
         </div>
         <div className="flex gap-2">
-          <Link href={`/studio/live/${campaignId}/play`} className="font-mono text-[10px] uppercase tracking-widest text-volt border border-volt/40 px-3 py-1.5 hover:bg-volt/10">Play</Link>
-          <Link href="/studio" className="font-mono text-[10px] uppercase tracking-widest text-mute border border-white/10 px-3 py-1.5 hover:text-volt">Studio</Link>
+          <Link
+            href={`/studio/live/${campaignId}/play`}
+            className="text-sm text-mute border border-white/10 px-3 py-1.5 hover:text-fog"
+          >
+            Play demo
+          </Link>
+          <Link href="/studio" className="text-sm text-mute border border-white/10 px-3 py-1.5 hover:text-fog">
+            Studio
+          </Link>
         </div>
       </header>
       <section className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-        {metric("People", stats.participating, "text-volt")}
-        {metric("Interactions", stats.interactions)}
-        {metric("Store visits", stats.store_visits, "text-volt")}
-        {metric("Product scans", stats.product_scans)}
-        {metric("Rewards", stats.rewards, "text-gold")}
-        {metric("Redeemed", stats.redemptions, "text-gold")}
-        {metric("Conversions", stats.conversions, "text-magenta")}
+        {metric("People", stats.participating, "people")}
+        {metric("Interactions", stats.interactions, "interactions")}
+        {metric("Store visits", stats.store_visits, "store_visits")}
+        {metric("Product scans", stats.product_scans, "product_scans")}
+        {metric("Rewards", stats.rewards, "rewards")}
+        {metric("Redeemed", stats.redemptions, "redemptions")}
+        {metric("Conversions", stats.conversions, "conversions")}
+        {metric("Pending", stats.pending, "pending")}
       </section>
       {typeof spendCents === "number" && (
-        <p className="font-mono text-[10px] uppercase tracking-widest text-mute">
+        <p className="text-sm text-mute">
           Visit spend {formatMoney(spendCents)}
           {typeof remainingCents === "number" ? ` · remaining ${formatMoney(remainingCents)}` : ""}
           {" "}· billed on verified check-in, not unlock or XP
         </p>
       )}
-      <section className="border border-white/8 bg-ink2/50 p-6 clip-keyhole">
-        <p className="font-mono text-[10px] uppercase tracking-[0.3em] text-mute mb-2">Funnel</p>
-        <p className="text-mute text-xs mb-6">Tap a stage to inspect underlying events.</p>
+      <section className="border border-white/10 p-6">
+        <p className="section-kicker mb-2">Funnel</p>
+        <p className="text-mute text-sm mb-6">Tap a stage to filter the event list. Counts are verified only.</p>
         <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-0">
-          {funnel.map((s, i) => (
-            <div key={s.stage} className="flex items-center gap-2 sm:flex-1">
-              <button type="button" onClick={() => setStage(stage === s.stage ? null : s.stage)} aria-pressed={stage === s.stage}
-                className={`flex-1 text-center py-3 border transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-volt ${stage === s.stage ? "border-volt bg-volt/10" : "border-white/10 bg-void/60 hover:border-white/25"}`}>
-                <p className="font-mono text-[9px] uppercase tracking-widest text-mute">{s.stage}</p>
-                <p className="font-display text-xl text-fog tabular-nums">{s.count.toLocaleString()}</p>
-              </button>
-              {i < funnel.length - 1 && <span className="hidden sm:block text-mute px-1">→</span>}
-            </div>
-          ))}
-        </div>
-        {stage && (
-          <div className="mt-4 border border-white/8 divide-y divide-white/5 max-h-64 overflow-y-auto">
-            <p className="px-3 py-2 font-mono text-[10px] uppercase tracking-widest text-volt">{stage} · events</p>
-            {stageEvents.length === 0 ? (
-              <p className="px-3 py-3 text-mute text-xs font-mono">No matching events in recent stream.</p>
-            ) : stageEvents.map((e, idx) => (
-              <div key={idx} className="flex justify-between px-3 py-2 font-mono text-xs">
-                <span className="text-fog">{e.event_type}</span>
-                <span className="text-mute">{e.verification_status} · {new Date(e.created_at).toLocaleString()}</span>
+          {funnel.map((s, i) => {
+            const active = slice.kind === "stage" && slice.stage === s.stage;
+            return (
+              <div key={s.stage} className="flex items-center gap-2 sm:flex-1">
+                <button
+                  type="button"
+                  onClick={() =>
+                    setSlice(active ? { kind: "all" } : { kind: "stage", stage: s.stage })
+                  }
+                  aria-pressed={active}
+                  className={`flex-1 text-center py-3 border ${active ? "border-fog" : "border-white/10 hover:border-white/25"}`}
+                >
+                  <p className="text-sm text-mute">{s.stage}</p>
+                  <p className="font-display text-xl text-fog tabular-nums">{s.count.toLocaleString()}</p>
+                </button>
+                {i < funnel.length - 1 && <span className="hidden sm:block text-mute px-1">→</span>}
               </div>
-            ))}
-          </div>
-        )}
+            );
+          })}
+        </div>
       </section>
       {locations.length > 0 && (
         <section>
-          <p className="font-mono text-[10px] uppercase tracking-[0.3em] text-mute mb-4">Map analytics</p>
-          <div className="space-y-2">
-            {locations.map((loc) => (
-              <div key={loc.location_id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border border-white/8 bg-ink2/60 px-4 py-3">
-                <p className="font-display text-fog">{loc.label}</p>
-                <div className="flex flex-wrap gap-4 font-mono text-xs tabular-nums text-mute">
-                  <span>{loc.interactions} interactions</span>
-                  <span className="text-volt">{loc.visits} visits</span>
-                  <span className="text-gold">{loc.rewards} rewards</span>
-                  <span className="text-magenta">{loc.conversions} conv.</span>
-                </div>
-              </div>
-            ))}
+          <p className="section-kicker mb-4">Locations</p>
+          <div className="border border-white/10 divide-y divide-white/10">
+            {locations.map((loc) => {
+              const active = slice.kind === "location" && slice.id === loc.location_id;
+              return (
+                <button
+                  type="button"
+                  key={loc.location_id}
+                  onClick={() =>
+                    setSlice(
+                      active ? { kind: "all" } : { kind: "location", id: loc.location_id, label: loc.label }
+                    )
+                  }
+                  aria-pressed={active}
+                  className={`w-full text-left px-4 py-3 ${active ? "bg-white/5" : ""}`}
+                >
+                  <p className="font-display text-fog">{loc.label}</p>
+                  <p className="text-sm text-mute mt-1">
+                    {loc.interactions} interactions · {loc.visits} visits · {loc.rewards} rewards ·{" "}
+                    {loc.conversions} conversions
+                  </p>
+                </button>
+              );
+            })}
           </div>
         </section>
       )}
       <section>
-        <p className="font-mono text-[10px] uppercase tracking-[0.3em] text-mute mb-4">Top Impact</p>
+        <p className="section-kicker mb-4">Impact</p>
         {creators.length === 0 ? (
-          <p className="text-mute text-sm font-mono">No creator attribution yet.</p>
+          <p className="text-mute text-sm">No creator attribution yet.</p>
         ) : (
-          <div className="space-y-2">
-            {creators.slice(0, 8).map((c, i) => (
-              <div key={c.creator_id} className="flex items-center justify-between border border-white/8 bg-ink2/60 px-4 py-3">
-                <div className="flex items-center gap-3">
-                  <span className="font-mono text-xs text-mute w-6">{i + 1}.</span>
-                  <span className="font-display text-fog">{c.handle ?? c.creator_id.slice(0, 8)}</span>
-                </div>
-                <div className="flex items-center gap-6 font-mono text-xs tabular-nums">
-                  <span className="text-volt">
-                    {c.impact == null ? "Pending" : `${c.impact.toLocaleString()} Impact`}
-                  </span>
-                  <span className="text-mute hidden sm:inline">{c.visits} visits</span>
-                  <span className="text-magenta">{c.conversions} conv.</span>
-                </div>
-              </div>
+          <div className="border border-white/10 divide-y divide-white/10">
+            {creators.slice(0, 8).map((c, i) => {
+              const label = c.handle ?? c.creator_id.slice(0, 8);
+              const active = slice.kind === "creator" && slice.id === c.creator_id;
+              return (
+                <button
+                  type="button"
+                  key={c.creator_id}
+                  onClick={() =>
+                    setSlice(active ? { kind: "all" } : { kind: "creator", id: c.creator_id, label })
+                  }
+                  aria-pressed={active}
+                  className={`w-full text-left px-4 py-3 flex items-center justify-between gap-3 ${active ? "bg-white/5" : ""}`}
+                >
+                  <p className="text-fog">
+                    {i + 1}. {label}
+                  </p>
+                  <p className="text-sm text-mute tabular-nums">
+                    {c.impact == null ? "pending impact" : `${c.impact.toLocaleString()} impact`} · {c.visits}{" "}
+                    visits · {c.conversions} conversions
+                  </p>
+                </button>
+              );
+            })}
+          </div>
+        )}
+      </section>
+      <section>
+        <div className="flex flex-wrap items-end justify-between gap-3 mb-3">
+          <div>
+            <p className="section-kicker">Events</p>
+            <p className="text-sm text-mute mt-1">
+              {sliceCaption(slice)}
+              {" · "}
+              {visible.length} row{visible.length === 1 ? "" : "s"}
+              {slice.kind === "metric" && slice.key === "people"
+                ? ` · ${peopleInView} distinct people in these rows`
+                : ""}
+              {truncated ? " · latest 250 for this campaign" : ""}
+            </p>
+          </div>
+          {slice.kind !== "all" && (
+            <button type="button" onClick={() => setSlice({ kind: "all" })} className="text-sm text-mute hover:text-fog">
+              Clear filter
+            </button>
+          )}
+        </div>
+        {visible.length === 0 ? (
+          <p className="text-mute text-sm border border-white/10 px-4 py-8">
+            {events.length === 0
+              ? "No events yet. Counts stay empty until people actually show up."
+              : "No rows match this filter in the loaded events."}
+          </p>
+        ) : (
+          <div className="border border-white/10 divide-y divide-white/10">
+            {visible.map((e) => (
+              <article key={e.id} className="px-4 py-3">
+                <p className="text-fog">{eventLabel(e.event_type)}</p>
+                <p className="text-sm text-mute mt-1">
+                  {e.campaign_title}
+                  {" · "}
+                  {new Date(e.created_at).toLocaleString()}
+                  {" · "}
+                  {e.location_label ?? "no location"}
+                  {" · "}
+                  {e.creator_label ?? "no creator"}
+                  {" · "}
+                  {e.verification_status}
+                  {e.verification_method ? ` (${e.verification_method.replaceAll("_", " ")})` : ""}
+                  {" · "}
+                  {e.impact_points == null ? "no impact" : `${e.impact_points} impact`}
+                </p>
+              </article>
             ))}
           </div>
         )}
