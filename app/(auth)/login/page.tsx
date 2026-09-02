@@ -9,27 +9,28 @@ export default function LoginPage({
   searchParams: { error?: string; reset?: string };
 }) {
   return (
-    <main className="min-h-screen flex items-center justify-center px-6 bg-duotone">
+    <main className="min-h-screen flex items-center justify-center px-6 py-16 bg-void">
       <form action={logIn} className="w-full max-w-sm">
-        <h1 className="font-display text-2xl text-fog mb-6">Log in</h1>
+        <p className="section-kicker mb-2">UNLOCK</p>
+        <h1 className="font-display text-3xl text-fog mb-6">Log in</h1>
         {searchParams.error && (
           <p className="text-sm text-magenta mb-4">{searchParams.error}</p>
         )}
         {searchParams.reset && (
-          <p className="text-sm text-volt mb-4">Password updated. You can log in now.</p>
+          <p className="text-sm text-fog mb-4">Password updated. You can log in now.</p>
         )}
         <AuthFields />
-        <Button type="submit" variant="volt" className="w-full justify-center mt-2">
+        <Button type="submit" variant="volt" className="w-full mt-2">
           Log in
         </Button>
         <p className="mt-4 text-sm text-mute">
-          <Link href="/forgot-password" className="text-volt hover:underline">
+          <Link href="/forgot-password" className="hover:text-fog">
             Forgot password?
           </Link>
         </p>
-        <p className="mt-4 text-sm text-mute">
+        <p className="mt-3 text-sm text-mute">
           No account?{" "}
-          <Link href="/signup" className="text-volt hover:underline">
+          <Link href="/signup" className="text-fog hover:text-volt">
             Sign up
           </Link>
         </p>

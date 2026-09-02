@@ -1,8 +1,8 @@
 import type { Config } from "tailwindcss";
 
 // UNLOCK design tokens.
-// Palette: violet-black void (not pure #000), electric volt + magenta duotone,
-// gold reserved only for "reward won" moments — never decorative.
+// Palette: violet-black void (not pure #000), volt for one word / primary action,
+// magenta + gold reserved only for "reward won" moments — never decorative chrome.
 const config: Config = {
   content: ["./app/**/*.{ts,tsx}", "./components/**/*.{ts,tsx}"],
   theme: {
@@ -24,10 +24,6 @@ const config: Config = {
       },
       clipPath: {
         keyhole: "polygon(0 0, 100% 0, 100% 100%, 24px 100%, 0 calc(100% - 24px))"
-      },
-      backgroundImage: {
-        "duotone-glow":
-          "radial-gradient(circle at 15% 0%, rgba(198,255,61,0.16), transparent 45%), radial-gradient(circle at 85% 100%, rgba(255,61,203,0.14), transparent 45%)"
       }
     }
   },

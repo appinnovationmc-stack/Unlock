@@ -16,9 +16,10 @@ export default function SignupPage({ searchParams }: { searchParams: { error?: s
   const [role, setRole] = useState<(typeof roles)[number]["value"]>("consumer");
 
   return (
-    <main className="min-h-screen flex items-center justify-center px-6 bg-duotone">
+    <main className="min-h-screen flex items-center justify-center px-6 py-16 bg-void">
       <form action={signUp} className="w-full max-w-sm">
-        <h1 className="font-display text-2xl text-fog mb-6">Create account</h1>
+        <p className="section-kicker mb-2">UNLOCK</p>
+        <h1 className="font-display text-3xl text-fog mb-6">Create account</h1>
         {searchParams.error && (
           <p className="text-sm text-magenta mb-4">{searchParams.error}</p>
         )}
@@ -29,9 +30,9 @@ export default function SignupPage({ searchParams }: { searchParams: { error?: s
               type="button"
               key={r.value}
               onClick={() => setRole(r.value)}
-              className={`flex-1 py-2 font-mono text-xs uppercase tracking-widest border transition-colors ${
+              className={`flex-1 py-2 text-sm border transition-colors ${
                 role === r.value
-                  ? "border-volt text-volt bg-volt/10"
+                  ? "border-volt text-volt"
                   : "border-white/10 text-mute hover:border-white/30"
               }`}
             >
@@ -43,13 +44,13 @@ export default function SignupPage({ searchParams }: { searchParams: { error?: s
 
         <AuthFields handle={role !== "brand"} />
 
-        <Button type="submit" variant="volt" className="w-full justify-center mt-2">
+        <Button type="submit" variant="volt" className="w-full mt-2">
           Sign up as {role}
         </Button>
 
         <p className="mt-6 text-sm text-mute">
           Have an account?{" "}
-          <Link href="/login" className="text-volt hover:underline">
+          <Link href="/login" className="text-fog hover:text-volt">
             Log in
           </Link>
         </p>

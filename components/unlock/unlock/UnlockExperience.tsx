@@ -5,6 +5,7 @@ import { recordInteraction } from "@/lib/unlock/interactions/record";
 import { unlockCampaign } from "@/lib/actions/unlock";
 import { UnlockReveal } from "./UnlockReveal";
 import { LocationCheckin } from "@/components/unlock/experiences/LocationCheckin";
+import { Button } from "@/components/ui/Button";
 
 export function UnlockExperience({
   campaignId,
@@ -114,16 +115,16 @@ export function UnlockExperience({
         )}
         <div className="border border-white/15 bg-ink2 p-6 text-center">
           <p className="text-fog text-sm mb-3">{error ?? "Something went wrong."}</p>
-          <button
+          <Button
             type="button"
+            variant="ghost"
             onClick={() => {
               setError(null);
               setPhase("ready");
             }}
-            className="font-mono text-[10px] tracking-widest text-mute border border-white/20 px-3 py-1.5"
           >
             Try again
-          </button>
+          </Button>
         </div>
       </div>
     );

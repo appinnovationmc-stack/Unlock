@@ -109,7 +109,7 @@ export function UnlockButton({
           {phase === "done" ? "✓" : phase === "unlocking" ? "…" : "◎"}
         </span>
       </button>
-      <p className="font-mono text-xs tracking-wide text-mute">{status}</p>
+      <p className="text-sm text-mute">{status}</p>
     </div>
   );
 }

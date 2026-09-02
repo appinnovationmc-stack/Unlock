@@ -16,8 +16,7 @@
   }
 
   body {
-    @apply bg-void text-fog font-body antialiased;
-    background-image: var(--tw-bg-duotone, none);
+    @apply bg-void text-fog font-body antialiased text-base leading-relaxed;
   }
 
   ::selection {
@@ -30,13 +29,25 @@
   }
 }
 
+@layer components {
+  .page-shell {
+    @apply mx-auto w-full max-w-xl px-6 py-10 md:px-12;
+  }
+  .page-shell-wide {
+    @apply mx-auto w-full max-w-5xl px-6 py-10 md:px-12;
+  }
+  .section-kicker {
+    @apply font-mono text-xs tracking-wide text-mute;
+  }
+}
+
 @layer utilities {
   .bg-duotone {
-    background-image: theme("backgroundImage.duotone-glow");
+    background-image: none;
   }
 
   .text-glow-volt {
-    text-shadow: 0 0 24px rgba(198, 255, 61, 0.45);
+    text-shadow: none;
   }
 
   .noise-overlay {
@@ -102,6 +113,7 @@
 .unlock-live-map .maplibregl-ctrl-attrib {
   background: rgba(11, 10, 20, 0.85);
   color: #8b87a8;
+  font-size: 10px;
 }
 .unlock-live-map .maplibregl-ctrl-group {
   background: #15132a;

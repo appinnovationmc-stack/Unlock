@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { createCampaign } from "@/lib/actions/campaigns";
+import { Button } from "@/components/ui/Button";
 
 const INTENTS = [
   { id: "DISCOVER", label: "Discover", hint: "Find the brand / product", mechanics: [] as string[] },
@@ -45,8 +46,8 @@ function Chip({ active, onClick, children }: { active: boolean; onClick: () => v
     <button
       type="button"
       onClick={onClick}
-      className={`font-mono text-[10px] uppercase tracking-widest px-3 py-2 border transition-colors ${
-        active ? "border-volt bg-volt/15 text-volt" : "border-white/10 text-mute hover:border-white/25 hover:text-fog"
+      className={`text-sm px-3 py-2 border transition-colors ${
+        active ? "border-volt text-volt" : "border-white/10 text-mute hover:border-white/25 hover:text-fog"
       }`}
     >
       {children}
@@ -71,7 +72,7 @@ export function ExperienceBuilder() {
   const previewReward = rewardLabel.trim() || `${rewardKind} reward`;
   const previewHint =
     intent === "VISIT"
-      ? "Get close. Check in. Unlock."
+      ? "Get close. Check in. Hold to unlock."
       : intent === "COLLECT"
         ? "Hunt it down. Scan. Unlock."
         : intent === "SOLVE"
@@ -88,11 +89,14 @@ export function ExperienceBuilder() {
     return base;
   }, [intent]);
 
+  const field =
+    "mt-1 w-full bg-void border border-white/10 focus:border-volt px-3 py-2 text-fog text-base outline-none";
+
   return (
     <div className="grid lg:grid-cols-2 gap-8">
       <div className="space-y-6">
         <div>
-          <p className="font-mono text-[10px] uppercase tracking-[0.3em] text-volt mb-1">Build experience</p>
+          <p className="section-kicker mb-1">Build experience</p>
           <h2 className="font-display text-xl text-fog">What do you want people to do?</h2>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -109,10 +113,10 @@ export function ExperienceBuilder() {
             </Chip>
           ))}
         </div>
-        <p className="text-mute text-xs font-mono">{intentMeta.hint}</p>
+        <p className="text-mute text-sm">{intentMeta.hint}</p>
 
         <div>
-          <p className="font-mono text-[10px] uppercase tracking-widest text-mute mb-2">Where?</p>
+          <p className="section-kicker mb-2">Where?</p>
           <div className="flex flex-wrap gap-2">
             {WHERE.map((w) => (
               <Chip key={w.id} active={where === w.id} onClick={() => setWhere(w.id)}>
@@ -123,7 +127,7 @@ export function ExperienceBuilder() {
         </div>
 
         <div>
-          <p className="font-mono text-[10px] uppercase tracking-widest text-mute mb-2">What do they get?</p>
+          <p className="section-kicker mb-2">What do they get?</p>
           <div className="flex flex-wrap gap-2 mb-3">
             {REWARDS.map((r) => (
               <Chip key={r.id} active={rewardKind === r.id} onClick={() => setRewardKind(r.id)}>
@@ -136,19 +140,19 @@ export function ExperienceBuilder() {
               value={rewardLabel}
               onChange={(e) => setRewardLabel(e.target.value)}
               placeholder="Reward label"
-              className="bg-void border border-white/10 focus:border-volt px-3 py-2 text-fog text-sm outline-none"
+              className={field}
             />
             <input
               value={rewardValue}
               onChange={(e) => setRewardValue(e.target.value)}
               placeholder="Value (R50, 20%…)"
-              className="bg-void border border-white/10 focus:border-volt px-3 py-2 text-fog text-sm outline-none"
+              className={field}
             />
           </div>
         </div>
 
         <div>
-          <p className="font-mono text-[10px] uppercase tracking-widest text-mute mb-2">How do we verify?</p>
+          <p className="section-kicker mb-2">How do we verify?</p>
           <div className="flex flex-wrap gap-2">
             {VERIFY.map((v) => (
               <Chip key={v.id} active={verify === v.id} onClick={() => setVerify(v.id)}>
@@ -159,20 +163,17 @@ export function ExperienceBuilder() {
         </div>
 
         <div>
-          <p className="font-mono text-[10px] uppercase tracking-widest text-mute mb-2">We will measure</p>
+          <p className="section-kicker mb-2">We will measure</p>
           <div className="flex flex-wrap gap-2">
             {measureHints.map((m) => (
-              <span
-                key={m}
-                className="font-mono text-[9px] uppercase tracking-widest border border-white/10 text-mute px-2 py-1"
-              >
+              <span key={m} className="text-xs text-mute border border-white/10 px-2 py-1">
                 {m}
               </span>
             ))}
           </div>
         </div>
 
-        <form action={createCampaign} className="space-y-4 border border-white/8 bg-ink2/60 p-5">
+        <form action={createCampaign} className="space-y-4 border border-white/10 p-5">
           <input type="hidden" name="objective" value={intent.toLowerCase()} />
           {mechanics.map((m) => (
             <input key={m} type="hidden" name="mechanics" value={m} />
@@ -185,83 +186,75 @@ export function ExperienceBuilder() {
           <input type="hidden" name="description" value={previewHint} />
 
           <label className="block">
-            <span className="font-mono text-[10px] uppercase tracking-widest text-mute">Title *</span>
+            <span className="text-sm text-mute">Title *</span>
             <input
               name="title"
               required
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="e.g. The Midnight Drop"
-              className="mt-1 w-full bg-void border border-white/10 focus:border-volt px-3 py-2 text-fog outline-none"
+              className={field}
             />
           </label>
           <label className="block">
-            <span className="font-mono text-[10px] uppercase tracking-widest text-mute">Tagline</span>
+            <span className="text-sm text-mute">Tagline</span>
             <input
               name="tagline"
               value={tagline}
               onChange={(e) => setTagline(e.target.value)}
               placeholder="One line that hooks participation"
-              className="mt-1 w-full bg-void border border-white/10 focus:border-volt px-3 py-2 text-fog outline-none"
+              className={field}
             />
           </label>
           <label className="block">
-            <span className="font-mono text-[10px] uppercase tracking-widest text-mute">Impact on unlock</span>
+            <span className="text-sm text-mute">Impact on unlock</span>
             <input
               type="number"
               min={0}
               max={500}
               value={xp}
               onChange={(e) => setXp(Number(e.target.value) || 0)}
-              className="mt-1 w-full bg-void border border-white/10 focus:border-volt px-3 py-2 text-fog outline-none"
+              className={field}
             />
           </label>
 
           <div className="flex gap-3 pt-2">
-            <button
-              type="submit"
-              name="status"
-              value="draft"
-              className="flex-1 font-mono text-[10px] uppercase tracking-widest border border-white/15 text-mute py-2.5 hover:text-fog"
-            >
+            <Button type="submit" name="status" value="draft" variant="ghost" className="flex-1">
               Save draft
-            </button>
-            <button
-              type="submit"
-              name="status"
-              value="live"
-              className="flex-1 font-mono text-[10px] uppercase tracking-widest border border-volt bg-volt/20 text-volt py-2.5 hover:bg-volt/30"
-            >
+            </Button>
+            <Button type="submit" name="status" value="live" variant="volt" className="flex-1">
               Publish live
-            </button>
+            </Button>
           </div>
         </form>
       </div>
 
       <div className="lg:sticky lg:top-8 h-fit">
-        <p className="font-mono text-[10px] uppercase tracking-[0.3em] text-magenta mb-3">Consumer preview</p>
+        <p className="section-kicker mb-3">Consumer preview</p>
         <div className="border border-white/10 bg-void clip-keyhole overflow-hidden">
           <div className="aspect-[4/3] relative bg-ink2 flex items-center justify-center">
             <div className="relative z-10 text-center px-6">
-              <p className="font-mono text-[9px] uppercase tracking-[0.3em] text-volt mb-2">{intent}</p>
+              <p className="section-kicker mb-2">{intent}</p>
               <p className="font-display text-2xl text-fog mb-1">{previewTitle}</p>
               {tagline ? <p className="text-mute text-sm mb-4">{tagline}</p> : null}
-              <p className="text-mute text-xs mb-6 max-w-xs mx-auto">{previewHint}</p>
-              <div className="inline-flex flex-col items-center gap-2 border border-volt/40 px-6 py-4 clip-keyhole-sm">
-                <span className="text-2xl">◎</span>
-                <span className="font-mono text-[10px] uppercase tracking-widest text-volt">Hold to unlock</span>
+              <p className="text-mute text-sm mb-6 max-w-xs mx-auto">{previewHint}</p>
+              <div className="inline-flex flex-col items-center gap-2">
+                <span className="h-16 w-16 rounded-full border-2 border-white/25 flex items-center justify-center text-xl text-fog">
+                  ◎
+                </span>
+                <span className="text-sm text-mute">Hold to unlock</span>
               </div>
-              <p className="mt-4 font-mono text-[10px] text-gold">{previewReward}</p>
-              {rewardValue ? <p className="font-mono text-[10px] text-mute">{rewardValue}</p> : null}
+              <p className="mt-4 text-sm text-fog">{previewReward}</p>
+              {rewardValue ? <p className="text-sm text-mute">{rewardValue}</p> : null}
             </div>
           </div>
-          <div className="px-4 py-3 border-t border-white/5 flex justify-between font-mono text-[9px] uppercase tracking-widest text-mute">
+          <div className="px-4 py-3 border-t border-white/5 flex justify-between text-sm text-mute">
             <span>{where}</span>
             <span>Verify: {verify}</span>
             <span>+{xp} Impact</span>
           </div>
         </div>
-        <p className="mt-3 text-mute text-xs font-mono">
+        <p className="mt-3 text-mute text-sm">
           Publish live still needs a map pin after save. Verify choice is stored on the experience.
         </p>
       </div>
