@@ -56,9 +56,9 @@ function Chip({ active, onClick, children }: { active: boolean; onClick: () => v
 
 export function ExperienceBuilder() {
   const [intent, setIntent] = useState("COLLECT");
-  const [where, setWhere] = useState("EVERYWHERE");
+  const [where, setWhere] = useState("STORES");
   const [rewardKind, setRewardKind] = useState("DISCOUNT");
-  const [verify, setVerify] = useState("session");
+  const [verify, setVerify] = useState("location");
   const [title, setTitle] = useState("");
   const [tagline, setTagline] = useState("");
   const [rewardLabel, setRewardLabel] = useState("");
@@ -97,7 +97,14 @@ export function ExperienceBuilder() {
         </div>
         <div className="flex flex-wrap gap-2">
           {INTENTS.map((i) => (
-            <Chip key={i.id} active={intent === i.id} onClick={() => setIntent(i.id)}>
+            <Chip
+              key={i.id}
+              active={intent === i.id}
+              onClick={() => {
+                setIntent(i.id);
+                if (i.id === "VISIT" || i.id === "COLLECT") setVerify("location");
+              }}
+            >
               {i.label}
             </Chip>
           ))}
@@ -173,6 +180,9 @@ export function ExperienceBuilder() {
           <input type="hidden" name="reward_label" value={rewardLabel || previewReward} />
           <input type="hidden" name="reward_value" value={rewardValue} />
           <input type="hidden" name="xp_value" value={String(xp)} />
+          <input type="hidden" name="verify" value={verify} />
+          <input type="hidden" name="where" value={where} />
+          <input type="hidden" name="description" value={previewHint} />
 
           <label className="block">
             <span className="font-mono text-[10px] uppercase tracking-widest text-mute">Title *</span>
@@ -232,13 +242,6 @@ export function ExperienceBuilder() {
         <p className="font-mono text-[10px] uppercase tracking-[0.3em] text-magenta mb-3">Consumer preview</p>
         <div className="border border-white/10 bg-void clip-keyhole overflow-hidden">
           <div className="aspect-[4/3] relative bg-ink2 flex items-center justify-center">
-            <div
-              className="absolute inset-0 opacity-50"
-              style={{
-                background:
-                  "radial-gradient(circle at 40% 30%, rgba(198,255,61,0.15), transparent 50%), radial-gradient(circle at 70% 70%, rgba(255,61,203,0.1), transparent 45%)"
-              }}
-            />
             <div className="relative z-10 text-center px-6">
               <p className="font-mono text-[9px] uppercase tracking-[0.3em] text-volt mb-2">{intent}</p>
               <p className="font-display text-2xl text-fog mb-1">{previewTitle}</p>
@@ -259,7 +262,7 @@ export function ExperienceBuilder() {
           </div>
         </div>
         <p className="mt-3 text-mute text-xs font-mono">
-          Change intent or reward — preview updates live. Same spatial language as the consumer app.
+          Publish live still needs a map pin after save. Verify choice is stored on the experience.
         </p>
       </div>
     </div>
