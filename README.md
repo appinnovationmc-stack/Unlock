@@ -2,170 +2,115 @@
 
 **Don't just see the ad. Unlock it.**
 
-Interactive advertising and customer-engagement platform connecting:
+Advertising people participate in — verified in the real world.
 
-**Brands → Campaigns → Consumers → Interactive Experiences → Creators → Engagement → Conversion → Measurable Results**
+**Discover → Interact → Verify → Impact → Unlock → Redeem → Measure**
 
 Born in Africa. Built for the world.
 
 ## Product
 
-Unlock is infrastructure for *advertising people participate in*, not advertising people merely see.
+UNLOCK is not an influencer marketplace. Followers are not value. Verified actions are.
 
-| Experience | Route | Purpose |
-|------------|-------|--------|
-| **Consumer** | `/discover`, `/campaign/[id]`, `/wallet` | Discover, participate, unlock, collect rewards |
-| **Brand** | `/onboarding`, `/studio` | Create orgs, build & publish campaigns, performance |
-| **Creator** | `/dashboard` | Earnings, referrals, live campaigns |
-| **Admin** | `/admin` | Platform monitoring (`user_metadata.role = "admin"`) |
+| Who | Routes | Job |
+|-----|--------|-----|
+| Consumer | `/discover` `/campaign/[id]` `/wallet` `/profile` `/impact` | See the field, check in, unlock, collect |
+| Brand | `/onboarding` `/studio` `/studio/live/[id]` `/billing` | Build an experience, drop a pin, watch LIVE |
+| Creator | `/dashboard` `/dashboard/wallet` | Drive visits, earn on verified contribution |
+| Admin | `/admin` | Platform ops (`user_metadata.role = "admin"`) |
+
+Public proof surface: `/for-brands`
+
+## Cold path (must work on production)
+
+1. Brand signs up → onboarding  
+2. Studio → name the experience → **Start — then drop a pin**  
+3. Add a map pin (lat/lng + radius)  
+4. Name the reward if missing  
+5. Fund budget (visit CPE) if you want paid visits  
+6. Preview `/campaign/[id]` → **Publish**  
+7. Consumer opens `/discover` → pin on the map → Enter  
+8. Log in → Check in at the pin → Hold to unlock  
+9. Reward + Impact appear in `/wallet`  
+10. Brand opens `/studio/live/[id]` — verified visit and unlock counts move  
+
+If any step is empty map / migration missing / “saved as draft” with no next action, it is not shippable.
 
 ## Stack
 
-- **Next.js 14** (App Router) + TypeScript
-- **Tailwind CSS** — void / volt / magenta / gold, keyhole geometry
-- **Supabase** — Auth, Postgres, RLS, PostGIS, SECURITY DEFINER RPCs
-
-## Signature design
-
-- **Palette**: violet-black void (`#0B0A14`), electric volt (`#C6FF3D`), magenta (`#FF3DCB`), gold (`#FFC24B`) for reward states only
-- **Type**: Unbounded (display), Inter (body), IBM Plex Mono (data/stats)
-- **Geometry**: keyhole clip-path on cards, buttons, stat blocks
-- **Interaction**: `UnlockReveal` foil-tear unlock moment
-
-## Data model (core)
-
-- `organizations` / `org_members` — multi-tenant boundary
-- `consumers` / `creators` — global identities
-- `campaigns` — lifecycle: draft → scheduled → live → paused → ended → archived
-- `rewards` + `reward_claims` — claim / redeem with server-side enforcement
-- `attribution_events` — funnel stages
-- `campaign_participations`, `referrals`, `transactions`
-- RLS on every tenant table; public read only for `status = 'live'` campaigns
-
-## Security highlights
-
-- Org membership bootstrap locked to first owner only (anti-hijack)
-- XP and wallet columns not client-writable
-- `unlock_campaign` SECURITY DEFINER RPC: server-side XP, one conversion per consumer per campaign, auto reward claim
-- Role-aware routing after login
+- Next.js 14 App Router + TypeScript  
+- Tailwind — void `#0B0A14` / volt `#C6FF3D` / magenta `#FF3DCB` / gold `#FFC24B`  
+- Supabase — Auth, Postgres, RLS, PostGIS, SECURITY DEFINER RPCs  
+- MapLibre GL + Esri streets (no map API key)  
+- Paystack for SA money (optional until billing is used)
 
 ## Setup
 
 ```bash
 npm install
 cp .env.example .env.local
-# Fill:
+# Required:
 # NEXT_PUBLIC_SUPABASE_URL=
 # NEXT_PUBLIC_SUPABASE_ANON_KEY=
 # NEXT_PUBLIC_SITE_URL=http://localhost:3000
 
-# Apply ALL migrations in order (SQL editor or supabase db push)
-# supabase/migrations/*.sql including 00000006_production_completion.sql
+# Apply every file in supabase/migrations/ in filename order
+# (SQL editor or: supabase db push)
 
 npm run dev
 ```
 
-## Demo path (executive)
+Push notifications are **optional**. Do not demo them unless both VAPID keys are set. Without keys the opt-in UI stays hidden and send is a no-op.
 
-1. Sign up as **Brand** → complete onboarding  
-2. **Studio** → create campaign (draft or publish live)  
-3. Lifecycle: Publish / Pause / Resume / End / Archive  
-4. Sign up as **Consumer** → Discover → open campaign → **Unlock**  
-5. Reward appears in **Wallet**; XP awarded  
-6. Brand Studio shows unlock / attribution counts  
-7. Creator dashboard shows campaigns + referral metrics  
+```
+NEXT_PUBLIC_VAPID_PUBLIC_KEY=
+VAPID_PRIVATE_KEY=
+VAPID_SUBJECT=mailto:ops@unlock.app
+```
+
+## Migrations
+
+Apply **all** files under `supabase/migrations/` in filename order. Do not stop at `00000006`.
+
+Core product layers (not a complete list — the folder is the source of truth):
+
+| Range | What |
+|-------|------|
+| `00000000`–`00000009` | Core schema, auth, rewards, product hunt |
+| `00000010`–`00000017` | Commercial money engine, analytics, withdrawals |
+| `00000018`–`00000026` | Interaction economy, Impact, geofence, realtime, push table |
+| `20260901*` / `20260902*` | RLS lockdowns, visit CPE, risk score, authoritative events |
+
+After pull, if a new `supabase/migrations/*.sql` appeared, apply it before demoing.
+
+```bash
+npm run test:finance
+npm run test:unlock
+npm run build
+```
 
 ## Environment
 
 | Variable | Required | Notes |
 |----------|----------|-------|
-| `NEXT_PUBLIC_SUPABASE_URL` | yes | Supabase project URL |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | yes | Anon/public key |
-| `NEXT_PUBLIC_SITE_URL` | recommended | Absolute origin for auth email redirects |
+| `NEXT_PUBLIC_SUPABASE_URL` | yes | Project URL |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | yes | Anon key |
+| `NEXT_PUBLIC_SITE_URL` | recommended | Auth redirects |
+| `SUPABASE_SERVICE_ROLE_KEY` | server-only | Webhooks, admin, push send |
+| `PAYSTACK_*` | if taking money | See `docs/COMMERCIAL_ENGINE.md` |
+| `VAPID_*` | if sending push | Hidden UI until both keys exist |
 
-## Production checklist
+Never prefix secrets with `NEXT_PUBLIC_`.
 
-- [ ] Supabase project live, all migrations applied (through `00000006`)
-- [ ] Auth email templates configured (reset password)
-- [ ] RLS verified (cross-org isolation)
-- [ ] `unlock_campaign` RPC present and granted
-- [ ] Vercel (or host) env vars set
-- [ ] Production build: `npm run build`
-- [ ] No secrets in client bundles
+## Security (current)
+
+- Tenant RLS; analytics views run as the querying user  
+- `interaction_events` / money tables: client cannot INSERT/UPDATE value  
+- Impact and XP awarded only by SECURITY DEFINER RPCs  
+- Live publish requires a map pin + reward  
+- Check-in verifies PostGIS radius + accuracy + interval  
+- Anon cannot execute money/admin RPCs  
 
 ## License
 
 Private — App Innovation MC
-
-## Commercial money engine
-
-Full financial layer (ledger, campaign budgets, configurable platform fees, brand billing, creator earnings & wallet, withdrawals, payment provider abstraction with Paystack for South Africa + sandbox, invoices schema, finance audit).
-
-See **[docs/COMMERCIAL_ENGINE.md](docs/COMMERCIAL_ENGINE.md)** for schema, RPCs, payment architecture, security, and E2E money path.
-
-```bash
-# Apply migration 00000010_commercial_money_engine.sql
-npm run test:finance
-```
-
-Routes: `/billing` (brand), `/wallet` (creator).
-
----
-
-## UNLOCK 2.0 — Interaction Economy
-
-**Core principle:** Followers are not value. Verified actions are value. Outcomes are highest value.
-
-| Piece | Location |
-|-------|----------|
-| Interaction event engine | `supabase/migrations/00000018_interaction_economy.sql` |
-| Server-only Impact awarding | `record_interaction_event` + `lib/unlock/` |
-| Hold-to-unlock | `components/unlock/unlock/` |
-| World / Live Map | `app/(consumer)/discover/page.tsx` |
-| Brand LIVE | `app/(brand)/studio/live/[campaignId]/page.tsx` |
-| Creator Impact-first | `app/(creator)/dashboard/page.tsx` |
-
-Apply migration `00000018_interaction_economy.sql` on Supabase after prior migrations.
-
-### Migrations (2.0)
-
-| File | Purpose |
-|------|---------|
-| `00000018_interaction_economy.sql` | Events, Impact, missions, record_interaction_event |
-| `00000019_anti_farming_rate_limits.sql` | Hourly rate policies + hardened RPC |
-
-Apply both in order after prior migrations.
-
-### Consumer routes (2.0)
-
-- `/discover` — World / live map surface
-- `/campaign/[id]` — Hold-to-unlock, missions, location check-in, product hunt events
-- `/impact` — Impact leaderboard
-- `/wallet` — Collection + Impact
-
-### Brand routes (2.0)
-
-- `/studio` — Intent-first ExperienceBuilder + mission form + LIVE links
-- `/studio/live/[campaignId]` — Live command centre
-
-| `00000020_verify_location_checkin.sql` | PostGIS radius verification |
-| `00000021_add_campaign_location_rpc.sql` | Add map pins from Studio |
-
-### Definition of done (2.0)
-
-- Consumer opens app → sees live map surface of experiences
-- Completes hold-to-unlock → server event + Impact + reward
-- Check-in verifies against store pins when configured
-- Brand builds via intent, sees LIVE metrics, adds missions & pins
-- Creator ranked by Impact, not followers
-- All metrics from interaction_events (no client-side Impact)
-
-| `00000024_geofence_hardening.sql` | Accuracy + min interval for check-ins |
-
-### Map
-
-Discover uses **MapLibre GL** + OpenStreetMap tiles (no API key). Pins from `get_live_map_pins()`.
-
-### Play demo
-
-`/studio/live/[campaignId]/play` — hold-to-unlock without writing events.
