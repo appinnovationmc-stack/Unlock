@@ -2,6 +2,7 @@ import { UnlockClient } from "@/components/campaign/UnlockClient";
 import { RecordCampaignView } from "@/components/unlock/interactions/RecordView";
 import { RecordReferralClick } from "@/components/unlock/interactions/RecordReferralClick";
 import { NfcScan } from "@/components/unlock/experiences/NfcScan";
+import { QrScan } from "@/components/unlock/experiences/QrScan";
 import { ProductHuntClaim } from "@/components/campaign/ProductHuntClaim";
 import { createClient } from "@/lib/supabase/server";
 import { notFound } from "next/navigation";
@@ -93,7 +94,7 @@ export default async function CampaignPage({
       : mechanics.includes("qr_scan")
         ? "Hunt it down. Scan. Unlock."
         : mechanics.includes("nfc_tap")
-          ? "Tap the tag. Unlock."
+          ? "On Android Chrome, hold near the tag. On iPhone, use QR."
           : mechanics.includes("quiz") || mechanics.includes("puzzle")
             ? "Face the challenge. Tap through. Claim what you earn."
             : "Hold the seal. Complete the moment. Take the reward.";
@@ -153,6 +154,11 @@ export default async function CampaignPage({
       {mechanics.includes("nfc_tap") && campaign.status === "live" && (
         <div className="mb-6">
           <NfcScan campaignId={campaign.id} />
+        </div>
+      )}
+      {(mechanics.includes("qr_scan") || mechanics.includes("nfc_tap")) && campaign.status === "live" && (
+        <div className="mb-6">
+          <QrScan campaignId={campaign.id} />
         </div>
       )}
 

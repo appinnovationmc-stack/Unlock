@@ -3,7 +3,7 @@
 import { useEffect, useRef } from "react";
 import { recordInteraction } from "@/lib/unlock/interactions/record";
 
-/** Records REFERRAL_CLICK once when user lands with ?ref=creatorId */
+/** Session analytics for ?ref= — not a conversion and not CPE. */
 export function RecordReferralClick({
   campaignId,
   creatorId
