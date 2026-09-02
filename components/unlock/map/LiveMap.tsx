@@ -17,8 +17,23 @@ export type MapPin = {
 const JOBURG = { lat: -26.2041, lng: 28.0473 };
 const CITY_ZOOM = 11;
 
-/** OpenFreeMap Liberty — readable streets. Their `dark` style is black-on-black. No API key. */
-const OPENFREEMAP_LIBERTY = "https://tiles.openfreemap.org/styles/liberty";
+/** Raster streets (Carto Voyager). OpenFreeMap vector styles were painting background only. */
+const VOYAGER_STYLE: maplibregl.StyleSpecification = {
+  version: 8,
+  sources: {
+    carto: {
+      type: "raster",
+      tiles: [
+        "https://a.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}@2x.png",
+        "https://b.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}@2x.png",
+        "https://c.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}@2x.png"
+      ],
+      tileSize: 256,
+      attribution: "© OpenStreetMap contributors © CARTO"
+    }
+  },
+  layers: [{ id: "carto", type: "raster", source: "carto" }]
+};
 
 function isValidPin(pin: MapPin): boolean {
   return (
@@ -28,6 +43,42 @@ function isValidPin(pin: MapPin): boolean {
     Math.abs(pin.lng) <= 180 &&
     Boolean(pin.campaign_id)
   );
+}
+
+function attachPins(map: maplibregl.Map, pins: MapPin[]) {
+  pins.forEach((pin) => {
+    const wrap = document.createElement("a");
+    wrap.href = `/campaign/${pin.campaign_id}`;
+    wrap.className = "unlock-map-pin-wrap";
+    wrap.style.cssText =
+      "display:flex;align-items:center;gap:6px;cursor:pointer;max-width:180px;text-decoration:none;";
+    wrap.title = pin.label || pin.campaign_title;
+
+    const el = document.createElement("span");
+    el.className = "unlock-map-pin";
+    el.style.cssText =
+      "flex-shrink:0;width:14px;height:14px;border-radius:9999px;background:#C6FF3D;border:2px solid #0B0A14;box-shadow:0 0 12px rgba(198,255,61,0.7);";
+
+    const caption = document.createElement("span");
+    caption.textContent = pin.label || pin.campaign_title;
+    caption.style.cssText =
+      "font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:10px;letter-spacing:0.04em;text-transform:uppercase;color:#ECE9F7;background:rgba(11,10,20,0.9);border:1px solid rgba(255,255,255,0.12);padding:3px 7px;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;";
+
+    wrap.append(el, caption);
+
+    new maplibregl.Marker({ element: wrap, anchor: "left" })
+      .setLngLat([pin.lng, pin.lat])
+      .addTo(map);
+  });
+
+  if (pins.length > 1) {
+    const bounds = new maplibregl.LngLatBounds();
+    pins.forEach((p) => bounds.extend([p.lng, p.lat]));
+    map.fitBounds(bounds, { padding: 56, maxZoom: 14, duration: 0 });
+  } else if (pins.length === 1) {
+    map.setCenter([pins[0].lng, pins[0].lat]);
+    map.setZoom(13);
+  }
 }
 
 /**
@@ -62,7 +113,7 @@ export function LiveMap({
     try {
       map = new maplibregl.Map({
         container: containerRef.current,
-        style: OPENFREEMAP_LIBERTY,
+        style: VOYAGER_STYLE,
         center,
         zoom: CITY_ZOOM,
         attributionControl: false
@@ -83,42 +134,22 @@ export function LiveMap({
       }
     };
 
-    map.on("load", () => {
+    let pinsAttached = false;
+    const placePins = () => {
+      if (pinsAttached) return;
+      pinsAttached = true;
       resize();
-      currentPins.forEach((pin) => {
-        const wrap = document.createElement("a");
-        wrap.href = `/campaign/${pin.campaign_id}`;
-        wrap.className = "unlock-map-pin-wrap";
-        wrap.style.cssText =
-          "display:flex;align-items:center;gap:6px;cursor:pointer;max-width:180px;text-decoration:none;";
-        wrap.title = pin.label || pin.campaign_title;
+      attachPins(map, currentPins);
+    };
 
-        const el = document.createElement("span");
-        el.className = "unlock-map-pin";
-        el.style.cssText =
-          "flex-shrink:0;width:14px;height:14px;border-radius:9999px;background:#C6FF3D;border:2px solid #0B0A14;box-shadow:0 0 12px rgba(198,255,61,0.7);";
-
-        const caption = document.createElement("span");
-        caption.textContent = pin.label || pin.campaign_title;
-        caption.style.cssText =
-          "font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:10px;letter-spacing:0.04em;text-transform:uppercase;color:#ECE9F7;background:rgba(11,10,20,0.9);border:1px solid rgba(255,255,255,0.12);padding:3px 7px;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;";
-
-        wrap.append(el, caption);
-
-        new maplibregl.Marker({ element: wrap, anchor: "left" })
-          .setLngLat([pin.lng, pin.lat])
-          .addTo(map);
-      });
-
-      if (currentPins.length > 1) {
-        const bounds = new maplibregl.LngLatBounds();
-        currentPins.forEach((p) => bounds.extend([p.lng, p.lat]));
-        map.fitBounds(bounds, { padding: 56, maxZoom: 14, duration: 0 });
-      } else if (currentPins.length === 1) {
-        map.setCenter([currentPins[0].lng, currentPins[0].lat]);
-        map.setZoom(13);
-      }
+    map.on("error", () => {
+      /* raster 404s shouldn't blank the map; constructor already succeeded */
     });
+    map.once("load", placePins);
+    map.once("style.load", () => {
+      requestAnimationFrame(placePins);
+    });
+    const fallback = window.setTimeout(placePins, 2500);
 
     const ro =
       typeof ResizeObserver !== "undefined" ? new ResizeObserver(() => resize()) : null;
@@ -127,6 +158,7 @@ export function LiveMap({
 
     mapRef.current = map;
     return () => {
+      window.clearTimeout(fallback);
       ro?.disconnect();
       map.remove();
       mapRef.current = null;
