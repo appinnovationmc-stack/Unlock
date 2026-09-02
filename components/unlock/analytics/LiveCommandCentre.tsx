@@ -67,6 +67,14 @@ function eventLabel(type: string) {
   return type.toLowerCase().replaceAll("_", " ");
 }
 
+/** Quiet drilldown hint. Never a fraud banner. Score ≥70 (risk_review) is still not an accusation. */
+function riskMuteLine(e: LiveDrilldownEvent): string | null {
+  if (e.risk_score == null) return null;
+  if (e.risk_score >= 70) return `review · risk ${e.risk_score}`;
+  const reasons = e.risk_reasons.map((r) => r.replaceAll("_", " ")).join(" · ");
+  return reasons ? `risk ${e.risk_score} · ${reasons}` : `risk ${e.risk_score}`;
+}
+
 function matchesSlice(e: LiveDrilldownEvent, slice: Slice) {
   if (slice.kind === "all") return true;
   if (slice.kind === "location") return e.location_id === slice.id;
@@ -325,25 +333,29 @@ export function LiveCommandCentre({
           </p>
         ) : (
           <div className="border border-white/10 divide-y divide-white/10">
-            {visible.map((e) => (
-              <article key={e.id} className="px-4 py-3">
-                <p className="text-fog">{eventLabel(e.event_type)}</p>
-                <p className="text-sm text-mute mt-1">
-                  {e.campaign_title}
-                  {" · "}
-                  {new Date(e.created_at).toLocaleString()}
-                  {" · "}
-                  {e.location_label ?? "no location"}
-                  {" · "}
-                  {e.creator_label ?? "no creator"}
-                  {" · "}
-                  {e.verification_status}
-                  {e.verification_method ? ` (${e.verification_method.replaceAll("_", " ")})` : ""}
-                  {" · "}
-                  {e.impact_points == null ? "no impact" : `${e.impact_points} impact`}
-                </p>
-              </article>
-            ))}
+            {visible.map((e) => {
+              const risk = riskMuteLine(e);
+              return (
+                <article key={e.id} className="px-4 py-3">
+                  <p className="text-fog">{eventLabel(e.event_type)}</p>
+                  <p className="text-sm text-mute mt-1">
+                    {e.campaign_title}
+                    {" · "}
+                    {new Date(e.created_at).toLocaleString()}
+                    {" · "}
+                    {e.location_label ?? "no location"}
+                    {" · "}
+                    {e.creator_label ?? "no creator"}
+                    {" · "}
+                    {e.verification_status}
+                    {e.verification_method ? ` (${e.verification_method.replaceAll("_", " ")})` : ""}
+                    {" · "}
+                    {e.impact_points == null ? "no impact" : `${e.impact_points} impact`}
+                  </p>
+                  {risk && <p className="text-sm text-mute mt-1">{risk}</p>}
+                </article>
+              );
+            })}
           </div>
         )}
       </section>
