@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import Link from "next/link";
+import { PushOptIn } from "@/components/unlock/notifications/PushOptIn";
 
 export const dynamic = "force-dynamic";
 
@@ -65,6 +66,9 @@ export default async function ProfilePage() {
         <h1 className="font-display text-3xl text-fog">@{consumer.handle}</h1>
         <p className="text-mute text-sm mt-2">Identity built from verified actions — not followers.</p>
       </header>
+      <section className="mb-8">
+        <PushOptIn />
+      </section>
       <section className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-10">
         <div className="border border-volt/25 bg-ink2 px-5 py-5 clip-keyhole-sm">
           <p className="font-mono text-[10px] uppercase tracking-widest text-mute">Impact</p>

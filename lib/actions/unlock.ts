@@ -2,6 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
+import { deliverPushToCurrentUser } from "@/lib/push/deliver";
 
 export async function unlockCampaign(campaignId: string, referrerCreatorId?: string | null) {
   const supabase = createClient();
@@ -54,6 +55,15 @@ export async function unlockCampaign(campaignId: string, referrerCreatorId?: str
   revalidatePath("/wallet");
   revalidatePath("/dashboard");
   revalidatePath("/studio");
+
+  if (row && !row.already_unlocked) {
+    void deliverPushToCurrentUser({
+      title: "UNLOCK",
+      body: row.reward_label ? `Unlocked: ${row.reward_label}` : "Reward unlocked",
+      url: `/campaign/${campaignId}`,
+      tag: `unlock-${campaignId}`
+    }).catch(() => undefined);
+  }
 
   return {
     error: null,
