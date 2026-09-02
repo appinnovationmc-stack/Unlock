@@ -44,6 +44,9 @@ export async function Nav() {
         <Link href="/discover" className={link}>
           Discover
         </Link>
+        <Link href="/for-brands" className={link}>
+          For brands
+        </Link>
         {(role === "brand" || !user) && (
           <Link href="/studio" className={link}>
             Studio
