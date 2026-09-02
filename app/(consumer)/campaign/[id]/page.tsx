@@ -101,7 +101,7 @@ export default async function CampaignPage({
   const actionLine = campaign.tagline || actionHint;
 
   return (
-    <main className="min-h-screen px-6 py-10 md:px-12 max-w-xl mx-auto">
+    <main className="page-shell min-h-screen">
       {user && campaign.status === "live" && (
         <RecordCampaignView campaignId={campaign.id} creatorId={referrerCreatorId} />
       )}
@@ -109,20 +109,16 @@ export default async function CampaignPage({
         <RecordReferralClick campaignId={campaign.id} creatorId={referrerCreatorId} />
       )}
       {campaign.status !== "live" && (
-        <p className="mb-4 font-mono text-xs tracking-widest text-mute border border-white/15 px-3 py-2 inline-block">
+        <p className="mb-4 section-kicker border border-white/15 px-3 py-2 inline-block">
           Preview · {campaign.status}
         </p>
       )}
 
       {experienceType && (
-        <p className="mb-3 font-mono text-[10px] tracking-[0.3em] text-mute">
-          {experienceType}
-        </p>
+        <p className="mb-3 section-kicker">{experienceType}</p>
       )}
       {referrerCreatorId && (
-        <p className="mb-4 font-mono text-[10px] tracking-widest text-mute">
-          Opened via creator path
-        </p>
+        <p className="mb-4 text-sm text-mute">Opened via creator path</p>
       )}
 
       <h1 className="font-display text-3xl md:text-5xl text-fog mb-3 leading-tight">
@@ -130,22 +126,22 @@ export default async function CampaignPage({
       </h1>
       <p className="text-mute text-lg mb-8 leading-snug">{actionLine}</p>
 
-      <div className="grid gap-4 mb-10">
+      <div className="grid gap-6 mb-10">
         <div>
-          <p className="font-mono text-[10px] tracking-widest text-mute">What is this</p>
-          <p className="text-fog text-sm mt-1 leading-relaxed">
+          <p className="section-kicker">What is this</p>
+          <p className="text-fog text-base mt-1 leading-relaxed">
             {campaign.description ||
               campaign.tagline ||
               "A brand experience. Not a banner — a moment you complete."}
           </p>
         </div>
         <div>
-          <p className="font-mono text-[10px] tracking-widest text-mute">What you do</p>
-          <p className="text-fog text-sm mt-1">{actionHint}</p>
+          <p className="section-kicker">What you do</p>
+          <p className="text-fog text-base mt-1">{actionHint}</p>
         </div>
         <div>
-          <p className="font-mono text-[10px] tracking-widest text-mute">What you get</p>
-          <p className="text-fog text-sm mt-1">
+          <p className="section-kicker">What you get</p>
+          <p className="text-fog text-base mt-1">
             {rewardLabel}
             {reward?.label ? (
               <span className="text-mute"> · +{campaign.xp_value} XP</span>
@@ -172,7 +168,7 @@ export default async function CampaignPage({
         />
       )}
 
-      <div className="mt-12 flex justify-center gap-6 font-mono text-[10px] tracking-widest">
+      <div className="mt-12 flex justify-center gap-6 text-sm">
         <Link href="/discover" className="text-mute hover:text-fog">
           ← Field
         </Link>

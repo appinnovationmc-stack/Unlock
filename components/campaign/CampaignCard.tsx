@@ -6,7 +6,7 @@ const mechanicLabels: Record<string, string> = {
   quiz: "Quiz",
   puzzle: "Puzzle",
   riddle: "Riddle",
-  treasure_hunt: "Treasure Hunt",
+  treasure_hunt: "Treasure hunt",
   qr_scan: "QR",
   nfc_tap: "NFC",
   geolocation: "Location",
@@ -54,15 +54,12 @@ export function CampaignCard({
             className="absolute inset-0 w-full h-full object-cover opacity-70"
           />
         ) : null}
-        <span className="relative z-[1] font-mono text-[10px] tracking-widest text-mute self-start border border-white/15 px-2 py-0.5 bg-void/50">
+        <span className="relative z-[1] section-kicker self-start border border-white/15 px-2 py-0.5 bg-void/50">
           {kindLabel}
         </span>
         <div className="relative z-[1] flex flex-wrap gap-1.5">
           {(campaign.mechanics ?? []).slice(0, 3).map((m) => (
-            <span
-              key={m}
-              className="font-mono text-[10px] tracking-wider text-void bg-fog/90 px-2 py-0.5 rounded-sm"
-            >
+            <span key={m} className="text-xs text-void bg-fog/90 px-2 py-0.5">
               {mechanicLabels[m] ?? m}
             </span>
           ))}
@@ -75,11 +72,9 @@ export function CampaignCard({
         </h3>
         <p className="mt-1 text-sm text-mute line-clamp-2">{tagline}</p>
 
-        <div className="mt-4 flex items-center justify-between">
-          <span className="font-mono text-xs text-mute">+{campaign.xp_value} XP</span>
-          <span className="font-mono text-[10px] tracking-widest text-mute group-hover:text-fog transition-colors">
-            Enter →
-          </span>
+        <div className="mt-4 flex items-center justify-between text-sm text-mute">
+          <span>+{campaign.xp_value} XP</span>
+          <span className="group-hover:text-fog transition-colors">Enter</span>
         </div>
       </div>
     </Link>
