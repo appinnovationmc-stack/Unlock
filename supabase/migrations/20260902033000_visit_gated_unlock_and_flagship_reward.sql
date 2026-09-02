@@ -1,6 +1,8 @@
 -- Product truth: visit campaigns with pins cannot unlock from the couch.
 -- Also attach a named reward to the flagship if none exists.
 -- New filename — do not reuse 00000008 / 00000013.
+-- Grant only unlock_campaign(uuid, uuid). A default param is not a second
+-- catalog signature; grant on unlock_campaign(uuid) errors and rolls the block back.
 
 insert into public.rewards (org_id, campaign_id, type, label, value)
 select c.org_id, c.id, 'discount', 'Free taste at the counter', 'Show this in your wallet'
@@ -173,4 +175,3 @@ end;
 $$;
 
 grant execute on function public.unlock_campaign(uuid, uuid) to authenticated;
-grant execute on function public.unlock_campaign(uuid) to authenticated;
