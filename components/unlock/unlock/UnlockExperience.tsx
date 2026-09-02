@@ -65,23 +65,27 @@ export function UnlockExperience({ campaignId, rewardLabel, campaignTitle, refer
         impact={result.xp || impactHint}
         already={result.already}
         campaignId={campaignId}
+        campaignTitle={campaignTitle}
       />
     );
   }
   if (phase === "error") {
     return (
-      <div className="border border-magenta/40 bg-ink2 p-6 text-center">
-        <p className="text-magenta text-sm mb-3">{error ?? "Something went wrong."}</p>
+      <div className="border border-white/15 bg-ink2 p-6 text-center">
+        <p className="text-fog text-sm mb-3">{error ?? "Something went wrong."}</p>
         <button type="button" onClick={() => { setError(null); setPhase("ready"); }}
-          className="font-mono text-[10px] uppercase tracking-widest text-fog border border-white/20 px-3 py-1.5">Try again</button>
+          className="font-mono text-[10px] tracking-widest text-mute border border-white/20 px-3 py-1.5">Try again</button>
       </div>
     );
   }
   return (
-    <div className="space-y-4">
-      {campaignTitle && <p className="font-mono text-[10px] uppercase tracking-[0.3em] text-mute text-center">{campaignTitle}</p>}
-      <UnlockButton onUnlock={handleUnlock} disabled={isPending || phase === "confirming"} label={phase === "confirming" ? "CONFIRMING…" : "HOLD TO UNLOCK"} />
-      <p className="text-center text-mute text-xs">Hold the keyhole. The system confirms. The reward is yours.</p>
+    <div className="space-y-3">
+      <UnlockButton
+        onUnlock={handleUnlock}
+        disabled={isPending || phase === "confirming"}
+        label={phase === "confirming" ? "Confirming…" : "Hold to unlock"}
+      />
+      <p className="text-center text-mute text-xs">Hold until it confirms. The reward is yours.</p>
     </div>
   );
 }

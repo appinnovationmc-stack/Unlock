@@ -87,8 +87,12 @@ export default async function CampaignPage({
         ? "Hunt it down. Scan. Unlock."
         : "Tap the seal. Complete the moment. Take the reward.";
 
+  const actionLine =
+    campaign.tagline ||
+    actionHint;
+
   return (
-    <main className="min-h-screen px-6 py-10 md:px-12 max-w-2xl mx-auto">
+    <main className="min-h-screen px-6 py-10 md:px-12 max-w-xl mx-auto">
       {user && campaign.status === "live" && (
         <RecordCampaignView campaignId={campaign.id} creatorId={referrerCreatorId} />
       )}
@@ -96,50 +100,43 @@ export default async function CampaignPage({
         <RecordReferralClick campaignId={campaign.id} creatorId={referrerCreatorId} />
       )}
       {campaign.status !== "live" && (
-        <p className="mb-4 font-mono text-xs uppercase tracking-widest text-gold border border-gold/30 px-3 py-2 inline-block">
+        <p className="mb-4 font-mono text-xs tracking-widest text-mute border border-white/15 px-3 py-2 inline-block">
           Preview · {campaign.status}
         </p>
       )}
 
       {experienceType && (
-        <p className="mb-3 font-mono text-[10px] uppercase tracking-[0.3em] text-volt">
+        <p className="mb-3 font-mono text-[10px] tracking-[0.3em] text-mute">
           {experienceType}
         </p>
       )}
       {referrerCreatorId && (
-        <p className="mb-4 font-mono text-[10px] uppercase tracking-widest text-magenta">
+        <p className="mb-4 font-mono text-[10px] tracking-widest text-mute">
           Opened via creator path
         </p>
       )}
 
-      <p className="font-mono text-xs uppercase tracking-[0.25em] text-volt mb-3">
-        Encounter
-        {campaign.objective ? ` · ${String(campaign.objective).replace(/_/g, " ")}` : ""}
-      </p>
-
       <h1 className="font-display text-3xl md:text-5xl text-fog mb-3 leading-tight">
         {campaign.title}
       </h1>
-      {campaign.tagline && (
-        <p className="text-mute text-lg mb-8 leading-snug">{campaign.tagline}</p>
-      )}
+      <p className="text-mute text-lg mb-8 leading-snug">{actionLine}</p>
 
-      {/* WHAT / DO / GET — encounter clarity */}
-      <div className="grid gap-3 mb-10">
-        <div className="border border-white/10 bg-ink2/50 px-4 py-3">
-          <p className="font-mono text-[10px] uppercase tracking-widest text-mute">What is this</p>
+      {/* What / do / get — quiet labels only */}
+      <div className="grid gap-4 mb-10">
+        <div>
+          <p className="font-mono text-[10px] tracking-widest text-mute">What is this</p>
           <p className="text-fog text-sm mt-1 leading-relaxed">
             {campaign.description ||
               campaign.tagline ||
               "A brand experience. Not a banner — a moment you complete."}
           </p>
         </div>
-        <div className="border border-white/10 bg-ink2/50 px-4 py-3">
-          <p className="font-mono text-[10px] uppercase tracking-widest text-mute">What you do</p>
+        <div>
+          <p className="font-mono text-[10px] tracking-widest text-mute">What you do</p>
           <p className="text-fog text-sm mt-1">{actionHint}</p>
         </div>
-        <div className="border border-volt/20 bg-volt/5 px-4 py-3">
-          <p className="font-mono text-[10px] uppercase tracking-widest text-volt">What you get</p>
+        <div>
+          <p className="font-mono text-[10px] tracking-widest text-mute">What you get</p>
           <p className="text-fog text-sm mt-1">
             {rewardLabel}
             <span className="text-mute"> · +{campaign.xp_value} XP</span>
@@ -172,11 +169,11 @@ export default async function CampaignPage({
         />
       )}
 
-      <div className="mt-12 flex justify-center gap-6 font-mono text-[10px] uppercase tracking-widest">
-        <Link href="/discover" className="text-mute hover:text-volt">
+      <div className="mt-12 flex justify-center gap-6 font-mono text-[10px] tracking-widest">
+        <Link href="/discover" className="text-mute hover:text-fog">
           ← Field
         </Link>
-        <Link href="/wallet" className="text-mute hover:text-volt">
+        <Link href="/wallet" className="text-mute hover:text-fog">
           Collection →
         </Link>
       </div>

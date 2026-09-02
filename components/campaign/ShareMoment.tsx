@@ -5,16 +5,18 @@ import { recordInteraction } from "@/lib/unlock/interactions/record";
 
 /**
  * Post-unlock social beat — native share or copy link.
- * Designed as the "broadcast" step after the encounter.
+ * Magenta/gold only when celebrated (after a win).
  */
 export function ShareMoment({
   campaignId,
   title,
-  rewardHint
+  rewardHint,
+  celebrated = false
 }: {
   campaignId: string;
   title: string;
   rewardHint?: string;
+  celebrated?: boolean;
 }) {
   const [copied, setCopied] = useState(false);
 
@@ -58,9 +60,20 @@ export function ShareMoment({
     }
   }
 
+  if (!celebrated) {
+    return (
+      <div className="border border-white/10 px-4 py-4 text-center">
+        <p className="font-mono text-[10px] tracking-widest text-mute mb-2">Pass it on</p>
+        <p className="text-mute text-sm mb-3">
+          Share after you unlock — that is when the encounter travels.
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div className="border border-magenta/30 bg-magenta/5 px-4 py-4 text-center">
-      <p className="font-mono text-[10px] uppercase tracking-widest text-magenta mb-2">
+      <p className="font-mono text-[10px] tracking-widest text-magenta mb-2">
         Broadcast
       </p>
       <p className="text-fog text-sm mb-3">
@@ -70,7 +83,7 @@ export function ShareMoment({
       <button
         type="button"
         onClick={share}
-        className="font-mono text-xs uppercase tracking-widest text-void bg-volt px-4 py-2 hover:brightness-110"
+        className="font-mono text-xs tracking-widest text-void bg-volt px-4 py-2 hover:brightness-110"
       >
         {copied ? "Link copied" : "Share this encounter"}
       </button>
