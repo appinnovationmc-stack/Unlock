@@ -1,8 +1,9 @@
 import { CampaignCard } from "@/components/campaign/CampaignCard";
 import { XPBadge } from "@/components/ui/XPBadge";
 import { Button } from "@/components/ui/Button";
+import { HonestEmpty, HonestError } from "@/components/ui/HonestState";
 import { createClient } from "@/lib/supabase/server";
-import type { Campaign, ImpactScore } from "@/lib/types";
+import type { Campaign } from "@/lib/types";
 import Link from "next/link";
 import { LiveMapSection } from "@/components/unlock/map/LiveMapSection";
 import { unescapeHtmlEntities } from "@/lib/unlock/display-text";
@@ -40,7 +41,7 @@ export default async function DiscoverPage() {
   const {
     data: { user }
   } = await supabase.auth.getUser();
-  const { data: campaigns } = await supabase
+  const { data: campaigns, error: campaignsError } = await supabase
     .from("campaigns")
     .select("*")
     .eq("status", "live")
@@ -92,18 +93,25 @@ export default async function DiscoverPage() {
       <section className="page-shell-wide py-0 pb-8">
         <div className="relative aspect-[16/9] md:aspect-[21/9] max-h-[420px] w-full min-h-[280px] overflow-hidden border border-white/8 bg-ink2">
           <div className="absolute inset-0 min-h-[280px]">
-            <LiveMapSection pins={mapPins} />
+            <LiveMapSection pins={mapPins} loadError={Boolean(pinError)} />
           </div>
           <div className="absolute bottom-3 left-3 pointer-events-none z-10">
             <p className="text-sm text-fog bg-void/80 px-3 py-1.5">
-              {mapPins.length > 0
-                ? `${mapPins.length} pin${mapPins.length === 1 ? "" : "s"} · ${count} experience${count === 1 ? "" : "s"}`
-                : count > 0
-                  ? `${count} experience${count === 1 ? "" : "s"}`
-                  : "No live pins yet"}
+              {pinError
+                ? "Pins failed to load"
+                : mapPins.length > 0
+                  ? `${mapPins.length} pin${mapPins.length === 1 ? "" : "s"}${count > 0 ? ` · ${count} experience${count === 1 ? "" : "s"}` : ""}`
+                  : count > 0
+                    ? `${count} experience${count === 1 ? "" : "s"} · no live pins`
+                    : "No live pins yet"}
             </p>
           </div>
         </div>
+        {pinError ? (
+          <div className="mt-3">
+            <HonestError body="Could not load map pins. This is not an empty field." href="/discover" />
+          </div>
+        ) : null}
       </section>
       {!user && list.length > 0 && (
         <section className="page-shell-wide pb-8">
@@ -120,14 +128,15 @@ export default async function DiscoverPage() {
       )}
 
       <section className="page-shell-wide pb-16">
-        {list.length === 0 ? (
-          <div className="border border-white/10 px-6 py-16 text-center">
-            <p className="font-display text-xl text-fog mb-2">The world is quiet</p>
-            <p className="text-mute text-base mb-6 max-w-md mx-auto">No live experiences right now.</p>
-            <Link href="/studio">
-              <Button variant="ghost">Plant an experience</Button>
-            </Link>
-          </div>
+        {campaignsError ? (
+          <HonestError body="Could not load live experiences." href="/discover" />
+        ) : list.length === 0 ? (
+          <HonestEmpty
+            title="No live experiences"
+            body="Nothing is published right now. The map stays empty until a campaign is live with a pin."
+            href="/studio"
+            action="Open Studio"
+          />
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {list.map((c) => (
@@ -140,9 +149,6 @@ export default async function DiscoverPage() {
           </div>
         )}
       </section>
-      <footer className="px-6 pb-10 text-center">
-        <p className="text-sm text-mute">Actions are value. Verified actions are higher value.</p>
-      </footer>
     </main>
   );
 }

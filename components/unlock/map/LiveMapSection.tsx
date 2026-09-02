@@ -12,6 +12,18 @@ const LiveMap = dynamic(() => import("./LiveMap").then((m) => m.LiveMap), {
   )
 });
 
-export function LiveMapSection({ pins }: { pins: MapPin[] }) {
-  return <LiveMap pins={pins} fallbackCenter={{ lat: -26.2041, lng: 28.0473 }} />;
+export function LiveMapSection({
+  pins,
+  loadError = false
+}: {
+  pins: MapPin[];
+  loadError?: boolean;
+}) {
+  return (
+    <LiveMap
+      pins={pins}
+      loadError={loadError}
+      fallbackCenter={{ lat: -26.2041, lng: 28.0473 }}
+    />
+  );
 }
