@@ -43,9 +43,9 @@ export function CampaignCard({
     <Link
       href={`/campaign/${campaign.id}`}
       className="group relative block clip-keyhole bg-ink2 noise-overlay overflow-hidden
-        border border-white/5 hover:border-volt/40 transition-colors duration-200"
+        border border-white/5 hover:border-white/20 transition-colors duration-200"
     >
-      <div className="aspect-[4/3] w-full bg-duotone flex flex-col justify-between p-5 relative">
+      <div className="aspect-[4/3] w-full bg-ink2 flex flex-col justify-between p-5 relative">
         {art ? (
           // eslint-disable-next-line @next/next/no-img-element -- optional user-supplied campaign art, not a brand asset we ship
           <img
@@ -54,14 +54,14 @@ export function CampaignCard({
             className="absolute inset-0 w-full h-full object-cover opacity-70"
           />
         ) : null}
-        <span className="relative z-[1] font-mono text-[10px] uppercase tracking-widest text-volt self-start border border-volt/30 px-2 py-0.5 bg-void/50">
+        <span className="relative z-[1] font-mono text-[10px] tracking-widest text-mute self-start border border-white/15 px-2 py-0.5 bg-void/50">
           {kindLabel}
         </span>
         <div className="relative z-[1] flex flex-wrap gap-1.5">
           {(campaign.mechanics ?? []).slice(0, 3).map((m) => (
             <span
               key={m}
-              className="font-mono text-[10px] uppercase tracking-wider text-void bg-fog/90 px-2 py-0.5 rounded-sm"
+              className="font-mono text-[10px] tracking-wider text-void bg-fog/90 px-2 py-0.5 rounded-sm"
             >
               {mechanicLabels[m] ?? m}
             </span>
@@ -70,14 +70,14 @@ export function CampaignCard({
       </div>
 
       <div className="p-5 border-t border-white/5">
-        <h3 className="font-display text-lg leading-tight text-fog group-hover:text-glow-volt transition-all">
+        <h3 className="font-display text-lg leading-tight text-fog group-hover:text-volt transition-colors">
           {title}
         </h3>
         <p className="mt-1 text-sm text-mute line-clamp-2">{tagline}</p>
 
         <div className="mt-4 flex items-center justify-between">
-          <span className="font-mono text-xs text-volt">+{campaign.xp_value} XP</span>
-          <span className="font-mono text-[10px] uppercase tracking-widest text-mute group-hover:text-fog transition-colors">
+          <span className="font-mono text-xs text-mute">+{campaign.xp_value} XP</span>
+          <span className="font-mono text-[10px] tracking-widest text-mute group-hover:text-fog transition-colors">
             Enter →
           </span>
         </div>

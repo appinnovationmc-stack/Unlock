@@ -3,17 +3,15 @@ import { Button } from "@/components/ui/Button";
 
 export default function Home() {
   return (
-    <main className="min-h-screen bg-duotone flex flex-col items-center justify-center px-6 text-center relative overflow-hidden">
-      <div className="absolute inset-0 pointer-events-none opacity-30 bg-[radial-gradient(ellipse_at_center,_rgba(198,255,61,0.12),_transparent_60%)]" />
-
-      <p className="font-mono text-xs uppercase tracking-[0.35em] text-volt mb-6 relative">
+    <main className="min-h-screen bg-void flex flex-col items-center justify-center px-6 text-center relative overflow-hidden">
+      <p className="font-mono text-xs tracking-[0.35em] text-mute mb-6 relative">
         Encounters · not ads
       </p>
 
       <h1 className="font-display text-5xl md:text-7xl font-900 leading-[0.95] text-fog max-w-4xl relative">
-        DON&apos;T JUST SEE THE AD.
+        Don&apos;t just see the ad.
         <br />
-        <span className="text-volt text-glow-volt">UNLOCK IT.</span>
+        <span className="text-volt">Unlock it.</span>
       </h1>
 
       <p className="mt-6 max-w-lg text-mute relative text-base md:text-lg leading-relaxed">
@@ -38,7 +36,7 @@ export default function Home() {
           ["03", "Broadcast", "Reward in hand. Share it. Creators get paid for real reach."]
         ].map(([n, t, d]) => (
           <div key={n} className="border border-white/10 bg-ink2/40 px-5 py-4 clip-keyhole-sm">
-            <p className="font-mono text-[10px] text-volt tracking-widest">{n}</p>
+            <p className="font-mono text-[10px] text-mute tracking-widest">{n}</p>
             <p className="font-display text-fog mt-1">{t}</p>
             <p className="text-mute text-xs mt-2 leading-relaxed">{d}</p>
           </div>
@@ -46,11 +44,11 @@ export default function Home() {
       </div>
 
       <p className="mt-12 font-mono text-[10px] uppercase tracking-widest text-mute relative">
-        <Link href="/studio" className="hover:text-volt">
+        <Link href="/studio" className="hover:text-fog">
           Brands → Studio (backstage)
         </Link>
         {" · "}
-        <Link href="/dashboard" className="hover:text-volt">
+        <Link href="/dashboard" className="hover:text-fog">
           Creators
         </Link>
       </p>
