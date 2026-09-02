@@ -128,7 +128,7 @@ export function PushOptIn() {
     return (
       <div className="border border-white/8 bg-ink2/80 px-4 py-3 flex items-center justify-between gap-4">
         <p className="font-mono text-[11px] text-mute leading-relaxed">
-          Notifications on for this browser. Delivery still needs a server sender once VAPID is live.
+          This browser is subscribed. Pushes are not sent yet — the server has no Web Push sender.
         </p>
         <button
           type="button"
