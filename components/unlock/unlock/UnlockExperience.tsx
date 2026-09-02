@@ -1,7 +1,6 @@
 "use client";
-import { useState, useTransition } from "react";
+import { useRef, useState, useTransition } from "react";
 import { UnlockButton } from "./UnlockButton";
-import { recordInteraction } from "@/lib/unlock/interactions/record";
 import { unlockCampaign } from "@/lib/actions/unlock";
 import { UnlockReveal } from "./UnlockReveal";
 import { LocationCheckin } from "@/components/unlock/experiences/LocationCheckin";
@@ -12,75 +11,44 @@ export function UnlockExperience({
   rewardLabel,
   campaignTitle,
   referrerCreatorId,
-  impactHint = 10,
   requireVisit = false
 }: {
   campaignId: string;
   rewardLabel: string;
   campaignTitle?: string;
   referrerCreatorId?: string | null;
-  impactHint?: number;
   requireVisit?: boolean;
 }) {
   const [phase, setPhase] = useState<"ready" | "confirming" | "revealed" | "error">("ready");
   const [checkedIn, setCheckedIn] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [result, setResult] = useState<{ xp: number; reward: string | null; already: boolean } | null>(null);
+  const [result, setResult] = useState<{
+    impact: number | null;
+    reward: string | null;
+    already: boolean;
+  } | null>(null);
   const [isPending, startTransition] = useTransition();
+  const inFlightRef = useRef(false);
 
   const handleUnlock = () => {
+    if (inFlightRef.current) return;
     if (requireVisit && !checkedIn) {
       setError("Check in at the place first");
       setPhase("error");
       return;
     }
+    inFlightRef.current = true;
     setPhase("confirming");
     startTransition(async () => {
-      await recordInteraction({
-        eventType: "CHALLENGE_START",
-        campaignId,
-        creatorId: referrerCreatorId ?? undefined,
-        verificationMethod: "authenticated_session",
-        metadata: { source: "unlock_moment" },
-        idempotencyKey: `start:${campaignId}:${Date.now().toString(36)}`
-      });
-
-      await recordInteraction({
-        eventType: "REWARD_UNLOCK",
-        campaignId,
-        creatorId: referrerCreatorId ?? undefined,
-        verificationMethod: "authenticated_session",
-        metadata: { source: "unlock_moment" },
-        idempotencyKey: `unlock:${campaignId}:${Date.now().toString(36)}`
-      });
       const res = await unlockCampaign(campaignId, referrerCreatorId);
       if (res.error && !res.alreadyUnlocked) {
+        inFlightRef.current = false;
         setError(res.error);
         setPhase("error");
         return;
       }
-      if (!res.alreadyUnlocked && referrerCreatorId) {
-        void recordInteraction({
-          eventType: "REFERRAL_CONVERSION",
-          campaignId,
-          creatorId: referrerCreatorId,
-          verificationMethod: "authenticated_session",
-          metadata: { source: "unlock_with_ref", referral: true },
-          idempotencyKey: `refconv:${campaignId}:${referrerCreatorId}`
-        });
-      }
-      if (!res.alreadyUnlocked) {
-        void recordInteraction({
-          eventType: "CHALLENGE_COMPLETE",
-          campaignId,
-          creatorId: referrerCreatorId ?? undefined,
-          verificationMethod: "authenticated_session",
-          metadata: { source: "unlock_moment" },
-          idempotencyKey: `complete:${campaignId}:${Date.now().toString(36)}`
-        });
-      }
       setResult({
-        xp: res.xpAwarded,
+        impact: res.impactAwarded,
         reward: res.rewardLabel ?? rewardLabel,
         already: res.alreadyUnlocked
       });
@@ -92,7 +60,7 @@ export function UnlockExperience({
     return (
       <UnlockReveal
         reward={result.reward ?? rewardLabel}
-        impact={result.xp || impactHint}
+        impact={result.impact}
         already={result.already}
         campaignId={campaignId}
         campaignTitle={campaignTitle}

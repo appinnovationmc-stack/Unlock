@@ -13,7 +13,7 @@ export function UnlockReveal({
   campaignTitle
 }: {
   reward: string;
-  impact: number;
+  impact: number | null;
   already: boolean;
   campaignId: string;
   campaignTitle?: string;
@@ -51,7 +51,9 @@ export function UnlockReveal({
         </p>
         <h2 className="font-display text-3xl text-fog mb-2">{reward}</h2>
         {!already && (
-          <p className="text-gold text-sm mb-6">+{impact} impact</p>
+          <p className="text-gold text-sm mb-6">
+            {impact == null ? "Impact pending" : `+${impact} impact`}
+          </p>
         )}
         <div className="flex flex-col sm:flex-row gap-3 justify-center">
           <Link href="/wallet">

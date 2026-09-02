@@ -7,9 +7,9 @@ export async function getUserImpact(userId?: string): Promise<ImpactScore | null
   const { data: { user } } = await supabase.auth.getUser();
   const target = userId ?? user?.id;
   if (!target) return null;
-  const { data } = await supabase.from("impact_scores").select("*").eq("user_id", target).maybeSingle();
-  if (data) return data as ImpactScore;
-  return { user_id: target, total_impact: 0, verified_interactions: 0, store_visits: 0, conversions: 0, last_updated_at: new Date().toISOString() };
+  const { data, error } = await supabase.from("impact_scores").select("*").eq("user_id", target).maybeSingle();
+  if (error || !data) return null;
+  return data as ImpactScore;
 }
 
 export async function getImpactLeaderboard(limit = 20) {

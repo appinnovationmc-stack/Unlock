@@ -14,6 +14,7 @@ export async function unlockCampaign(campaignId: string, referrerCreatorId?: str
       error: "You need to log in to unlock this.",
       alreadyUnlocked: false,
       xpAwarded: 0,
+      impactAwarded: null as number | null,
       rewardLabel: null as string | null
     };
   }
@@ -36,6 +37,7 @@ export async function unlockCampaign(campaignId: string, referrerCreatorId?: str
       error: friendly,
       alreadyUnlocked: false,
       xpAwarded: 0,
+      impactAwarded: null as number | null,
       rewardLabel: null as string | null
     };
   }
@@ -44,6 +46,7 @@ export async function unlockCampaign(campaignId: string, referrerCreatorId?: str
     xp_awarded: number;
     already_unlocked: boolean;
     reward_label: string | null;
+    impact_awarded?: number | null;
   } | null;
 
   revalidatePath(`/campaign/${campaignId}`);
@@ -56,6 +59,7 @@ export async function unlockCampaign(campaignId: string, referrerCreatorId?: str
     error: null,
     alreadyUnlocked: row?.already_unlocked ?? false,
     xpAwarded: row?.xp_awarded ?? 0,
+    impactAwarded: typeof row?.impact_awarded === "number" ? row.impact_awarded : null,
     rewardLabel: row?.reward_label ?? null
   };
 }
