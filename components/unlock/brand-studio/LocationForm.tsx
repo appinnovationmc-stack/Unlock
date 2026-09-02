@@ -12,17 +12,19 @@ type Pin = {
 
 export function LocationForm({
   campaigns,
-  existingPins = []
+  existingPins = [],
+  defaultCampaignId
 }: {
   campaigns: { id: string; title: string }[];
   existingPins?: Pin[];
+  defaultCampaignId?: string;
 }) {
   if (!campaigns.length) return null;
 
   const field = "w-full bg-void border border-white/10 px-3 py-2 text-fog text-base outline-none";
 
   return (
-    <div className="mt-6 space-y-4">
+    <div id="add-pin" className="mt-6 space-y-4">
       {existingPins.length > 0 && (
         <div className="border border-white/10 p-4">
           <p className="section-kicker mb-3">Active pins ({existingPins.length})</p>
@@ -50,11 +52,11 @@ export function LocationForm({
       )}
 
       <form action={addCampaignLocation} className="border border-white/10 p-5 space-y-3">
-        <p className="section-kicker">Add location pin</p>
+        <p className="section-kicker">Add a location pin</p>
         <p className="text-mute text-sm">
           Pins power the live map and verified check-ins. Radius is metres from the point.
         </p>
-        <select name="campaign_id" required className={field}>
+        <select name="campaign_id" required defaultValue={defaultCampaignId} className={field}>
           {campaigns.map((c) => (
             <option key={c.id} value={c.id}>
               {c.title}

@@ -1,21 +1,21 @@
-import { Button } from "@/components/ui/Button";
 import { ExperienceBuilder } from "@/components/unlock/brand-studio/ExperienceBuilder";
 import { MissionForm } from "@/components/unlock/brand-studio/MissionForm";
 import { LocationForm } from "@/components/unlock/brand-studio/LocationForm";
+import { RewardForm } from "@/components/unlock/brand-studio/RewardForm";
+import { CampaignLaunchPath } from "@/components/unlock/brand-studio/CampaignLaunchPath";
 import { ImpactRulesForm } from "@/components/unlock/brand-studio/ImpactRulesForm";
-import { getMyOrgId, updateCampaignStatus } from "@/lib/actions/campaigns";
+import { getMyOrgId } from "@/lib/actions/campaigns";
 import { getOrgCampaignAnalytics } from "@/lib/actions/finance";
 import { formatMoney } from "@/lib/finance/money";
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
-import Link from "next/link";
 
 export const dynamic = "force-dynamic";
 
 export default async function StudioPage({
   searchParams
 }: {
-  searchParams: { error?: string; created?: string; draft?: string };
+  searchParams: { error?: string; created?: string; draft?: string; pin?: string; reward?: string };
 }) {
   const supabase = createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -46,6 +46,32 @@ export default async function StudioPage({
     locationPins = locs ?? [];
   } catch {
     locationPins = [];
+  }
+
+  const pinIds = new Set(locationPins.map((p) => p.campaign_id));
+
+  let rewardByCampaign = new Set<string>();
+  try {
+    const { data: rewardRows } = await supabase
+      .from("rewards")
+      .select("campaign_id, label")
+      .eq("org_id", orgId);
+    for (const r of rewardRows ?? []) {
+      if (r.campaign_id && String(r.label ?? "").trim()) rewardByCampaign.add(r.campaign_id);
+    }
+  } catch {
+    rewardByCampaign = new Set();
+  }
+
+  let fundedIds = new Set<string>();
+  try {
+    const { data: budgetRows } = await supabase
+      .from("campaign_budgets")
+      .select("campaign_id")
+      .eq("org_id", orgId);
+    fundedIds = new Set((budgetRows ?? []).map((b) => b.campaign_id).filter(Boolean));
+  } catch {
+    fundedIds = new Set();
   }
 
   let missionRows: { id: string; title: string; campaign_id: string }[] = [];
@@ -90,6 +116,12 @@ export default async function StudioPage({
   const liveCount = (campaigns ?? []).filter((c) => c.status === "live").length;
   const draftCount = (campaigns ?? []).filter((c) => c.status === "draft").length;
   const hasCampaigns = (campaigns?.length ?? 0) > 0;
+  const createdId =
+    searchParams.created && searchParams.created !== "location" && searchParams.created !== "location_removed"
+      ? searchParams.created
+      : undefined;
+  const campaignOptions = (campaigns ?? []).map((c: any) => ({ id: c.id, title: c.title }));
+  const missingReward = campaignOptions.filter((c) => !rewardByCampaign.has(c.id));
 
   return (
     <main className="page-shell-wide min-h-screen">
@@ -107,15 +139,30 @@ export default async function StudioPage({
         )}
       </header>
 
+      {searchParams.pin === "1" && (
+        <p className="mb-4 text-sm text-fog border border-white/15 px-3 py-2">
+          Location pin added. Next: name the reward if it is missing, fund, then publish.
+        </p>
+      )}
+      {searchParams.reward === "1" && (
+        <p className="mb-4 text-sm text-fog border border-white/15 px-3 py-2">
+          Reward saved. Next: fund a budget, preview, then publish.
+        </p>
+      )}
       {searchParams.created === "location" && (
         <p className="mb-4 text-sm text-fog border border-white/15 px-3 py-2">Location pin added. Check-ins will verify against its radius.</p>
       )}
       {searchParams.error && (
         <p className="mb-6 text-sm text-magenta border border-magenta/30 px-4 py-3">{searchParams.error}</p>
       )}
-      {searchParams.created && (
+      {searchParams.created && searchParams.draft && !searchParams.error && (
         <p className="mb-6 text-sm text-fog border border-white/15 px-4 py-3">
-          Campaign {searchParams.draft ? "saved as draft" : "published"} successfully.
+          Draft saved. It is not live. Next: add a pin, add a reward, fund, preview, then publish.
+        </p>
+      )}
+      {searchParams.created && !searchParams.draft && searchParams.created !== "location" && searchParams.created !== "location_removed" && !searchParams.pin && !searchParams.reward && (
+        <p className="mb-6 text-sm text-fog border border-white/15 px-4 py-3">
+          Campaign published successfully.
         </p>
       )}
 
@@ -135,13 +182,19 @@ export default async function StudioPage({
             </div>
           ) : (
             campaigns!.map((c) => (
-              <div key={c.id} className="px-5 py-5 space-y-3">
+              <div
+                key={c.id}
+                id={`campaign-${c.id}`}
+                className={`px-5 py-5 space-y-3 ${
+                  createdId === c.id ? "bg-white/[0.03]" : ""
+                }`}
+              >
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     <p className="font-display text-fog text-lg">{c.title}</p>
                     <p className="text-sm text-mute mt-1">
-                      {(c.mechanics ?? []).join(" · ") || "no mechanics"}
-                      {c.objective ? ` · ${c.objective}` : ""}
+                      {(c.objective ? String(c.objective).replace(/_/g, " ") : "experience")}
+                      {c.tagline ? ` · ${c.tagline}` : ""}
                     </p>
                   </div>
                   <span className={`text-sm shrink-0 ${
@@ -168,51 +221,15 @@ export default async function StudioPage({
                   if (!parts.length) return null;
                   return <p className="text-sm text-mute">{parts.join(" · ")}</p>;
                 })()}
-                <div className="flex flex-wrap gap-2">
-                  <Link href={`/campaign/${c.id}`}>
-                    <Button variant="ghost" className="px-3 py-1.5">Preview</Button>
-                  </Link>
-                  {(c.status === "live" || c.status === "paused") && (
-                    <Link href={`/studio/live/${c.id}`}>
-                      <Button variant="ghost" className="px-3 py-1.5">Live</Button>
-                    </Link>
-                  )}
-                  {c.status === "draft" && (
-                    <form action={updateCampaignStatus}>
-                      <input type="hidden" name="campaign_id" value={c.id} />
-                      <input type="hidden" name="status" value="live" />
-                      <Button type="submit" variant="volt" className="px-3 py-1.5">Publish</Button>
-                    </form>
-                  )}
-                  {c.status === "live" && (
-                    <form action={updateCampaignStatus}>
-                      <input type="hidden" name="campaign_id" value={c.id} />
-                      <input type="hidden" name="status" value="paused" />
-                      <Button type="submit" variant="ghost" className="px-3 py-1.5">Pause</Button>
-                    </form>
-                  )}
-                  {c.status === "paused" && (
-                    <form action={updateCampaignStatus}>
-                      <input type="hidden" name="campaign_id" value={c.id} />
-                      <input type="hidden" name="status" value="live" />
-                      <Button type="submit" variant="volt" className="px-3 py-1.5">Resume</Button>
-                    </form>
-                  )}
-                  {(c.status === "live" || c.status === "paused") && (
-                    <form action={updateCampaignStatus}>
-                      <input type="hidden" name="campaign_id" value={c.id} />
-                      <input type="hidden" name="status" value="ended" />
-                      <Button type="submit" variant="ghost" className="px-3 py-1.5">End</Button>
-                    </form>
-                  )}
-                  {c.status === "ended" && (
-                    <form action={updateCampaignStatus}>
-                      <input type="hidden" name="campaign_id" value={c.id} />
-                      <input type="hidden" name="status" value="archived" />
-                      <Button type="submit" variant="ghost" className="px-3 py-1.5">Archive</Button>
-                    </form>
-                  )}
-                </div>
+                <CampaignLaunchPath
+                  campaign={{
+                    id: c.id,
+                    status: c.status,
+                    hasPin: pinIds.has(c.id),
+                    hasReward: rewardByCampaign.has(c.id),
+                    hasBudget: fundedIds.has(c.id)
+                  }}
+                />
               </div>
             ))
           )}
@@ -234,9 +251,12 @@ export default async function StudioPage({
             </ul>
           </div>
         )}
-        <MissionForm campaigns={(campaigns ?? []).map((c: any) => ({ id: c.id, title: c.title }))} />
-        <LocationForm campaigns={(campaigns ?? []).map((c: any) => ({ id: c.id, title: c.title }))} existingPins={locationPins} />
-        <ImpactRulesForm campaigns={(campaigns ?? []).map((c: any) => ({ id: c.id, title: c.title }))} />
+        <MissionForm campaigns={campaignOptions} />
+        <LocationForm campaigns={campaignOptions} existingPins={locationPins} defaultCampaignId={createdId} />
+        {missingReward.length > 0 && (
+          <RewardForm campaigns={missingReward} defaultCampaignId={createdId} />
+        )}
+        <ImpactRulesForm campaigns={campaignOptions} />
 
         {totals.totalAttributionEvents > 0 && (
           <div className="mt-8 border border-white/10 p-5">

@@ -196,7 +196,7 @@ export async function createCampaign(formData: FormData) {
   if (wantedLive) {
     redirect(
       `/studio?created=${campaign.id}&draft=1&error=${encodeURIComponent(
-        "Saved as draft. Add a map pin, then Publish."
+        "Saved as draft. Add a map pin, then publish."
       )}`
     );
   }
@@ -279,6 +279,10 @@ export async function updateCampaignStatus(formData: FormData) {
   revalidatePath("/studio");
   revalidatePath("/discover");
   revalidatePath(`/campaign/${campaignId}`);
+  revalidatePath(`/studio/live/${campaignId}`);
+  if (nextStatus === "live") {
+    redirect(`/studio/live/${campaignId}`);
+  }
   redirect("/studio");
 }
 
@@ -336,7 +340,48 @@ export async function addCampaignLocation(formData: FormData) {
   revalidatePath("/studio");
   revalidatePath(`/studio/live/${campaignId}`);
   revalidatePath(`/campaign/${campaignId}`);
-  redirect("/studio?created=location");
+  redirect(`/studio?created=${campaignId}&pin=1`);
+}
+
+export async function addCampaignReward(formData: FormData) {
+  const supabase = createClient();
+  const orgId = await getMyOrgId();
+  if (!orgId) redirect("/onboarding");
+
+  const campaignId = String(formData.get("campaign_id") ?? "").trim();
+  const label = String(formData.get("label") ?? "").trim();
+  const value = String(formData.get("value") ?? "").trim();
+
+  if (!campaignId || !label) {
+    redirect(`/studio?error=${encodeURIComponent("Reward needs a name")}`);
+  }
+
+  const { data: campaign } = await supabase
+    .from("campaigns")
+    .select("id")
+    .eq("id", campaignId)
+    .eq("org_id", orgId)
+    .maybeSingle();
+
+  if (!campaign) {
+    redirect(`/studio?error=${encodeURIComponent("Campaign not found")}`);
+  }
+
+  const { error } = await supabase.from("rewards").insert({
+    org_id: orgId,
+    campaign_id: campaignId,
+    type: "discount",
+    label,
+    value: value || label
+  });
+
+  if (error) {
+    redirect(`/studio?error=${encodeURIComponent(error.message)}`);
+  }
+
+  revalidatePath("/studio");
+  revalidatePath(`/campaign/${campaignId}`);
+  redirect(`/studio?created=${campaignId}&reward=1`);
 }
 
 export async function removeCampaignLocation(formData: FormData) {
