@@ -6,12 +6,12 @@ import type { MapPin } from "./LiveMap";
 const LiveMap = dynamic(() => import("./LiveMap").then((m) => m.LiveMap), {
   ssr: false,
   loading: () => (
-    <div className="absolute inset-0 flex items-center justify-center bg-ink2">
+    <div className="absolute inset-0 flex items-center justify-center bg-ink2 min-h-[280px]">
       <p className="font-mono text-xs text-mute tracking-widest uppercase">Loading map…</p>
     </div>
   )
 });
 
 export function LiveMapSection({ pins }: { pins: MapPin[] }) {
-  return <LiveMap pins={pins} />;
+  return <LiveMap pins={pins} fallbackCenter={{ lat: -26.2041, lng: 28.0473 }} />;
 }
