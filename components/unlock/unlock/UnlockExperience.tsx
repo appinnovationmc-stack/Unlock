@@ -37,7 +37,6 @@ export function UnlockExperience({ campaignId, rewardLabel, campaignTitle, refer
           eventType: "REFERRAL_CONVERSION",
           campaignId,
           creatorId: referrerCreatorId,
-          // authenticated_session => verified immediately so Impact awards to funnel
           verificationMethod: "authenticated_session",
           metadata: { source: "unlock_with_ref", referral: true },
           idempotencyKey: `refconv:${campaignId}:${referrerCreatorId}`
@@ -79,13 +78,10 @@ export function UnlockExperience({ campaignId, rewardLabel, campaignTitle, refer
     );
   }
   return (
-    <div className="space-y-3">
-      <UnlockButton
-        onUnlock={handleUnlock}
-        disabled={isPending || phase === "confirming"}
-        label={phase === "confirming" ? "Confirming…" : "Hold to unlock"}
-      />
-      <p className="text-center text-mute text-xs">Hold until it confirms. The reward is yours.</p>
-    </div>
+    <UnlockButton
+      onUnlock={handleUnlock}
+      disabled={isPending || phase === "confirming"}
+      label={phase === "confirming" ? "Confirming…" : "Hold to unlock"}
+    />
   );
 }

@@ -3,8 +3,6 @@ import { RecordCampaignView } from "@/components/unlock/interactions/RecordView"
 import { RecordReferralClick } from "@/components/unlock/interactions/RecordReferralClick";
 import { LocationCheckin } from "@/components/unlock/experiences/LocationCheckin";
 import { NfcScan } from "@/components/unlock/experiences/NfcScan";
-import { MissionProgress } from "@/components/unlock/missions/MissionProgress";
-import { MissionProgressRefresh } from "@/components/unlock/missions/MissionProgressClient";
 import { ProductHuntClaim } from "@/components/campaign/ProductHuntClaim";
 import { createClient } from "@/lib/supabase/server";
 import { notFound } from "next/navigation";
@@ -54,7 +52,6 @@ export default async function CampaignPage({
     .limit(1)
     .maybeSingle();
 
-
   let experienceType: string | null = null;
   try {
     const { data: exp } = await supabase
@@ -85,7 +82,7 @@ export default async function CampaignPage({
       ? "Face the challenge. Tap through. Claim what you earn."
       : mechanics.includes("treasure_hunt") || mechanics.includes("qr_scan")
         ? "Hunt it down. Scan. Unlock."
-        : "Tap the seal. Complete the moment. Take the reward.";
+        : "Hold the seal. Complete the moment. Take the reward.";
 
   const actionLine =
     campaign.tagline ||
@@ -121,7 +118,6 @@ export default async function CampaignPage({
       </h1>
       <p className="text-mute text-lg mb-8 leading-snug">{actionLine}</p>
 
-      {/* What / do / get — quiet labels only */}
       <div className="grid gap-4 mb-10">
         <div>
           <p className="font-mono text-[10px] tracking-widest text-mute">What is this</p>
@@ -143,9 +139,6 @@ export default async function CampaignPage({
           </p>
         </div>
       </div>
-
-      <MissionProgressRefresh />
-      <MissionProgress campaignId={campaign.id} userId={user?.id} />
 
       {(mechanics.includes("geolocation") || mechanics.includes("treasure_hunt")) && campaign.status === "live" && (
         <div className="mb-6">

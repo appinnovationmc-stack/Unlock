@@ -6,8 +6,7 @@ import { verifyLocationCheckin } from "@/lib/unlock/verification/location";
 
 /**
  * Location-based verification for VISIT / geolocation mechanics.
- * 1) Record LOCATION_CHECKIN (pending)
- * 2) Call verify_location_checkin with coords (PostGIS radius check)
+ * Quiet chrome: one button, errors only when something fails.
  */
 export function LocationCheckin({
   campaignId,
@@ -58,22 +57,20 @@ export function LocationCheckin({
           }
           if (!verified.verified) {
             setStatus("rejected");
-            setMessage("You are outside the experience radius. Move closer to the location pin.");
+            setMessage("Too far from the pin. Move closer.");
             return;
           }
 
           setStatus("done");
-          const dist =
-            verified.distanceM != null ? ` (${Math.round(verified.distanceM)}m from pin)` : "";
-          setMessage(`Checked in and verified${dist}. Impact awarded.`);
+          setMessage(null);
         });
       },
       (err) => {
         setStatus("error");
         setMessage(
           err.code === 1
-            ? "Location permission denied. Enable it to complete place-based challenges."
-            : "Could not get your location. Try again outdoors."
+            ? "Location permission denied."
+            : "Could not get your location."
         );
       },
       { enableHighAccuracy: true, timeout: 15000, maximumAge: 60000 }
@@ -81,39 +78,29 @@ export function LocationCheckin({
   }
 
   return (
-    <div className="border border-white/10 bg-ink2/60 p-5 space-y-3">
-      <p className="font-mono text-[10px] uppercase tracking-widest text-volt">Verified visit</p>
-      <p className="text-mute text-xs">
-        We use your location only to verify this check-in — not for ads or tracking elsewhere.
-      </p>
+    <div className="space-y-2">
       <button
         type="button"
         onClick={handleCheckin}
         disabled={isPending || status === "locating" || status === "done"}
-        className={`w-full font-mono text-[10px] uppercase tracking-widest py-3 border ${
+        className={`w-full font-mono text-[10px] tracking-widest py-2.5 border ${
           status === "done"
-            ? "border-gold text-gold bg-gold/10"
+            ? "border-gold/40 text-gold"
             : status === "rejected"
-              ? "border-magenta text-magenta"
-              : "border-volt text-volt hover:bg-volt/10"
+              ? "border-white/20 text-mute"
+              : "border-white/15 text-mute hover:text-fog hover:border-white/30"
         } disabled:opacity-50`}
       >
         {status === "locating" || isPending
-          ? "Locating & verifying…"
+          ? "Checking in…"
           : status === "done"
             ? "Checked in"
             : status === "rejected"
-              ? "Outside radius — try again"
+              ? "Too far — try again"
               : label}
       </button>
       {message && (
-        <p
-          className={`text-xs text-center ${
-            status === "error" || status === "rejected" ? "text-magenta" : "text-mute"
-          }`}
-        >
-          {message}
-        </p>
+        <p className="text-xs text-center text-mute">{message}</p>
       )}
     </div>
   );
