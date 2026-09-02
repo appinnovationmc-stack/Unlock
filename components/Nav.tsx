@@ -8,11 +8,11 @@ export async function Nav() {
 
   if (!hasEnv) {
     return (
-      <nav className="flex items-center justify-between px-6 py-3 border-b border-magenta/40 bg-magenta/10 font-mono text-xs uppercase tracking-widest">
-        <Link href="/" className="text-fog font-display tracking-normal text-sm">
+      <nav className="flex items-center justify-between px-6 py-4 border-b border-magenta/30 bg-magenta/10">
+        <Link href="/" className="font-display text-sm text-fog tracking-tight">
           UNLOCK
         </Link>
-        <span className="text-magenta normal-case tracking-normal">
+        <span className="text-sm text-magenta">
           Set .env.local (Supabase URL + anon key) and restart npm run dev
         </span>
       </nav>
@@ -33,51 +33,53 @@ export async function Nav() {
     // env misconfigured mid-request
   }
 
+  const link = "text-sm text-mute hover:text-fog transition-colors";
+
   return (
-    <nav className="flex items-center justify-between px-6 py-3 border-b border-white/5 font-mono text-xs uppercase tracking-widest">
-      <Link href="/" className="text-fog font-display tracking-normal text-sm">
+    <nav className="flex items-center justify-between px-6 py-4 border-b border-white/5 bg-void">
+      <Link href="/" className="font-display text-sm text-fog tracking-tight">
         UNLOCK
       </Link>
-      <div className="flex items-center gap-3 sm:gap-4 text-mute flex-wrap justify-end">
-        <Link href="/discover" className="hover:text-volt">
+      <div className="flex items-center gap-5 flex-wrap justify-end">
+        <Link href="/discover" className={link}>
           Discover
         </Link>
         {(role === "brand" || !user) && (
-          <Link href="/studio" className="hover:text-volt">
+          <Link href="/studio" className={link}>
             Studio
           </Link>
         )}
         {(role === "creator" || !user) && (
-          <Link href="/dashboard" className="hover:text-volt">
+          <Link href="/dashboard" className={link}>
             Creator
           </Link>
         )}
         {role === "consumer" && (
           <>
-            <Link href="/impact" className="hover:text-volt">
+            <Link href="/impact" className={link}>
               Impact
             </Link>
-            <Link href="/profile" className="hover:text-volt">
+            <Link href="/profile" className={link}>
               Profile
             </Link>
-            <Link href="/wallet" className="hover:text-volt">
+            <Link href="/wallet" className={link}>
               Wallet
             </Link>
           </>
         )}
         {role === "admin" && (
-          <Link href="/admin" className="hover:text-volt">
+          <Link href="/admin" className={link}>
             Admin
           </Link>
         )}
         {user ? (
           <form action={logOut}>
-            <button type="submit" className="hover:text-magenta truncate max-w-[140px]">
+            <button type="submit" className={`${link} truncate max-w-[140px]`}>
               {user.email?.split("@")[0]} · Out
             </button>
           </form>
         ) : (
-          <Link href="/login" className="hover:text-volt">
+          <Link href="/login" className={link}>
             Log in
           </Link>
         )}
