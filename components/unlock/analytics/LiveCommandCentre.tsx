@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
+import { formatMoney } from "@/lib/finance/money";
 
 export interface LiveStats {
   participating: number;
@@ -50,7 +51,9 @@ export function LiveCommandCentre({
   stats,
   creators = [],
   locations = [],
-  recentEvents = []
+  recentEvents = [],
+  spendCents = null,
+  remainingCents = null
 }: {
   campaignTitle: string;
   campaignId: string;
@@ -59,6 +62,8 @@ export function LiveCommandCentre({
   creators?: CreatorImpactRow[];
   locations?: LocationStat[];
   recentEvents?: FunnelEvent[];
+  spendCents?: number | null;
+  remainingCents?: number | null;
 }) {
   const [stage, setStage] = useState<string | null>(null);
   const funnel = [
@@ -106,6 +111,13 @@ export function LiveCommandCentre({
         {metric("Redeemed", stats.redemptions, "text-gold")}
         {metric("Conversions", stats.conversions, "text-magenta")}
       </section>
+      {typeof spendCents === "number" && (
+        <p className="font-mono text-[10px] uppercase tracking-widest text-mute">
+          Visit spend {formatMoney(spendCents)}
+          {typeof remainingCents === "number" ? ` · remaining ${formatMoney(remainingCents)}` : ""}
+          {" "}· billed on verified check-in, not unlock or XP
+        </p>
+      )}
       <section className="border border-white/8 bg-ink2/50 p-6 clip-keyhole">
         <p className="font-mono text-[10px] uppercase tracking-[0.3em] text-mute mb-2">Funnel</p>
         <p className="text-mute text-xs mb-6">Tap a stage to inspect underlying events.</p>
