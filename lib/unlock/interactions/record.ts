@@ -32,7 +32,7 @@ function methodFor(eventType: InteractionEventType, requested?: VerificationMeth
   if (eventType === "LOCATION_CHECKIN") return "location";
   if (eventType === "NFC_SCAN") return "nfc";
   if (eventType === "QR_SCAN") return "qr";
-  if (eventType === "PRODUCT_INTERACTION") return requested === "product" ? "product" : "product";
+  if (eventType === "PRODUCT_INTERACTION") return "product";
   if (SESSION_ANALYTICS.has(eventType)) return "authenticated_session";
   return requested ?? "authenticated_session";
 }
