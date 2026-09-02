@@ -17,22 +17,20 @@ export type MapPin = {
 const JOBURG = { lat: -26.2041, lng: 28.0473 };
 const CITY_ZOOM = 11;
 
-/** Raster streets (Carto Voyager). OpenFreeMap vector styles were painting background only. */
-const VOYAGER_STYLE: maplibregl.StyleSpecification = {
+/** Esri World Street Map — public raster, no API key, no Carto watermark. Tile path is z/y/x. */
+const STREET_STYLE: maplibregl.StyleSpecification = {
   version: 8,
   sources: {
-    carto: {
+    esri: {
       type: "raster",
       tiles: [
-        "https://a.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}@2x.png",
-        "https://b.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}@2x.png",
-        "https://c.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}@2x.png"
+        "https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}"
       ],
       tileSize: 256,
-      attribution: "© OpenStreetMap contributors © CARTO"
+      attribution: "Tiles © Esri"
     }
   },
-  layers: [{ id: "carto", type: "raster", source: "carto" }]
+  layers: [{ id: "esri", type: "raster", source: "esri" }]
 };
 
 function isValidPin(pin: MapPin): boolean {
@@ -113,7 +111,7 @@ export function LiveMap({
     try {
       map = new maplibregl.Map({
         container: containerRef.current,
-        style: VOYAGER_STYLE,
+        style: STREET_STYLE,
         center,
         zoom: CITY_ZOOM,
         attributionControl: false
