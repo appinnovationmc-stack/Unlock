@@ -1,17 +1,11 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-
-function safeNext(value: string | null) {
-  if (!value || !value.startsWith("/") || value.startsWith("//")) {
-    return "/reset-password";
-  }
-  return value;
-}
+import { safeNextPath } from "@/lib/auth/safe-next";
 
 export async function GET(request: Request) {
   const url = new URL(request.url);
   const code = url.searchParams.get("code");
-  const next = safeNext(url.searchParams.get("next"));
+  const next = safeNextPath(url.searchParams.get("next"), "/reset-password");
   const origin = url.origin;
 
   // Supabase redirects here directly with these params if verification failed

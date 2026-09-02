@@ -3,6 +3,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import type { AuthRole } from "@/lib/types";
+import { safeNextPath } from "@/lib/auth/safe-next";
 
 export type { AuthRole };
 
@@ -46,13 +47,20 @@ export async function signUp(formData: FormData) {
 export async function logIn(formData: FormData) {
   const email = String(formData.get("email"));
   const password = String(formData.get("password"));
+  const requestedNext = String(formData.get("next") ?? "");
+  const next = requestedNext ? safeNextPath(requestedNext, "") : "";
 
   const supabase = createClient();
   const { data, error } = await supabase.auth.signInWithPassword({ email, password });
 
   if (error) {
-    return redirect(`/login?error=${encodeURIComponent(error.message)}`);
+    const q = new URLSearchParams();
+    q.set("error", error.message);
+    if (next) q.set("next", next);
+    return redirect(`/login?${q.toString()}`);
   }
+
+  if (next) redirect(next);
 
   const user = data.user;
   if (!user) redirect("/discover");

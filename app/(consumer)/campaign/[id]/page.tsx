@@ -171,6 +171,7 @@ export default async function CampaignPage({
           campaignTitle={campaign.title}
           referrerCreatorId={referrerCreatorId}
           requireVisit={requireVisit && campaign.status === "live"}
+          authenticated={!!user}
         />
       )}
 
