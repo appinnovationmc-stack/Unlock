@@ -15,8 +15,9 @@ export async function verifyLocationCheckin(
   } = await supabase.auth.getUser();
   if (!user) return { verified: false, error: "Not authenticated", locationId: null, distanceM: null };
 
-  // Visit CPE debit runs inside verify_location_checkin (SECURITY DEFINER),
-  // not from the client. This action only invokes that RPC.
+  // Visit CPE debit AND creator-earning auto-verify run inside
+  // verify_location_checkin (SECURITY DEFINER), not from the client.
+  // Do not call verify_creator_earning from the app.
   const { data, error } = await supabase.rpc("verify_location_checkin", {
     p_event_id: eventId,
     p_lat: lat,
@@ -33,6 +34,7 @@ export async function verifyLocationCheckin(
     revalidatePath(`/studio/live/${campaignId}`);
     revalidatePath("/studio");
     revalidatePath("/wallet");
+    revalidatePath("/dashboard/wallet");
     revalidatePath("/impact");
   }
 
