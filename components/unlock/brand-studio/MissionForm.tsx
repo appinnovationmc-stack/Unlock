@@ -24,7 +24,7 @@ export function MissionForm({ campaigns }: { campaigns: { id: string; title: str
     >
       <p className="section-kicker">Add mission</p>
       <p className="text-mute text-sm">
-        Optional multi-step path for a campaign. Shows on the consumer campaign page when migration is applied.
+        Steps wait for verified server events. Clients cannot mint unlock or conversion to complete a mission.
       </p>
       <select name="campaign_id" required className={field}>
         {campaigns.map((c) => (
@@ -40,7 +40,6 @@ export function MissionForm({ campaigns }: { campaigns: { id: string; title: str
         <select name="step1_event" className={field}>
           <option value="LOCATION_CHECKIN">LOCATION_CHECKIN</option>
           <option value="QR_SCAN">QR_SCAN</option>
-          <option value="CHALLENGE_COMPLETE">CHALLENGE_COMPLETE</option>
           <option value="PRODUCT_INTERACTION">PRODUCT_INTERACTION</option>
           <option value="SHARE">SHARE</option>
         </select>
@@ -50,7 +49,6 @@ export function MissionForm({ campaigns }: { campaigns: { id: string; title: str
         <select name="step2_event" className={field}>
           <option value="REWARD_UNLOCK">REWARD_UNLOCK</option>
           <option value="SHARE">SHARE</option>
-          <option value="CHALLENGE_COMPLETE">CHALLENGE_COMPLETE</option>
         </select>
       </div>
       <Button type="submit" disabled={pending} variant="ghost">

@@ -88,13 +88,6 @@ export function ProductHuntClaim({
         metadata: { code: code.trim(), store: storeLocation.trim() || null, source: "product_hunt" },
         idempotencyKey: `product:${campaignId}:${code.trim().toUpperCase()}`
       });
-      void recordInteraction({
-        eventType: "QR_SCAN",
-        campaignId,
-        verificationMethod: "qr",
-        metadata: { code: code.trim(), source: "product_hunt" },
-        idempotencyKey: `qr:${campaignId}:${code.trim().toUpperCase()}`
-      });
     });
   }
 
@@ -110,13 +103,6 @@ export function ProductHuntClaim({
       }
       if (result.confirmed) {
         setStage("confirmed");
-        void recordInteraction({
-          eventType: "REWARD_UNLOCK",
-          campaignId,
-          verificationMethod: "product",
-          metadata: { claimId, source: "product_hunt_confirm" },
-          idempotencyKey: `unlock:product:${claimId}`
-        });
       }
     });
   }
