@@ -28,6 +28,7 @@ export type LiveDrilldown = {
   events: LiveDrilldownEvent[];
   truncated: boolean;
   loaded: number;
+  error: string | null;
 };
 
 function metadataRisk(meta: unknown): { score: number | null; reasons: string[] } {
@@ -52,9 +53,11 @@ export async function getCampaignLiveEvents(
   campaignTitle: string,
   orgId: string
 ): Promise<LiveDrilldown> {
-  const empty: LiveDrilldown = { events: [], truncated: false, loaded: 0 };
+  const empty: LiveDrilldown = { events: [], truncated: false, loaded: 0, error: null };
   const myOrg = await getMyOrgId();
-  if (!myOrg || myOrg !== orgId) return empty;
+  if (!myOrg || myOrg !== orgId) {
+    return { ...empty, error: "Could not load events for this organisation." };
+  }
 
   const supabase = createClient();
   const { data, error } = await supabase
@@ -67,7 +70,9 @@ export async function getCampaignLiveEvents(
     .order("created_at", { ascending: false })
     .limit(LIVE_EVENT_LIMIT + 1);
 
-  if (error || !data) return empty;
+  if (error || !data) {
+    return { ...empty, error: error?.message || "Could not load events." };
+  }
 
   const truncated = data.length > LIVE_EVENT_LIMIT;
   const rows = truncated ? data.slice(0, LIVE_EVENT_LIMIT) : data;
@@ -131,5 +136,5 @@ export async function getCampaignLiveEvents(
     };
   });
 
-  return { events, truncated, loaded: events.length };
+  return { events, truncated, loaded: events.length, error: null };
 }
