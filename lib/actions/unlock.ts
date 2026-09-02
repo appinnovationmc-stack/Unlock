@@ -28,8 +28,12 @@ export async function unlockCampaign(campaignId: string, referrerCreatorId?: str
   const { data, error } = await supabase.rpc("unlock_campaign", args).single();
 
   if (error) {
+    const msg = error.message || "Could not unlock";
+    const friendly = msg.includes("Check in at the place first")
+      ? "Check in at the place first"
+      : msg;
     return {
-      error: error.message,
+      error: friendly,
       alreadyUnlocked: false,
       xpAwarded: 0,
       rewardLabel: null as string | null
