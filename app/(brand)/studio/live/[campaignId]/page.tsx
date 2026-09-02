@@ -3,46 +3,81 @@ import { LiveRealtimeListener } from "@/components/unlock/analytics/LiveRealtime
 import { PlayExperience } from "@/components/unlock/brand-studio/PlayExperience";
 import { createClient } from "@/lib/supabase/server";
 import { getMyOrgId } from "@/lib/actions/campaigns";
+import { getCampaignLiveEvents } from "@/lib/actions/live";
 import { redirect, notFound } from "next/navigation";
 
 export const dynamic = "force-dynamic";
-// Realtime websocket subscription now drives refreshes instantly; the 30s
-// revalidate stays only as a fallback for the initial/no-JS render.
 export const revalidate = 30;
+
+const INTERACT_TYPES = [
+  "CHALLENGE_START",
+  "CHALLENGE_COMPLETE",
+  "SHARE",
+  "CONTENT_SUBMITTED",
+  "REVIEW_SUBMITTED"
+];
 
 export default async function LiveCampaignPage({ params }: { params: { campaignId: string } }) {
   const supabase = createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user }
+  } = await supabase.auth.getUser();
   if (!user) redirect("/login");
   const orgId = await getMyOrgId();
   if (!orgId) redirect("/onboarding");
-  const { data: campaign } = await supabase.from("campaigns").select("id, title, status, org_id")
-    .eq("id", params.campaignId).eq("org_id", orgId).maybeSingle();
+  const { data: campaign } = await supabase
+    .from("campaigns")
+    .select("id, title, status, org_id")
+    .eq("id", params.campaignId)
+    .eq("org_id", orgId)
+    .maybeSingle();
   if (!campaign) notFound();
 
-  let stats = { participating: 0, interactions: 0, store_visits: 0, product_scans: 0, rewards: 0, redemptions: 0, conversions: 0 };
+  let stats = {
+    participating: 0,
+    interactions: 0,
+    store_visits: 0,
+    product_scans: 0,
+    rewards: 0,
+    redemptions: 0,
+    conversions: 0,
+    discover: 0,
+    interact: 0,
+    pending: 0
+  };
   let creators: any[] = [];
   try {
-    const { data: events, error } = await supabase.from("interaction_events")
+    const { data: events, error } = await supabase
+      .from("interaction_events")
       .select("event_type, verification_status, creator_id, user_id")
-      .eq("campaign_id", params.campaignId).eq("verification_status", "verified");
+      .eq("campaign_id", params.campaignId)
+      .eq("organisation_id", orgId);
     if (!error && events) {
-      const people = new Set(events.map((e: any) => e.user_id));
+      const verified = events.filter((e: any) => e.verification_status === "verified");
+      const people = new Set(verified.map((e: any) => e.user_id));
       stats = {
-        participating: people.size, interactions: events.length,
-        store_visits: events.filter((e: any) => e.event_type === "LOCATION_CHECKIN").length,
-        product_scans: events.filter((e: any) => ["QR_SCAN","PRODUCT_INTERACTION","NFC_SCAN"].includes(e.event_type)).length,
-        rewards: events.filter((e: any) => ["REWARD_UNLOCK","REWARD_CLAIM"].includes(e.event_type)).length,
-        redemptions: events.filter((e: any) => e.event_type === "REWARD_REDEEM").length,
-        conversions: events.filter((e: any) => ["REFERRAL_CONVERSION","PURCHASE"].includes(e.event_type)).length
+        participating: people.size,
+        interactions: verified.length,
+        store_visits: verified.filter((e: any) => e.event_type === "LOCATION_CHECKIN").length,
+        product_scans: verified.filter((e: any) =>
+          ["QR_SCAN", "PRODUCT_INTERACTION", "NFC_SCAN"].includes(e.event_type)
+        ).length,
+        rewards: verified.filter((e: any) => ["REWARD_UNLOCK", "REWARD_CLAIM"].includes(e.event_type)).length,
+        redemptions: verified.filter((e: any) => e.event_type === "REWARD_REDEEM").length,
+        conversions: verified.filter((e: any) =>
+          ["REFERRAL_CONVERSION", "PURCHASE"].includes(e.event_type)
+        ).length,
+        discover: verified.filter((e: any) => e.event_type === "CAMPAIGN_VIEW").length,
+        interact: verified.filter((e: any) => INTERACT_TYPES.includes(e.event_type)).length,
+        pending: events.filter((e: any) => e.verification_status === "pending").length
       };
       const byCreator = new Map<string, any>();
-      for (const e of events as any[]) {
+      for (const e of verified as any[]) {
         if (!e.creator_id) continue;
         const cur = byCreator.get(e.creator_id) ?? { interactions: 0, visits: 0, conversions: 0 };
         cur.interactions += 1;
         if (e.event_type === "LOCATION_CHECKIN") cur.visits += 1;
-        if (["REFERRAL_CONVERSION","PURCHASE"].includes(e.event_type)) cur.conversions += 1;
+        if (["REFERRAL_CONVERSION", "PURCHASE"].includes(e.event_type)) cur.conversions += 1;
         byCreator.set(e.creator_id, cur);
       }
       const ids = Array.from(byCreator.keys());
@@ -58,6 +93,7 @@ export default async function LiveCampaignPage({ params }: { params: { campaignI
           .from("impact_events")
           .select("creator_id, points")
           .eq("campaign_id", params.campaignId)
+          .eq("organisation_id", orgId)
           .in("creator_id", ids);
         if (!impactErr) {
           impactReady = true;
@@ -70,47 +106,51 @@ export default async function LiveCampaignPage({ params }: { params: { campaignI
           }
         }
       }
-      creators = Array.from(byCreator.entries()).map(([id, v]) => ({
-        creator_id: id, handle: handles.get(id),
-        impact: impactReady ? (impactByCreator.get(id) ?? 0) : null,
-        interactions: v.interactions, visits: v.visits, conversions: v.conversions
-      })).sort((a, b) => (b.impact ?? -1) - (a.impact ?? -1));
+      creators = Array.from(byCreator.entries())
+        .map(([id, v]) => ({
+          creator_id: id,
+          handle: handles.get(id),
+          impact: impactReady ? (impactByCreator.get(id) ?? 0) : null,
+          interactions: v.interactions,
+          visits: v.visits,
+          conversions: v.conversions
+        }))
+        .sort((a, b) => (b.impact ?? -1) - (a.impact ?? -1));
     }
-  } catch { /* migration may not be applied */ }
-
-  if (stats.interactions === 0) {
-    const { count: partCount } = await supabase.from("campaign_participations").select("*", { count: "exact", head: true }).eq("campaign_id", params.campaignId);
-    const { count: unlockCount } = await supabase.from("campaign_participations").select("*", { count: "exact", head: true }).eq("campaign_id", params.campaignId).not("unlocked_at", "is", null);
-    const { count: claimCount } = await supabase.from("reward_claims").select("*", { count: "exact", head: true }).eq("campaign_id", params.campaignId);
-    stats.participating = partCount ?? 0; stats.rewards = unlockCount ?? 0; stats.redemptions = claimCount ?? 0;
-    stats.interactions = (partCount ?? 0) + (unlockCount ?? 0);
+  } catch {
+    /* table may not be applied */
   }
 
+  const drilldown = await getCampaignLiveEvents(campaign.id, campaign.title, orgId);
 
-  let recentEvents: { event_type: string; created_at: string; verification_status: string }[] = [];
+  let locationStats: {
+    location_id: string;
+    label: string;
+    interactions: number;
+    visits: number;
+    rewards: number;
+    conversions: number;
+  }[] = [];
   try {
-    const { data: recent } = await supabase
-      .from("interaction_events")
-      .select("event_type, created_at, verification_status")
-      .eq("campaign_id", params.campaignId)
-      .order("created_at", { ascending: false })
-      .limit(12);
-    recentEvents = recent ?? [];
-  } catch { /* */ }
-
-
-  let locationStats: { location_id: string; label: string; interactions: number; visits: number; rewards: number; conversions: number }[] = [];
-  try {
-    const byLoc = new Map<string, { interactions: number; visits: number; rewards: number; conversions: number }>();
+    const byLoc = new Map<
+      string,
+      { interactions: number; visits: number; rewards: number; conversions: number }
+    >();
     const { data: locEvents } = await supabase
       .from("interaction_events")
       .select("event_type, location_id")
       .eq("campaign_id", params.campaignId)
+      .eq("organisation_id", orgId)
       .eq("verification_status", "verified")
       .not("location_id", "is", null);
     for (const e of locEvents ?? []) {
       if (!e.location_id) continue;
-      const cur = byLoc.get(e.location_id) ?? { interactions: 0, visits: 0, rewards: 0, conversions: 0 };
+      const cur = byLoc.get(e.location_id) ?? {
+        interactions: 0,
+        visits: 0,
+        rewards: 0,
+        conversions: 0
+      };
       cur.interactions += 1;
       if (e.event_type === "LOCATION_CHECKIN") cur.visits += 1;
       if (["REWARD_UNLOCK", "REWARD_CLAIM"].includes(e.event_type)) cur.rewards += 1;
@@ -120,15 +160,23 @@ export default async function LiveCampaignPage({ params }: { params: { campaignI
     const locIds = Array.from(byLoc.keys());
     let labels = new Map<string, string>();
     if (locIds.length) {
-      const { data: locs } = await supabase.from("campaign_locations").select("id, label").in("id", locIds);
+      const { data: locs } = await supabase
+        .from("campaign_locations")
+        .select("id, label")
+        .eq("org_id", orgId)
+        .in("id", locIds);
       for (const l of locs ?? []) labels.set(l.id, l.label);
     }
-    locationStats = Array.from(byLoc.entries()).map(([id, v]) => ({
-      location_id: id,
-      label: labels.get(id) ?? id.slice(0, 8),
-      ...v
-    })).sort((a, b) => b.interactions - a.interactions);
-  } catch { /* */ }
+    locationStats = Array.from(byLoc.entries())
+      .map(([id, v]) => ({
+        location_id: id,
+        label: labels.get(id) ?? id.slice(0, 8),
+        ...v
+      }))
+      .sort((a, b) => b.interactions - a.interactions);
+  } catch {
+    /* */
+  }
 
   let pinCount = 0;
   let primaryType: string | null = null;
@@ -136,7 +184,8 @@ export default async function LiveCampaignPage({ params }: { params: { campaignI
     const { count } = await supabase
       .from("campaign_locations")
       .select("id", { count: "exact", head: true })
-      .eq("campaign_id", params.campaignId);
+      .eq("campaign_id", params.campaignId)
+      .eq("org_id", orgId);
     pinCount = count ?? 0;
     const { data: exp } = await supabase
       .from("experience_configs")
@@ -144,7 +193,9 @@ export default async function LiveCampaignPage({ params }: { params: { campaignI
       .eq("campaign_id", params.campaignId)
       .maybeSingle();
     primaryType = (exp as { primary_type?: string } | null)?.primary_type ?? null;
-  } catch { /* */ }
+  } catch {
+    /* */
+  }
 
   let spendCents: number | null = null;
   let remainingCents: number | null = null;
@@ -198,36 +249,22 @@ export default async function LiveCampaignPage({ params }: { params: { campaignI
         stats={stats}
         creators={creators}
         locations={locationStats}
-        recentEvents={recentEvents}
+        events={drilldown.events}
+        truncated={drilldown.truncated}
         spendCents={spendCents}
         remainingCents={remainingCents}
       />
-      <p className="font-mono text-[10px] uppercase tracking-widest text-mute text-center">
+      <p className="text-sm text-mute text-center">
         {primaryType ? <>Type · {primaryType} · </> : null}
         {pinCount} location pin{pinCount === 1 ? "" : "s"} ·{" "}
-        <a href={`/studio/live/${campaign.id}/play`} className="text-volt hover:underline">
+        <a href={`/studio/live/${campaign.id}/play`} className="hover:text-fog">
           Play demo
         </a>
         {" · "}
-        <a href={`/campaign/${campaign.id}`} className="text-volt hover:underline">
+        <a href={`/campaign/${campaign.id}`} className="hover:text-fog">
           Open as consumer
         </a>
       </p>
-      {recentEvents.length > 0 && (
-        <section className="max-w-2xl mx-auto">
-          <p className="font-mono text-[10px] uppercase tracking-[0.3em] text-mute mb-3">Recent interactions</p>
-          <div className="border border-white/8 divide-y divide-white/5">
-            {recentEvents.map((e, i) => (
-              <div key={i} className="flex justify-between px-4 py-2 font-mono text-xs">
-                <span className="text-fog">{e.event_type}</span>
-                <span className="text-mute">
-                  {e.verification_status} · {new Date(e.created_at).toLocaleString()}
-                </span>
-              </div>
-            ))}
-          </div>
-        </section>
-      )}
       <section className="max-w-md mx-auto">
         <PlayExperience title={campaign.title} rewardLabel={rewardLabel} />
       </section>

@@ -5,13 +5,8 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
 /**
- * Replaces the 30s revalidate poll on the LIVE command centre with a real
- * websocket subscription (Supabase Realtime → Postgres changefeed).
- * Any verified interaction_event for this campaign triggers an instant
- * router.refresh() instead of waiting for the next revalidation window.
- *
- * Requires: `alter publication supabase_realtime add table interaction_events;`
- * on the Supabase project (Realtime must be enabled for the table).
+ * Websocket subscription for this campaign's interaction_events.
+ * Insert/update triggers router.refresh so drilldown rows stay current.
  */
 export function LiveRealtimeListener({ campaignId }: { campaignId: string }) {
   const router = useRouter();
@@ -24,7 +19,6 @@ export function LiveRealtimeListener({ campaignId }: { campaignId: string }) {
 
     const scheduleRefresh = () => {
       setLastPing(Date.now());
-      // Debounce bursts of events (e.g. many check-ins at once) into one refresh.
       if (debounceRef.current) clearTimeout(debounceRef.current);
       debounceRef.current = setTimeout(() => router.refresh(), 400);
     };
@@ -60,14 +54,9 @@ export function LiveRealtimeListener({ campaignId }: { campaignId: string }) {
   }, [campaignId, router]);
 
   return (
-    <div className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-widest text-mute">
-      <span
-        className={`inline-flex h-1.5 w-1.5 rounded-full ${
-          connected ? "bg-volt animate-pulse" : "bg-mute"
-        }`}
-        aria-hidden
-      />
-      {connected ? "Live · websocket connected" : "Connecting…"}
+    <div className="flex items-center gap-2 text-sm text-mute">
+      <span className={`inline-flex h-1.5 w-1.5 rounded-full ${connected ? "bg-fog" : "bg-mute"}`} aria-hidden />
+      {connected ? "event feed connected" : "connecting"}
       <span className="sr-only" role="status" aria-live="polite">
         {lastPing ? "New activity received" : ""}
       </span>
