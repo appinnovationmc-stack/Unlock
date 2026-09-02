@@ -15,6 +15,8 @@ export async function verifyLocationCheckin(
   } = await supabase.auth.getUser();
   if (!user) return { verified: false, error: "Not authenticated", locationId: null, distanceM: null };
 
+  // Visit CPE debit runs inside verify_location_checkin (SECURITY DEFINER),
+  // not from the client. This action only invokes that RPC.
   const { data, error } = await supabase.rpc("verify_location_checkin", {
     p_event_id: eventId,
     p_lat: lat,
@@ -28,6 +30,8 @@ export async function verifyLocationCheckin(
   const row = Array.isArray(data) ? data[0] : data;
   if (campaignId) {
     revalidatePath(`/campaign/${campaignId}`);
+    revalidatePath(`/studio/live/${campaignId}`);
+    revalidatePath("/studio");
     revalidatePath("/wallet");
     revalidatePath("/impact");
   }

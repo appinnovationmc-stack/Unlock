@@ -183,6 +183,13 @@ export default async function StudioPage({
                         <span>Redeemed <b className="text-fog">{a.redemptions}</b></span>
                         <span>Referrals <b className="text-fog">{a.creator_referrals}</b></span>
                         <span>Spent <b className="text-fog">{formatMoney(a.spent_cents)}</b></span>
+                        {typeof a.verified_visits === "number" ? (
+                          <span className="col-span-3 sm:col-span-6 text-[10px] text-mute">
+                            {a.verified_visits} verified visits
+                            {typeof a.visit_spend_cents === "number" ? ` · visit CPE ${formatMoney(a.visit_spend_cents)}` : ""}
+                            {" "}· billed on check-in, not unlock
+                          </span>
+                        ) : null}
                       </div>
                     );
                   })()}
@@ -258,6 +265,9 @@ export default async function StudioPage({
             <p className="font-display text-3xl text-fog">{totals.totalAttributionEvents}</p>
             <p className="font-mono text-[10px] uppercase tracking-widest text-mute mt-1">
               Total recorded events · {totals.unlocks} unlocks · {formatMoney(totals.spentCents)} spent
+            </p>
+            <p className="font-mono text-[10px] text-mute mt-2">
+              Visit campaigns bill verified store check-ins (CPE). Unlock and XP do not spend brand money.
             </p>
           </div>
         </section>

@@ -127,6 +127,36 @@ export default async function LiveCampaignPage({ params }: { params: { campaignI
     primaryType = (exp as { primary_type?: string } | null)?.primary_type ?? null;
   } catch { /* */ }
 
+  let spendCents: number | null = null;
+  let remainingCents: number | null = null;
+  try {
+    const { data: budget } = await supabase
+      .from("campaign_budgets")
+      .select("spent_cents, total_budget_cents, reserved_cents")
+      .eq("campaign_id", params.campaignId)
+      .maybeSingle();
+    if (budget) {
+      spendCents = Number(budget.spent_cents ?? 0);
+      remainingCents =
+        Number(budget.total_budget_cents ?? 0) -
+        Number(budget.spent_cents ?? 0) -
+        Number(budget.reserved_cents ?? 0);
+    }
+    const { data: analytics } = await supabase
+      .from("campaign_analytics")
+      .select("visit_spend_cents, remaining_cents")
+      .eq("campaign_id", params.campaignId)
+      .maybeSingle();
+    if (analytics && analytics.visit_spend_cents != null) {
+      spendCents = Number(analytics.visit_spend_cents);
+    }
+    if (analytics && analytics.remaining_cents != null) {
+      remainingCents = Number(analytics.remaining_cents);
+    }
+  } catch {
+    /* visit_spend_cents column exists only after visit CPE SQL is applied */
+  }
+
   const { data: reward } = await supabase
     .from("rewards")
     .select("label, value")
@@ -150,6 +180,8 @@ export default async function LiveCampaignPage({ params }: { params: { campaignI
         creators={creators}
         locations={locationStats}
         recentEvents={recentEvents}
+        spendCents={spendCents}
+        remainingCents={remainingCents}
       />
       <p className="font-mono text-[10px] uppercase tracking-widest text-mute text-center">
         {primaryType ? <>Type · {primaryType} · </> : null}
