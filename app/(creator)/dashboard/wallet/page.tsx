@@ -18,12 +18,17 @@ type EarningRow = {
   campaigns: Nested<{ title?: string | null }>;
 };
 
+type LedgerRow = {
+  amount_cents: number;
+  status: string;
+};
+
 function one<T>(value: Nested<T>): T | null {
   if (!value) return null;
   return Array.isArray(value) ? (value[0] ?? null) : value;
 }
 
-function sumCents(rows: EarningRow[], statuses: string[]): number {
+function sumCents(rows: LedgerRow[], statuses: string[]): number {
   return rows.reduce((n, row) => {
     if (!statuses.includes(row.status)) return n;
     const cents = Number(row.amount_cents);
@@ -54,7 +59,11 @@ export default async function CreatorWalletPage() {
 
   if (!creator) redirect("/signup");
 
-  const [earningsRes, withdrawalsRes] = await Promise.all([
+  const [ledgerRes, earningsRes, withdrawalsRes] = await Promise.all([
+    supabase
+      .from("creator_earnings")
+      .select("amount_cents, status")
+      .eq("creator_id", user.id),
     supabase
       .from("creator_earnings")
       .select("id, amount_cents, status, earning_type, description, created_at, campaigns(title)")
@@ -69,13 +78,14 @@ export default async function CreatorWalletPage() {
       .limit(15)
   ]);
 
+  const ledger = (ledgerRes.data ?? []) as LedgerRow[];
   const earnings = (earningsRes.data ?? []) as EarningRow[];
   const withdrawals = withdrawalsRes.data || [];
 
-  const pendingCents = sumCents(earnings, ["pending"]);
-  const availableCents = sumCents(earnings, ["available"]);
-  const paidCents = sumCents(earnings, ["paid"]);
-  const lifetimeEarnedCents = sumCents(earnings, ["pending", "available", "paid"]);
+  const pendingCents = sumCents(ledger, ["pending"]);
+  const availableCents = sumCents(ledger, ["available"]);
+  const paidCents = sumCents(ledger, ["paid"]);
+  const lifetimeEarnedCents = sumCents(ledger, ["pending", "available", "paid"]);
 
   const grouped = EARNING_GROUPS.map((group) => ({
     ...group,
