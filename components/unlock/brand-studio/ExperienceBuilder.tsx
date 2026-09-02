@@ -96,8 +96,8 @@ export function ExperienceBuilder() {
     <div className="grid lg:grid-cols-2 gap-8">
       <div className="space-y-6">
         <div>
-          <p className="section-kicker mb-1">Build experience</p>
-          <h2 className="font-display text-xl text-fog">What do you want people to do?</h2>
+          <p className="section-kicker mb-1">Intent</p>
+          <h2 className="font-display text-xl text-fog">What should people actually do?</h2>
         </div>
         <div className="flex flex-wrap gap-2">
           {INTENTS.map((i) => (
@@ -223,7 +223,7 @@ export function ExperienceBuilder() {
               Save draft
             </Button>
             <Button type="submit" name="status" value="live" variant="volt" className="flex-1">
-              Save and continue
+              Start — then drop a pin
             </Button>
           </div>
         </form>
