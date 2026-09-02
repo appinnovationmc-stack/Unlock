@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { Metadata } from "next";
+import type { Route } from "next";
 import { Button } from "@/components/ui/Button";
 import { getPublicBrandProof } from "@/lib/unlock/proof/public";
 
@@ -34,7 +35,10 @@ function PublicStat({ label, value }: { label: string; value: string }) {
 
 export default async function ForBrandsPage() {
   const proof = await getPublicBrandProof();
-  const campaignHref = proof.flagship ? `/campaign/${proof.flagship.id}` : "/discover";
+  // Dynamic campaign id widens to string; cast keeps typedRoutes happy (same pattern as other Unlock deep links).
+  const campaignHref = (
+    proof.flagship ? `/campaign/${proof.flagship.id}` : "/discover"
+  ) as Route;
 
   return (
     <main className="min-h-screen bg-duotone px-6 py-12 md:px-12 relative overflow-hidden">
@@ -165,7 +169,7 @@ export default async function ForBrandsPage() {
         </section>
 
         <div className="mt-10 flex flex-col sm:flex-row gap-4">
-          <Link href="/signup?role=brand">
+          <Link href={"/signup?role=brand" as Route}>
             <Button variant="volt">Brand signup</Button>
           </Link>
           <Link href={campaignHref}>
