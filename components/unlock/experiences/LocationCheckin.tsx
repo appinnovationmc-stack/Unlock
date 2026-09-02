@@ -4,18 +4,18 @@ import { useState, useTransition } from "react";
 import { recordInteraction } from "@/lib/unlock/interactions/record";
 import { verifyLocationCheckin } from "@/lib/unlock/verification/location";
 
-/**
- * Location-based verification for VISIT / geolocation mechanics.
- * Quiet chrome: one button, errors only when something fails.
- */
 export function LocationCheckin({
   campaignId,
   locationId,
-  label = "Check in here"
+  creatorId,
+  label = "Check in here",
+  onVerified
 }: {
   campaignId: string;
   locationId?: string | null;
+  creatorId?: string | null;
   label?: string;
+  onVerified?: () => void;
 }) {
   const [status, setStatus] = useState<"idle" | "locating" | "done" | "error" | "rejected">("idle");
   const [message, setMessage] = useState<string | null>(null);
@@ -38,6 +38,7 @@ export function LocationCheckin({
             eventType: "LOCATION_CHECKIN",
             campaignId,
             locationId: locationId ?? undefined,
+            creatorId: creatorId ?? undefined,
             verificationMethod: "location",
             metadata: { lat, lng, accuracy: pos.coords.accuracy, source: "browser_geolocation" },
             idempotencyKey: `checkin:${campaignId}:${new Date().toISOString().slice(0, 13)}`
@@ -63,14 +64,13 @@ export function LocationCheckin({
 
           setStatus("done");
           setMessage(null);
+          onVerified?.();
         });
       },
       (err) => {
         setStatus("error");
         setMessage(
-          err.code === 1
-            ? "Location permission denied."
-            : "Could not get your location."
+          err.code === 1 ? "Location permission denied." : "Could not get your location."
         );
       },
       { enableHighAccuracy: true, timeout: 15000, maximumAge: 60000 }
@@ -99,9 +99,7 @@ export function LocationCheckin({
               ? "Too far — try again"
               : label}
       </button>
-      {message && (
-        <p className="text-xs text-center text-mute">{message}</p>
-      )}
+      {message && <p className="text-xs text-center text-mute">{message}</p>}
     </div>
   );
 }
