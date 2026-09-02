@@ -6,6 +6,9 @@ import { recordInteraction } from "@/lib/unlock/interactions/record";
 import { verifyLocationCheckin } from "@/lib/unlock/verification/location";
 import { campaignLoginHref } from "@/lib/auth/safe-next";
 
+const GPS_PRIVACY =
+  "GPS is used to verify you are at the pin. Not a follower map, and not always exact.";
+
 export function LocationCheckin({
   campaignId,
   locationId,
@@ -105,6 +108,7 @@ export function LocationCheckin({
         <Link href={campaignLoginHref(campaignId)} className={`${buttonClass} block text-center`}>
           {label}
         </Link>
+        <p className="text-xs text-center text-mute">{GPS_PRIVACY}</p>
       </div>
     );
   }
@@ -125,6 +129,7 @@ export function LocationCheckin({
               ? "Too far — try again"
               : label}
       </button>
+      <p className="text-xs text-center text-mute">{GPS_PRIVACY}</p>
       {message && <p className="text-xs text-center text-mute">{message}</p>}
     </div>
   );
