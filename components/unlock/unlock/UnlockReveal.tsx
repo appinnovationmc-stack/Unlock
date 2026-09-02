@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { ShareMoment } from "@/components/campaign/ShareMoment";
+import { Button } from "@/components/ui/Button";
 
 export function UnlockReveal({
   reward,
@@ -41,33 +42,25 @@ export function UnlockReveal({
         role="status"
         aria-live="polite"
         aria-label={already ? "Already unlocked" : "Unlocked"}
-        className={`relative overflow-hidden clip-keyhole border border-gold/40 bg-ink2 p-8 text-center transition-all ${
+        className={`relative overflow-hidden clip-keyhole border border-gold/40 bg-ink2 p-8 text-center transition-opacity ${
           reduced ? "duration-0" : "duration-500"
-        } ${show ? "opacity-100 scale-100" : reduced ? "opacity-100" : "opacity-0 scale-95"}`}
+        } ${show ? "opacity-100" : reduced ? "opacity-100" : "opacity-0"}`}
       >
-        {!reduced && (
-          <div
-            className="pointer-events-none absolute inset-0 opacity-40"
-            style={{ background: "radial-gradient(circle at 50% 30%, rgba(255,194,75,0.25), transparent 55%)" }}
-            aria-hidden
-          />
-        )}
-        <p className="relative font-mono text-[10px] tracking-[0.35em] text-gold mb-3">
+        <p className="section-kicker text-gold mb-3">
           {already ? "Already unlocked" : "Unlocked"}
         </p>
-        <h2 className="relative font-display text-3xl text-fog mb-2">{reward}</h2>
+        <h2 className="font-display text-3xl text-fog mb-2">{reward}</h2>
         {!already && (
-          <p className="relative font-mono text-gold text-sm tracking-widest mb-6">+{impact} impact</p>
+          <p className="text-gold text-sm mb-6">+{impact} impact</p>
         )}
-        <div className="relative flex flex-col sm:flex-row gap-3 justify-center">
-          <Link href="/wallet" className="font-mono text-[10px] tracking-widest border border-gold/50 text-gold px-4 py-2 hover:bg-gold/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-volt">
-            View in wallet
+        <div className="flex flex-col sm:flex-row gap-3 justify-center">
+          <Link href="/wallet">
+            <Button variant="ghost" className="border-gold/50 text-gold">
+              View in wallet
+            </Button>
           </Link>
-          <Link href="/discover" className="font-mono text-[10px] tracking-widest border border-white/15 text-mute px-4 py-2 hover:text-fog focus-visible:outline focus-visible:outline-2 focus-visible:outline-volt">
-            More experiences
-          </Link>
-          <Link href={`/campaign/${campaignId}`} className="font-mono text-[10px] tracking-widest border border-white/15 text-mute px-4 py-2 hover:text-fog focus-visible:outline focus-visible:outline-2 focus-visible:outline-volt">
-            Stay here
+          <Link href="/discover">
+            <Button variant="ghost">More experiences</Button>
           </Link>
         </div>
       </div>

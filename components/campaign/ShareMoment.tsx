@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { recordInteraction } from "@/lib/unlock/interactions/record";
+import { Button } from "@/components/ui/Button";
 
 export function ShareMoment({
   campaignId,
@@ -64,24 +65,15 @@ export function ShareMoment({
 
   return (
     <div className="border border-magenta/30 bg-magenta/5 px-4 py-4 text-center space-y-3">
-      <p className="font-mono text-[10px] tracking-widest text-magenta">Broadcast</p>
+      <p className="section-kicker text-magenta">Broadcast</p>
       <p className="text-fog text-sm">Pass this encounter on.</p>
       <div className="flex flex-col sm:flex-row gap-2 justify-center">
-        <a
-          href={waHref}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="font-mono text-xs tracking-widest text-void bg-volt px-4 py-2 hover:brightness-110"
-        >
-          WhatsApp
+        <a href={waHref} target="_blank" rel="noopener noreferrer">
+          <Button variant="volt">WhatsApp</Button>
         </a>
-        <button
-          type="button"
-          onClick={share}
-          className="font-mono text-xs tracking-widest text-mute border border-white/20 px-4 py-2 hover:text-fog"
-        >
+        <Button type="button" variant="ghost" onClick={share}>
           {copied ? "Link copied" : "Copy link"}
-        </button>
+        </Button>
       </div>
     </div>
   );

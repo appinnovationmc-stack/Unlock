@@ -55,12 +55,12 @@ function attachPins(map: maplibregl.Map, pins: MapPin[]) {
     const el = document.createElement("span");
     el.className = "unlock-map-pin";
     el.style.cssText =
-      "flex-shrink:0;width:14px;height:14px;border-radius:9999px;background:#C6FF3D;border:2px solid #0B0A14;box-shadow:0 0 12px rgba(198,255,61,0.7);";
+      "flex-shrink:0;width:12px;height:12px;border-radius:9999px;background:#C6FF3D;border:2px solid #0B0A14;";
 
     const caption = document.createElement("span");
     caption.textContent = pin.label || pin.campaign_title;
     caption.style.cssText =
-      "font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:10px;letter-spacing:0.04em;text-transform:uppercase;color:#ECE9F7;background:rgba(11,10,20,0.9);border:1px solid rgba(255,255,255,0.12);padding:3px 7px;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;";
+      "font-family:Inter,system-ui,sans-serif;font-size:12px;color:#ECE9F7;background:rgba(11,10,20,0.88);padding:4px 8px;line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;";
 
     wrap.append(el, caption);
 
@@ -168,7 +168,7 @@ export function LiveMap({
   if (failed) {
     return (
       <div className="absolute inset-0 flex items-center justify-center bg-ink2 min-h-[280px]">
-        <p className="font-mono text-xs text-mute tracking-widest uppercase px-4 text-center">
+        <p className="text-sm text-mute px-4 text-center">
           Map failed to load — experiences are still listed below
         </p>
       </div>
@@ -179,9 +179,9 @@ export function LiveMap({
     <div className="unlock-live-map relative w-full h-full min-h-[280px]">
       <div ref={containerRef} className="absolute inset-0 min-h-[280px]" />
       {validPins.length === 0 && (
-        <div className="absolute inset-x-0 bottom-16 flex justify-center pointer-events-none z-10">
-          <p className="font-mono text-[10px] text-mute tracking-widest uppercase bg-void/80 border border-white/10 px-3 py-2">
-            Johannesburg · no field pins yet — experiences still listed below
+        <div className="absolute inset-x-0 bottom-12 flex justify-center pointer-events-none z-10">
+          <p className="text-sm text-mute bg-void/80 px-3 py-2">
+            No field pins yet — experiences still listed below
           </p>
         </div>
       )}
