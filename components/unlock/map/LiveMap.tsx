@@ -17,35 +17,8 @@ export type MapPin = {
 const JOBURG = { lat: -26.2041, lng: 28.0473 };
 const CITY_ZOOM = 11;
 
-/** Carto dark tiles. Do not use Leaflet `{r}` retina tokens — MapLibre leaves them literal and tiles 404. */
-const CARTO_DARK_STYLE = {
-  version: 8 as const,
-  sources: {
-    "unlock-void": {
-      type: "raster" as const,
-      tiles: [
-        "https://a.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png",
-        "https://b.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png",
-        "https://c.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png",
-        "https://d.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png"
-      ],
-      tileSize: 256,
-      attribution: "© OpenStreetMap © CARTO"
-    }
-  },
-  layers: [
-    {
-      id: "unlock-void-base",
-      type: "raster" as const,
-      source: "unlock-void",
-      paint: {
-        "raster-brightness-max": 0.7,
-        "raster-contrast": 0.12,
-        "raster-saturation": -0.2
-      }
-    }
-  ]
-};
+/** Vector dark streets. Carto raster `dark_all` now watermarks anonymous use. No API key. */
+const OPENFREEMAP_DARK = "https://tiles.openfreemap.org/styles/dark";
 
 function isValidPin(pin: MapPin): boolean {
   return (
@@ -59,7 +32,6 @@ function isValidPin(pin: MapPin): boolean {
 
 /**
  * Real map surface for UNLOCK World discovery.
- * Carto dark raster tiles — no API key required.
  */
 export function LiveMap({
   pins,
@@ -90,7 +62,7 @@ export function LiveMap({
     try {
       map = new maplibregl.Map({
         container: containerRef.current,
-        style: CARTO_DARK_STYLE,
+        style: OPENFREEMAP_DARK,
         center,
         zoom: CITY_ZOOM,
         attributionControl: false
