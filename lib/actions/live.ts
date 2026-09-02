@@ -20,6 +20,8 @@ export type LiveDrilldownEvent = {
   creator_label: string | null;
   impact_points: number | null;
   user_id: string;
+  risk_score: number | null;
+  risk_reasons: string[];
 };
 
 export type LiveDrilldown = {
@@ -27,6 +29,22 @@ export type LiveDrilldown = {
   truncated: boolean;
   loaded: number;
 };
+
+function metadataRisk(meta: unknown): { score: number | null; reasons: string[] } {
+  if (!meta || typeof meta !== "object") return { score: null, reasons: [] };
+  const rec = meta as Record<string, unknown>;
+  const raw = rec.risk_score;
+  const score =
+    typeof raw === "number" && Number.isFinite(raw)
+      ? Math.max(0, Math.min(100, Math.round(raw)))
+      : typeof raw === "string" && raw.trim() !== "" && Number.isFinite(Number(raw))
+        ? Math.max(0, Math.min(100, Math.round(Number(raw))))
+        : null;
+  const reasons = Array.isArray(rec.risk_reasons)
+    ? rec.risk_reasons.filter((r): r is string => typeof r === "string" && r.length > 0)
+    : [];
+  return { score, reasons };
+}
 
 /** Org-member RLS read of interaction_events. No SECURITY DEFINER. */
 export async function getCampaignLiveEvents(
@@ -42,7 +60,7 @@ export async function getCampaignLiveEvents(
   const { data, error } = await supabase
     .from("interaction_events")
     .select(
-      "id, user_id, campaign_id, organisation_id, creator_id, location_id, event_type, verification_method, verification_status, created_at"
+      "id, user_id, campaign_id, organisation_id, creator_id, location_id, event_type, verification_method, verification_status, created_at, metadata"
     )
     .eq("campaign_id", campaignId)
     .eq("organisation_id", orgId)
@@ -90,23 +108,28 @@ export async function getCampaignLiveEvents(
     );
   }
 
-  const events: LiveDrilldownEvent[] = rows.map((r) => ({
-    id: r.id,
-    campaign_id: r.campaign_id,
-    campaign_title: campaignTitle,
-    event_type: r.event_type,
-    created_at: r.created_at,
-    verification_status: r.verification_status,
-    verification_method: r.verification_method ?? null,
-    location_id: r.location_id,
-    location_label: r.location_id ? labels.get(r.location_id) ?? r.location_id.slice(0, 8) : null,
-    creator_id: r.creator_id,
-    creator_label: r.creator_id
-      ? handles.get(r.creator_id) ?? r.creator_id.slice(0, 8)
-      : null,
-    impact_points: impactByEvent.has(r.id) ? impactByEvent.get(r.id)! : null,
-    user_id: r.user_id
-  }));
+  const events: LiveDrilldownEvent[] = rows.map((r) => {
+    const risk = metadataRisk((r as { metadata?: unknown }).metadata);
+    return {
+      id: r.id,
+      campaign_id: r.campaign_id,
+      campaign_title: campaignTitle,
+      event_type: r.event_type,
+      created_at: r.created_at,
+      verification_status: r.verification_status,
+      verification_method: r.verification_method ?? null,
+      location_id: r.location_id,
+      location_label: r.location_id ? labels.get(r.location_id) ?? r.location_id.slice(0, 8) : null,
+      creator_id: r.creator_id,
+      creator_label: r.creator_id
+        ? handles.get(r.creator_id) ?? r.creator_id.slice(0, 8)
+        : null,
+      impact_points: impactByEvent.has(r.id) ? impactByEvent.get(r.id)! : null,
+      user_id: r.user_id,
+      risk_score: risk.score,
+      risk_reasons: risk.reasons
+    };
+  });
 
   return { events, truncated, loaded: events.length };
 }
