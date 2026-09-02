@@ -17,8 +17,8 @@ export type MapPin = {
 const JOBURG = { lat: -26.2041, lng: 28.0473 };
 const CITY_ZOOM = 11;
 
-/** Vector dark streets. Carto raster `dark_all` now watermarks anonymous use. No API key. */
-const OPENFREEMAP_DARK = "https://tiles.openfreemap.org/styles/dark";
+/** OpenFreeMap Liberty — readable streets. Their `dark` style is black-on-black. No API key. */
+const OPENFREEMAP_LIBERTY = "https://tiles.openfreemap.org/styles/liberty";
 
 function isValidPin(pin: MapPin): boolean {
   return (
@@ -62,7 +62,7 @@ export function LiveMap({
     try {
       map = new maplibregl.Map({
         container: containerRef.current,
-        style: OPENFREEMAP_DARK,
+        style: OPENFREEMAP_LIBERTY,
         center,
         zoom: CITY_ZOOM,
         attributionControl: false
