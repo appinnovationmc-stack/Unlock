@@ -14,7 +14,9 @@ export function Button({ variant = "volt", className = "", ...props }: ButtonPro
   return (
     <button
       className={`inline-flex items-center justify-center gap-2 px-5 py-2.5 font-body text-sm
-        transition-colors duration-150 ${variants[variant]} ${className}`}
+        motion-safe:transition-colors motion-safe:duration-150
+        focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-volt
+        ${variants[variant]} ${className}`}
       {...props}
     />
   );

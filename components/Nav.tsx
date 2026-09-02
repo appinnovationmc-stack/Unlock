@@ -9,7 +9,7 @@ export async function Nav() {
   if (!hasEnv) {
     return (
       <nav className="flex items-center justify-between px-6 py-4 border-b border-magenta/30 bg-magenta/10">
-        <Link href="/" className="font-display text-sm text-fog tracking-tight">
+        <Link href="/" aria-label="Home" className="font-display text-sm text-fog tracking-tight">
           UNLOCK
         </Link>
         <span className="text-sm text-magenta">
@@ -33,11 +33,11 @@ export async function Nav() {
     // env misconfigured mid-request
   }
 
-  const link = "text-sm text-mute hover:text-fog transition-colors";
+  const link = "text-sm text-mute hover:text-fog motion-safe:transition-colors";
 
   return (
     <nav className="flex items-center justify-between px-6 py-4 border-b border-white/5 bg-void">
-      <Link href="/" className="font-display text-sm text-fog tracking-tight">
+      <Link href="/" aria-label="Home" className="font-display text-sm text-fog tracking-tight">
         UNLOCK
       </Link>
       <div className="flex items-center gap-5 flex-wrap justify-end">
