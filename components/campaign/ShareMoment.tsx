@@ -3,10 +3,6 @@
 import { useState } from "react";
 import { recordInteraction } from "@/lib/unlock/interactions/record";
 
-/**
- * Post-unlock social beat — native share or copy link.
- * Magenta/gold only when celebrated (after a win).
- */
 export function ShareMoment({
   campaignId,
   title,
@@ -29,6 +25,8 @@ export function ShareMoment({
     ? `I just unlocked “${title}” — ${rewardHint}. Don't just see the ad. Unlock it.`
     : `I just unlocked “${title}”. Don't just see the ad. Unlock it.`;
 
+  const waHref = `https://wa.me/?text=${encodeURIComponent(`${text}\n${path}`)}`;
+
   async function share() {
     let didShare = false;
     if (typeof navigator !== "undefined" && navigator.share) {
@@ -36,7 +34,7 @@ export function ShareMoment({
         await navigator.share({ title, text, url: path });
         didShare = true;
       } catch {
-        /* user cancelled or unsupported */
+        /* cancelled */
       }
     }
     if (!didShare) {
@@ -61,32 +59,30 @@ export function ShareMoment({
   }
 
   if (!celebrated) {
-    return (
-      <div className="border border-white/10 px-4 py-4 text-center">
-        <p className="font-mono text-[10px] tracking-widest text-mute mb-2">Pass it on</p>
-        <p className="text-mute text-sm mb-3">
-          Share after you unlock — that is when the encounter travels.
-        </p>
-      </div>
-    );
+    return null;
   }
 
   return (
-    <div className="border border-magenta/30 bg-magenta/5 px-4 py-4 text-center">
-      <p className="font-mono text-[10px] tracking-widest text-magenta mb-2">
-        Broadcast
-      </p>
-      <p className="text-fog text-sm mb-3">
-        Experiences go viral when people pass them on — not when brands buy another
-        impression.
-      </p>
-      <button
-        type="button"
-        onClick={share}
-        className="font-mono text-xs tracking-widest text-void bg-volt px-4 py-2 hover:brightness-110"
-      >
-        {copied ? "Link copied" : "Share this encounter"}
-      </button>
+    <div className="border border-magenta/30 bg-magenta/5 px-4 py-4 text-center space-y-3">
+      <p className="font-mono text-[10px] tracking-widest text-magenta">Broadcast</p>
+      <p className="text-fog text-sm">Pass this encounter on.</p>
+      <div className="flex flex-col sm:flex-row gap-2 justify-center">
+        <a
+          href={waHref}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="font-mono text-xs tracking-widest text-void bg-volt px-4 py-2 hover:brightness-110"
+        >
+          WhatsApp
+        </a>
+        <button
+          type="button"
+          onClick={share}
+          className="font-mono text-xs tracking-widest text-mute border border-white/20 px-4 py-2 hover:text-fog"
+        >
+          {copied ? "Link copied" : "Copy link"}
+        </button>
+      </div>
     </div>
   );
 }

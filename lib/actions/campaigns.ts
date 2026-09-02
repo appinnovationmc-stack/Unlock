@@ -25,7 +25,6 @@ export async function getMyOrgId() {
 function parseDateInput(raw: string): string | null {
   const v = raw.trim();
   if (!v) return null;
-  // datetime-local → "2026-08-29T18:00" — append Z-less local; store as ISO-ish
   const d = new Date(v);
   if (Number.isNaN(d.getTime())) return null;
   return d.toISOString();
@@ -41,6 +40,8 @@ function parseCampaignForm(formData: FormData) {
   const mechanics = formData.getAll("mechanics") as CampaignMechanicType[];
   const rewardLabel = String(formData.get("reward_label") ?? "").trim();
   const rewardValue = String(formData.get("reward_value") ?? "").trim();
+  const verify = String(formData.get("verify") ?? "session").trim() || "session";
+  const where = String(formData.get("where") ?? "").trim() || null;
   const startsAt =
     parseDateInput(String(formData.get("starts_at") ?? "")) ?? new Date().toISOString();
   const endsAt = parseDateInput(String(formData.get("ends_at") ?? ""));
@@ -57,11 +58,21 @@ function parseCampaignForm(formData: FormData) {
     mechanics,
     rewardLabel,
     rewardValue,
+    verify,
+    where,
     startsAt,
     endsAt,
     heroImage,
     status
   };
+}
+
+function verificationRequired(verify: string): string[] {
+  if (verify === "location") return ["location"];
+  if (verify === "qr") return ["qr"];
+  if (verify === "nfc") return ["nfc"];
+  if (verify === "product") return ["product"];
+  return ["authenticated_session"];
 }
 
 export async function createCampaign(formData: FormData) {
@@ -75,8 +86,16 @@ export async function createCampaign(formData: FormData) {
     return redirect(`/studio?error=${encodeURIComponent("Campaign title is required")}`);
   }
 
-  const insertStatus = f.status === "live" ? "live" : "draft";
-  const publishedAt = insertStatus === "live" ? new Date().toISOString() : null;
+  const wantedLive = f.status === "live";
+  if (wantedLive && !f.rewardLabel) {
+    return redirect(
+      `/studio?error=${encodeURIComponent("Name the reward before going live")}`
+    );
+  }
+
+  // New campaigns have no pins yet — live is a second step after LocationForm.
+  const insertStatus: CampaignStatus = "draft";
+  const publishedAt = null;
 
   const { data: campaign, error } = await supabase
     .from("campaigns")
@@ -84,7 +103,7 @@ export async function createCampaign(formData: FormData) {
       org_id: orgId,
       title: f.title,
       tagline: f.tagline || null,
-      description: f.description || null,
+      description: f.description || f.tagline || null,
       objective: f.objective,
       target_audience: f.targetAudience,
       mechanics: f.mechanics,
@@ -115,7 +134,6 @@ export async function createCampaign(formData: FormData) {
     });
   }
 
-  // UNLOCK 2.0 — experience config from intent/objective
   const objectiveToType: Record<string, string> = {
     discover: "DISCOVER",
     visit: "VISIT",
@@ -139,17 +157,22 @@ export async function createCampaign(formData: FormData) {
   };
   const primaryType =
     objectiveToType[(f.objective ?? "").toLowerCase()] ??
-    (f.mechanics.includes("geolocation" as any) ? "VISIT" :
-     f.mechanics.includes("qr_scan" as any) || f.mechanics.includes("treasure_hunt" as any) ? "COLLECT" :
-     f.mechanics.includes("quiz" as any) || f.mechanics.includes("puzzle" as any) ? "SOLVE" :
-     "PLAY");
+    (f.mechanics.includes("geolocation" as CampaignMechanicType)
+      ? "VISIT"
+      : f.mechanics.includes("qr_scan" as CampaignMechanicType) ||
+          f.mechanics.includes("treasure_hunt" as CampaignMechanicType)
+        ? "COLLECT"
+        : f.mechanics.includes("quiz" as CampaignMechanicType) ||
+            f.mechanics.includes("puzzle" as CampaignMechanicType)
+          ? "SOLVE"
+          : "PLAY");
 
   try {
     await supabase.from("experience_configs").insert({
       campaign_id: campaign.id,
       organisation_id: orgId,
       primary_type: primaryType,
-      verification_required: ["authenticated_session"],
+      verification_required: verificationRequired(f.verify),
       reward_preview: {
         label: f.rewardLabel || null,
         value: f.rewardValue || null
@@ -158,20 +181,60 @@ export async function createCampaign(formData: FormData) {
       config: {
         objective: f.objective,
         mechanics: f.mechanics,
+        where: f.where,
+        verify: f.verify,
         source: "experience_builder"
       }
     });
   } catch {
-    // table may not exist yet on older envs
+    /* table may not exist yet */
   }
 
   revalidatePath("/studio");
   revalidatePath("/discover");
 
-  if (insertStatus === "draft") {
-    redirect(`/studio?created=${campaign.id}&draft=1`);
+  if (wantedLive) {
+    redirect(
+      `/studio?created=${campaign.id}&draft=1&error=${encodeURIComponent(
+        "Saved as draft. Add a map pin, then Publish."
+      )}`
+    );
   }
-  redirect(`/studio?created=${campaign.id}`);
+  redirect(`/studio?created=${campaign.id}&draft=1`);
+}
+
+async function assertCanGoLive(
+  supabase: ReturnType<typeof createClient>,
+  orgId: string,
+  campaignId: string
+) {
+  const { data: c } = await supabase
+    .from("campaigns")
+    .select("title")
+    .eq("id", campaignId)
+    .eq("org_id", orgId)
+    .single();
+  if (!c?.title) {
+    return "Cannot publish: missing title";
+  }
+  const { count: pinCount } = await supabase
+    .from("campaign_locations")
+    .select("id", { count: "exact", head: true })
+    .eq("campaign_id", campaignId)
+    .eq("org_id", orgId);
+  if (!pinCount) {
+    return "Add a map pin before going live";
+  }
+  const { data: reward } = await supabase
+    .from("rewards")
+    .select("label")
+    .eq("campaign_id", campaignId)
+    .limit(1)
+    .maybeSingle();
+  if (!reward?.label?.trim()) {
+    return "Name the reward before going live";
+  }
+  return null;
 }
 
 export async function updateCampaignStatus(formData: FormData) {
@@ -187,6 +250,13 @@ export async function updateCampaignStatus(formData: FormData) {
     return redirect(`/studio?error=${encodeURIComponent("Invalid status")}`);
   }
 
+  if (nextStatus === "live") {
+    const blocked = await assertCanGoLive(supabase, orgId, campaignId);
+    if (blocked) {
+      return redirect(`/studio?error=${encodeURIComponent(blocked)}`);
+    }
+  }
+
   const updates: Record<string, unknown> = { status: nextStatus };
   if (nextStatus === "live") {
     updates.published_at = new Date().toISOString();
@@ -194,18 +264,6 @@ export async function updateCampaignStatus(formData: FormData) {
   }
   if (nextStatus === "paused") {
     updates.paused_at = new Date().toISOString();
-  }
-
-  if (nextStatus === "live") {
-    const { data: c } = await supabase
-      .from("campaigns")
-      .select("title, mechanics")
-      .eq("id", campaignId)
-      .eq("org_id", orgId)
-      .single();
-    if (!c?.title) {
-      return redirect(`/studio?error=${encodeURIComponent("Cannot publish: missing title")}`);
-    }
   }
 
   const { error } = await supabase
@@ -234,7 +292,6 @@ export async function publishCampaign(formData: FormData) {
   return createCampaign(formData);
 }
 
-/** Add a map pin / store location to a campaign (PostGIS point). */
 export async function addCampaignLocation(formData: FormData) {
   const supabase = createClient();
   const orgId = await getMyOrgId();
@@ -261,7 +318,6 @@ export async function addCampaignLocation(formData: FormData) {
     redirect(`/studio?error=${encodeURIComponent("Campaign not found")}`);
   }
 
-  // PostGIS geography point via raw SQL RPC-friendly insert
   const { error } = await supabase.rpc("add_campaign_location_point", {
     p_org_id: orgId,
     p_campaign_id: campaignId,
@@ -271,10 +327,7 @@ export async function addCampaignLocation(formData: FormData) {
     p_radius_m: Number.isFinite(radiusM) ? Math.max(25, Math.min(5000, radiusM)) : 150
   });
 
-  // Fallback if RPC missing: try direct insert with WKT-style via from
   if (error) {
-    // Store as metadata-only fallback using a text workaround isn't ideal;
-    // require migration 00000021 for the RPC.
     redirect(
       `/studio?error=${encodeURIComponent(error.message || "Could not add location — apply migration 00000021")}`
     );

@@ -1,8 +1,18 @@
 "use client";
 import { UnlockExperience } from "@/components/unlock/unlock/UnlockExperience";
 
-export function UnlockClient({ campaignId, rewardLabel, campaignTitle, referrerCreatorId }: {
-  campaignId: string; rewardLabel: string; campaignTitle?: string; referrerCreatorId?: string | null;
+export function UnlockClient({
+  campaignId,
+  rewardLabel,
+  campaignTitle,
+  referrerCreatorId,
+  requireVisit = false
+}: {
+  campaignId: string;
+  rewardLabel: string;
+  campaignTitle?: string;
+  referrerCreatorId?: string | null;
+  requireVisit?: boolean;
 }) {
   return (
     <UnlockExperience
@@ -10,6 +20,7 @@ export function UnlockClient({ campaignId, rewardLabel, campaignTitle, referrerC
       rewardLabel={rewardLabel}
       campaignTitle={campaignTitle}
       referrerCreatorId={referrerCreatorId}
+      requireVisit={requireVisit}
     />
   );
 }
