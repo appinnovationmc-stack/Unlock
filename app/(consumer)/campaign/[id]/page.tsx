@@ -1,7 +1,6 @@
 import { UnlockClient } from "@/components/campaign/UnlockClient";
 import { RecordCampaignView } from "@/components/unlock/interactions/RecordView";
 import { RecordReferralClick } from "@/components/unlock/interactions/RecordReferralClick";
-import { LocationCheckin } from "@/components/unlock/experiences/LocationCheckin";
 import { NfcScan } from "@/components/unlock/experiences/NfcScan";
 import { ProductHuntClaim } from "@/components/campaign/ProductHuntClaim";
 import { createClient } from "@/lib/supabase/server";
@@ -62,9 +61,14 @@ export default async function CampaignPage({
     experienceType = (exp as { primary_type?: string } | null)?.primary_type ?? null;
   } catch { /* */ }
 
-  const rewardLabel = reward
+  const { count: pinCount } = await supabase
+    .from("campaign_locations")
+    .select("id", { count: "exact", head: true })
+    .eq("campaign_id", params.id);
+
+  const rewardLabel = reward?.label
     ? `${reward.label}${reward.value ? " — " + reward.value : ""}`
-    : "Something waiting";
+    : "+" + (campaign.xp_value ?? 0) + " XP";
 
   const referrerCreatorId = searchParams.ref || null;
 
@@ -76,17 +80,25 @@ export default async function CampaignPage({
   const isProductHunt = (productCodeCount ?? 0) > 0;
 
   const mechanics = (campaign.mechanics ?? []) as string[];
+  const requireVisit =
+    (pinCount ?? 0) > 0 ||
+    mechanics.includes("geolocation") ||
+    mechanics.includes("treasure_hunt") ||
+    experienceType === "VISIT";
+
   const actionHint = isProductHunt
     ? "Find the product. Enter the code. Prove it. Unlock."
-    : mechanics.includes("quiz")
-      ? "Face the challenge. Tap through. Claim what you earn."
-      : mechanics.includes("treasure_hunt") || mechanics.includes("qr_scan")
+    : requireVisit
+      ? "Get close. Check in. Hold to unlock."
+      : mechanics.includes("qr_scan")
         ? "Hunt it down. Scan. Unlock."
-        : "Hold the seal. Complete the moment. Take the reward.";
+        : mechanics.includes("nfc_tap")
+          ? "Tap the tag. Unlock."
+          : mechanics.includes("quiz") || mechanics.includes("puzzle")
+            ? "Face the challenge. Tap through. Claim what you earn."
+            : "Hold the seal. Complete the moment. Take the reward.";
 
-  const actionLine =
-    campaign.tagline ||
-    actionHint;
+  const actionLine = campaign.tagline || actionHint;
 
   return (
     <main className="min-h-screen px-6 py-10 md:px-12 max-w-xl mx-auto">
@@ -135,16 +147,13 @@ export default async function CampaignPage({
           <p className="font-mono text-[10px] tracking-widest text-mute">What you get</p>
           <p className="text-fog text-sm mt-1">
             {rewardLabel}
-            <span className="text-mute"> · +{campaign.xp_value} XP</span>
+            {reward?.label ? (
+              <span className="text-mute"> · +{campaign.xp_value} XP</span>
+            ) : null}
           </p>
         </div>
       </div>
 
-      {(mechanics.includes("geolocation") || mechanics.includes("treasure_hunt")) && campaign.status === "live" && (
-        <div className="mb-6">
-          <LocationCheckin campaignId={campaign.id} />
-        </div>
-      )}
       {mechanics.includes("nfc_tap") && campaign.status === "live" && (
         <div className="mb-6">
           <NfcScan campaignId={campaign.id} />
@@ -159,6 +168,7 @@ export default async function CampaignPage({
           rewardLabel={rewardLabel}
           campaignTitle={campaign.title}
           referrerCreatorId={referrerCreatorId}
+          requireVisit={requireVisit && campaign.status === "live"}
         />
       )}
 
