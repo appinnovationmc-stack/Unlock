@@ -223,7 +223,7 @@ export function ExperienceBuilder() {
               Save draft
             </Button>
             <Button type="submit" name="status" value="live" variant="volt" className="flex-1">
-              Publish live
+              Save and continue
             </Button>
           </div>
         </form>
@@ -255,7 +255,7 @@ export function ExperienceBuilder() {
           </div>
         </div>
         <p className="mt-3 text-mute text-sm">
-          Publish live still needs a map pin after save. Verify choice is stored on the experience.
+          Saving starts a draft. Next: add a pin, add a reward, fund, preview, then publish. Verify is stored on the experience. Visit check-ins stay gated.
         </p>
       </div>
     </div>
