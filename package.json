@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "test:finance": "node scripts/test-finance-logic.mjs"
+    "test:finance": "node scripts/test-finance-logic.mjs",
+    "test:unlock": "node scripts/test-unlock-concurrency.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.5.1",
