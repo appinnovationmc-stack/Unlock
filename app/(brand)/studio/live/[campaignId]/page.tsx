@@ -51,11 +51,30 @@ export default async function LiveCampaignPage({ params }: { params: { campaignI
         const { data: rows } = await supabase.from("creators").select("id, handle").in("id", ids);
         for (const c of rows ?? []) handles.set(c.id, c.handle);
       }
+      const impactByCreator = new Map<string, number>();
+      let impactReady = false;
+      if (ids.length) {
+        const { data: impactRows, error: impactErr } = await supabase
+          .from("impact_events")
+          .select("creator_id, points")
+          .eq("campaign_id", params.campaignId)
+          .in("creator_id", ids);
+        if (!impactErr) {
+          impactReady = true;
+          for (const row of impactRows ?? []) {
+            if (!row.creator_id) continue;
+            impactByCreator.set(
+              row.creator_id,
+              (impactByCreator.get(row.creator_id) ?? 0) + Number(row.points ?? 0)
+            );
+          }
+        }
+      }
       creators = Array.from(byCreator.entries()).map(([id, v]) => ({
         creator_id: id, handle: handles.get(id),
-        impact: v.interactions * 10 + v.visits * 25 + v.conversions * 50,
+        impact: impactReady ? (impactByCreator.get(id) ?? 0) : null,
         interactions: v.interactions, visits: v.visits, conversions: v.conversions
-      })).sort((a, b) => b.impact - a.impact);
+      })).sort((a, b) => (b.impact ?? -1) - (a.impact ?? -1));
     }
   } catch { /* migration may not be applied */ }
 
@@ -210,7 +229,7 @@ export default async function LiveCampaignPage({ params }: { params: { campaignI
         </section>
       )}
       <section className="max-w-md mx-auto">
-        <PlayExperience title={campaign.title} rewardLabel={rewardLabel} impact={50} />
+        <PlayExperience title={campaign.title} rewardLabel={rewardLabel} />
       </section>
     </main>
   );

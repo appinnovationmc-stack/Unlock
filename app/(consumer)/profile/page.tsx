@@ -4,7 +4,8 @@ import Link from "next/link";
 
 export const dynamic = "force-dynamic";
 
-function levelFromImpact(impact: number) {
+function levelFromImpact(impact: number | null) {
+  if (impact == null) return { level: null as number | null, title: "Pending" };
   if (impact >= 5000) return { level: 5, title: "Legend" };
   if (impact >= 1500) return { level: 4, title: "Operator" };
   if (impact >= 500) return { level: 3, title: "Explorer" };
@@ -27,13 +28,21 @@ export default async function ProfilePage() {
     );
   }
 
-  let impact = 0, visits = 0, verified = 0;
+  let impact: number | null = null;
+  let visits: number | null = null;
+  let verified: number | null = null;
+  let impactError = false;
   try {
-    const { data: score } = await supabase.from("impact_scores").select("*").eq("user_id", user.id).maybeSingle();
-    impact = score?.total_impact ?? 0;
-    visits = score?.store_visits ?? 0;
-    verified = score?.verified_interactions ?? 0;
-  } catch {}
+    const { data: score, error } = await supabase.from("impact_scores").select("*").eq("user_id", user.id).maybeSingle();
+    if (error) impactError = true;
+    else if (score) {
+      impact = score.total_impact;
+      visits = score.store_visits;
+      verified = score.verified_interactions;
+    }
+  } catch {
+    impactError = true;
+  }
 
   const { count: unlockCount } = await supabase
     .from("campaign_participations")
@@ -47,6 +56,7 @@ export default async function ProfilePage() {
     .eq("consumer_id", user.id);
 
   const { level, title } = levelFromImpact(impact);
+  const impactLabel = impactError ? "Unavailable" : impact == null ? "Pending" : impact.toLocaleString();
 
   return (
     <main className="min-h-screen px-6 py-10 md:px-12 max-w-2xl mx-auto bg-void">
@@ -58,12 +68,12 @@ export default async function ProfilePage() {
       <section className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-10">
         <div className="border border-volt/25 bg-ink2 px-5 py-5 clip-keyhole-sm">
           <p className="font-mono text-[10px] uppercase tracking-widest text-mute">Impact</p>
-          <p className="font-display text-3xl text-volt mt-1 tabular-nums">{impact.toLocaleString()}</p>
+          <p className="font-display text-3xl text-volt mt-1 tabular-nums">{impactLabel}</p>
         </div>
         <div className="border border-white/8 bg-ink2 px-5 py-5 clip-keyhole-sm">
           <p className="font-mono text-[10px] uppercase tracking-widest text-mute">Level</p>
-          <p className="font-display text-2xl text-fog mt-1">{level}</p>
-          <p className="font-mono text-[10px] text-mute mt-1">{title}</p>
+          <p className="font-display text-2xl text-fog mt-1">{level == null ? "—" : level}</p>
+          <p className="font-mono text-[10px] text-mute mt-1">{impactError ? "Unavailable" : title}</p>
         </div>
         <div className="border border-white/8 bg-ink2 px-5 py-5 clip-keyhole-sm">
           <p className="font-mono text-[10px] uppercase tracking-widest text-mute">Unlocks</p>
@@ -75,11 +85,11 @@ export default async function ProfilePage() {
         </div>
         <div className="border border-white/8 bg-ink2 px-5 py-5 clip-keyhole-sm">
           <p className="font-mono text-[10px] uppercase tracking-widest text-mute">Verified</p>
-          <p className="font-display text-2xl text-fog mt-1">{verified}</p>
+          <p className="font-display text-2xl text-fog mt-1">{impactError ? "—" : verified == null ? "Pending" : verified}</p>
         </div>
         <div className="border border-white/8 bg-ink2 px-5 py-5 clip-keyhole-sm">
           <p className="font-mono text-[10px] uppercase tracking-widest text-mute">Visits</p>
-          <p className="font-display text-2xl text-fog mt-1">{visits}</p>
+          <p className="font-display text-2xl text-fog mt-1">{impactError ? "—" : visits == null ? "Pending" : visits}</p>
         </div>
       </section>
       <div className="flex flex-wrap gap-4 font-mono text-[10px] uppercase tracking-widest">

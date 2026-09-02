@@ -16,7 +16,7 @@ export interface LiveStats {
 export interface CreatorImpactRow {
   creator_id: string;
   handle?: string;
-  impact: number;
+  impact: number | null;
   interactions: number;
   visits: number;
   conversions: number;
@@ -178,7 +178,9 @@ export function LiveCommandCentre({
                   <span className="font-display text-fog">{c.handle ?? c.creator_id.slice(0, 8)}</span>
                 </div>
                 <div className="flex items-center gap-6 font-mono text-xs tabular-nums">
-                  <span className="text-volt">{c.impact.toLocaleString()} Impact</span>
+                  <span className="text-volt">
+                    {c.impact == null ? "Pending" : `${c.impact.toLocaleString()} Impact`}
+                  </span>
                   <span className="text-mute hidden sm:inline">{c.visits} visits</span>
                   <span className="text-magenta">{c.conversions} conv.</span>
                 </div>
