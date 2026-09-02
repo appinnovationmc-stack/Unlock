@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { prefersReducedMotion } from "@/lib/unlock/reduced-motion";
 
 interface UnlockRevealProps {
   label: string;
@@ -26,15 +27,22 @@ export function UnlockReveal({ label, onRevealed }: UnlockRevealProps) {
           disabled={phase === "tearing"}
           onClick={() => {
             if (phase !== "locked") return;
-            setPhase("tearing");
             onRevealed?.();
+            if (prefersReducedMotion()) {
+              setPhase("open");
+              return;
+            }
+            setPhase("tearing");
             window.setTimeout(() => setPhase("open"), 600);
           }}
           className={`absolute inset-0 bg-ink2 flex flex-col items-center justify-center gap-2
-            font-display text-fog/80 hover:text-volt transition-colors
+            font-display text-fog/80 hover:text-volt motion-safe:transition-colors
+            focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-volt
             ${phase === "tearing" ? "unlock-foil" : ""}`}
         >
-          <span className="text-3xl">◎</span>
+          <span className="text-3xl" aria-hidden>
+            ◎
+          </span>
           <span className="text-sm">{phase === "tearing" ? "Unlocking…" : "Tap to unlock"}</span>
         </button>
       )}
