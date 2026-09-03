@@ -8,7 +8,10 @@
     "start": "next start",
     "lint": "next lint",
     "test:finance": "node scripts/test-finance-logic.mjs",
-    "test:unlock": "node scripts/test-unlock-concurrency.mjs"
+    "test:unlock": "node scripts/test-unlock-concurrency.mjs",
+    "test:fraud": "node scripts/test-fraud-logic.mjs",
+    "test:recon": "node scripts/test-reconciliation-logic.mjs",
+    "test:gates": "node scripts/test-finance-logic.mjs && node scripts/test-fraud-logic.mjs && node scripts/test-reconciliation-logic.mjs && node scripts/test-unlock-concurrency.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.5.1",
