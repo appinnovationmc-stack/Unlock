@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { LiveMapSection } from "@/components/unlock/map/LiveMapSection";
 import { FieldPinList } from "@/components/unlock/map/FieldPinList";
@@ -15,6 +16,7 @@ export default async function DiscoverPage() {
   const live = mapPins.length > 0;
 
   let youAvatar: string | null = null;
+  let canPlant = false;
   if (user) {
     const { data } = await supabase
       .from("consumers")
@@ -22,6 +24,13 @@ export default async function DiscoverPage() {
       .eq("id", user.id)
       .maybeSingle();
     youAvatar = data?.avatar_url ?? null;
+    const { data: member } = await supabase
+      .from("org_members")
+      .select("org_id")
+      .eq("user_id", user.id)
+      .limit(1)
+      .maybeSingle();
+    canPlant = Boolean(member?.org_id);
   }
 
   const soon = new Set(
@@ -43,24 +52,36 @@ export default async function DiscoverPage() {
         <p className="text-mute text-sm mt-3 max-w-lg">
           {live
             ? "Find it. Get close. Unlock it."
-            : "When a brand plants something, it appears on this map."}
+            : "The field is empty until a brand plants a moment."}
         </p>
       </header>
 
-      <section className="page-shell-wide pb-6">
-        <div className="unlock-map-frame relative w-full h-[62vh] min-h-[360px] max-h-[720px] overflow-hidden bg-ink">
+      <section className="page-shell-wide pb-10">
+        <div className="unlock-map-frame relative w-full h-[62vh] min-h-[360px] max-h-[720px] bg-ink">
           <div className="absolute inset-0">
             <LiveMapSection pins={mapPins} youAvatar={youAvatar} />
           </div>
-          <div className="absolute top-3 left-3 z-10 pointer-events-none">
-            <p className="text-sm text-fog unlock-glass px-3 py-1.5">
-              {live
-                ? mapPins.length === 1
-                  ? "One nearby"
-                  : `${mapPins.length} nearby`
-                : "Nothing live"}
-            </p>
-          </div>
+          {live ? (
+            <div className="absolute top-3 left-3 z-10 pointer-events-none">
+              <p className="text-sm text-fog unlock-glass px-3 py-1.5">
+                {mapPins.length === 1 ? "One nearby" : `${mapPins.length} nearby`}
+              </p>
+            </div>
+          ) : (
+            <div className="absolute inset-0 z-10 flex items-center justify-center p-6 pointer-events-none">
+              <div className="unlock-glass max-w-sm text-center px-6 py-6 pointer-events-auto">
+                <p className="font-display text-xl text-fog">The city is waiting for a first drop.</p>
+                <p className="text-mute text-sm mt-2">
+                  Plant one pin. People walk. You measure who came.
+                </p>
+                {canPlant ? (
+                  <Link href="/studio" className="inline-block mt-4 text-sm min-h-11 leading-[44px]">
+                    Plant one
+                  </Link>
+                ) : null}
+              </div>
+            </div>
+          )}
         </div>
       </section>
 
