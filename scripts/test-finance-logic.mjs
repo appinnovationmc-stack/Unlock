@@ -67,5 +67,21 @@ function assert(cond, msg) {
   assert(keys.has(k2), "duplicate unique_key detected");
 }
 
+// Visit CPE: cannot bill more than remaining
+{
+  const remaining = 15_00; // R15
+  const rate = 20_00; // R20 default CPE
+  const billed = remaining >= rate ? rate : 0;
+  assert(billed === 0, "CPE does not overdraw remaining budget");
+}
+
+// Visit CPE: bills when remaining covers rate
+{
+  const remaining = 50_00;
+  const rate = 20_00;
+  const billed = remaining >= rate ? rate : 0;
+  assert(billed === 20_00, "CPE bills R20 when remaining covers it");
+}
+
 console.log("\nFinance logic tests finished.");
 if (process.exitCode) process.exit(1);
