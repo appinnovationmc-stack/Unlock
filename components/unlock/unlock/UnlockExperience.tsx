@@ -36,8 +36,6 @@ export function UnlockExperience({
   const [isPending, startTransition] = useTransition();
   const inFlightRef = useRef(false);
 
-  // Single public pin → pin-explicit record. Multiple pins → omit locationId;
-  // verify_location_checkin matches GPS to any campaign pin server-side.
   const locationId = pinLocationIds.length === 1 ? pinLocationIds[0] : null;
 
   const handleUnlock = () => {
@@ -47,7 +45,7 @@ export function UnlockExperience({
     }
     if (inFlightRef.current) return;
     if (requireVisit && !checkedIn) {
-      setError("Check in at the place first");
+      setError("Say you're here first");
       setPhase("error");
       return;
     }
@@ -99,7 +97,7 @@ export function UnlockExperience({
     return (
       <div className="space-y-4">
         {checkin}
-        <div className="border border-white/15 bg-ink2 p-6 text-center">
+        <div className="border border-black/10 bg-ink p-6 text-center">
           <p className="text-fog text-sm mb-3">{error ?? "Something went wrong."}</p>
           <Button
             type="button"
@@ -131,12 +129,9 @@ export function UnlockExperience({
           <Link
             href={{ pathname: "/login", query: { next: `/campaign/${campaignId}` } }}
             aria-label="Hold to unlock"
-            className="relative h-28 w-28 select-none rounded-full border-2 border-white/25 text-fog bg-ink2 hover:border-volt/60 motion-safe:transition-colors motion-safe:duration-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-volt"
+            className="unlock-glass relative h-28 w-28 select-none rounded-full text-fog focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-volt"
           >
-            <span
-              className="absolute inset-2 rounded-full bg-ink2 flex items-center justify-center font-display text-2xl"
-              aria-hidden
-            >
+            <span className="absolute inset-2 rounded-full flex items-center justify-center font-display text-2xl" aria-hidden>
               ◎
             </span>
           </Link>
@@ -162,9 +157,9 @@ export function UnlockExperience({
         disabled={isPending || phase === "confirming" || (requireVisit && !checkedIn)}
         label={
           phase === "confirming"
-            ? "Confirming…"
+            ? "Opening…"
             : requireVisit && !checkedIn
-              ? "Check in first"
+              ? "I'm here first"
               : "Hold to unlock"
         }
       />
