@@ -1,20 +1,24 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { logOut, getCurrentRole } from "@/lib/actions/auth";
+import { UnlockMark } from "@/components/ui/UnlockMark";
 
 export async function Nav() {
   const hasEnv =
     !!process.env.NEXT_PUBLIC_SUPABASE_URL && !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
+  const brand = (
+    <Link href="/" aria-label="UNLOCK home" className="flex items-center gap-2 min-h-11">
+      <UnlockMark size={28} />
+      <span className="font-display text-sm text-fog tracking-tight">UNLOCK</span>
+    </Link>
+  );
+
   if (!hasEnv) {
     return (
       <nav className="flex items-center justify-between px-6 py-4 border-b border-magenta/30 bg-magenta/10">
-        <Link href="/" aria-label="Home" className="font-display text-sm text-fog tracking-tight">
-          UNLOCK
-        </Link>
-        <span className="text-sm text-magenta">
-          Set .env.local (Supabase URL + anon key) and restart npm run dev
-        </span>
+        {brand}
+        <span className="text-sm text-magenta">Set .env.local and restart</span>
       </nav>
     );
   }
@@ -33,54 +37,48 @@ export async function Nav() {
     // env misconfigured mid-request
   }
 
-  const link = "text-sm text-mute hover:text-fog motion-safe:transition-colors";
+  const link = "text-sm text-mute hover:text-fog motion-safe:transition-colors min-h-11 inline-flex items-center";
+  const isBrand = role === "brand";
+  const isCreator = role === "creator";
+  const isAdmin = role === "admin";
+  const isConsumer = role === "consumer" || (!user && !isBrand);
 
   return (
-    <nav className="sticky top-0 z-40 flex items-center justify-between px-6 py-3 border-b border-white/5 bg-void/90 backdrop-blur-md pt-[max(0.75rem,env(safe-area-inset-top))]">
-      <Link href="/" aria-label="Home" className="font-display text-sm text-fog tracking-tight">
-        UNLOCK
-      </Link>
+    <nav className="sticky top-0 z-40 flex items-center justify-between px-6 py-3 border-b border-black/5 bg-void/90 backdrop-blur-md pt-[max(0.75rem,env(safe-area-inset-top))]">
+      {brand}
       <div className="flex items-center gap-5 flex-wrap justify-end">
         <Link href="/discover" className={link}>
-          Field
+          {isBrand ? "Field" : "Explore"}
         </Link>
-        {(!user || role === "brand") && (
-          <Link href="/for-brands" className={link}>
-            Brands
-          </Link>
-        )}
-        {(role === "brand" || !user) && (
+        {isBrand && (
           <Link href="/studio" className={link}>
             Studio
           </Link>
         )}
-        {(role === "creator" || !user) && (
+        {isCreator && (
           <Link href="/dashboard" className={link}>
             Creator
           </Link>
         )}
-        {role === "consumer" && (
-          <>
-            <Link href="/impact" className={link}>
-              Impact
-            </Link>
-            <Link href="/profile" className={link}>
-              Profile
-            </Link>
-            <Link href="/wallet" className={link}>
-              Wallet
-            </Link>
-          </>
-        )}
-        {role === "admin" && (
+        {isAdmin && (
           <Link href="/admin" className={link}>
             Admin
           </Link>
         )}
+        {(isConsumer || role === "consumer") && user && (
+          <>
+            <Link href="/wallet" className={link}>
+              Rewards
+            </Link>
+            <Link href="/profile" className={link}>
+              Profile
+            </Link>
+          </>
+        )}
         {user ? (
           <form action={logOut}>
-            <button type="submit" className={`${link} truncate max-w-[140px]`}>
-              {user.email?.split("@")[0]} · Out
+            <button type="submit" className={link}>
+              Out
             </button>
           </form>
         ) : (
