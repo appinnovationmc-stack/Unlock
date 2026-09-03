@@ -56,7 +56,7 @@ export default async function DiscoverPage() {
 
       <section className="px-4 md:px-10 pb-12">
         <div className="unlock-map-stage mx-auto max-w-6xl">
-          <div className="unlock-map-frame relative w-full h-[68vh] min-h-[420px] max-h-[780px] bg-ink">
+          <div className="unlock-map-frame relative w-full h-[68vh] min-h-[420px] max-h-[780px]">
             <div className="absolute inset-0">
               <LiveMapSection pins={mapPins} youAvatar={youAvatar} />
             </div>
@@ -68,14 +68,14 @@ export default async function DiscoverPage() {
                 </p>
               </div>
             ) : (
-              <div className="absolute inset-0 z-10 flex items-end md:items-center justify-center p-6 pointer-events-none">
-                <div className="unlock-glass max-w-sm text-center px-6 py-6 pointer-events-auto">
-                  <p className="font-display text-xl text-fog">The map is the media.</p>
-                  <p className="text-mute text-sm mt-2">
+              <div className="absolute top-4 left-4 right-16 z-10 pointer-events-none">
+                <div className="unlock-glass max-w-sm px-4 py-3 pointer-events-auto">
+                  <p className="font-display text-lg text-fog">The map is the media.</p>
+                  <p className="text-mute text-sm mt-1">
                     Plant one pin. People walk. You see who came.
                   </p>
                   {canPlant ? (
-                    <Link href="/studio" className="inline-block mt-4 text-sm min-h-11 leading-[44px]">
+                    <Link href="/studio" className="inline-block mt-3 text-sm min-h-11 leading-[44px]">
                       Plant one
                     </Link>
                   ) : null}
