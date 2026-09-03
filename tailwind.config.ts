@@ -11,7 +11,7 @@ const config: Config = {
         fog: "#1d1d1f",
         mute: "#6e6e73",
         volt: "#111111",
-        magenta: "#FF3DCB",
+        magenta: "#1d1d1f",
         gold: "#FFC24B"
       },
       fontFamily: {
