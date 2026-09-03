@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import type { MapPin } from "./LiveMap";
+import { mapsWalkUrl } from "./WalkRadar";
 
 function safeHttp(url?: string | null) {
   if (!url) return null;
@@ -34,6 +35,7 @@ export function PinSnippet({
   const name = pin.brand_name || pin.campaign_title;
   const place = pin.label && pin.label !== pin.campaign_title ? pin.label : null;
   const howFar = distanceLine(distanceM ?? null);
+  const walk = mapsWalkUrl(pin.lat, pin.lng);
 
   return (
     <div
@@ -60,7 +62,7 @@ export function PinSnippet({
             <p className="font-display text-lg text-fog truncate">{name}</p>
             {place ? <p className="text-sm text-mute truncate">{place}</p> : null}
             <p className="text-sm text-mute mt-2">
-              {howFar ? howFar : "Find it. Get close. Unlock it."}
+              {howFar ? howFar : "Find me, then walk."}
             </p>
           </div>
           <button
@@ -72,12 +74,22 @@ export function PinSnippet({
             Close
           </button>
         </div>
-        <Link
-          href={`/campaign/${pin.campaign_id}`}
-          className="mt-4 flex min-h-11 items-center justify-center rounded-full bg-volt text-white text-sm"
-        >
-          Go there
-        </Link>
+        <div className="mt-4 grid grid-cols-2 gap-2">
+          <a
+            href={walk}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex min-h-11 items-center justify-center text-sm border border-black/10"
+          >
+            Walk there
+          </a>
+          <Link
+            href={`/campaign/${pin.campaign_id}`}
+            className="flex min-h-11 items-center justify-center rounded-full bg-volt text-white text-sm"
+          >
+            Open
+          </Link>
+        </div>
       </div>
     </div>
   );
