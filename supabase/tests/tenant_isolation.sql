@@ -4,6 +4,11 @@
 --
 -- Pass = every row in isolation_proof.passed is true.
 -- There is no campaign_spend_ledger table; money journal is public.financial_ledger.
+--
+-- Important: interaction_events and impact_events intentionally expose a user's
+-- own activity across organisations. That is consumer history, not org analytics.
+-- The cross-tenant checks below therefore exclude the authenticated test user's
+-- own rows and prove that another organisation's OTHER users' events remain hidden.
 
 CREATE TEMP TABLE isolation_proof (
   check_name text PRIMARY KEY,
@@ -175,6 +180,8 @@ DECLARE
   ok boolean;
   det text;
   camp_b uuid;
+  other_event_count int;
+  other_impact_count int;
 BEGIN
   SELECT a.user_id, a.org_id, b.org_id
   INTO u_a, org_a, org_b
@@ -218,22 +225,32 @@ BEGIN
 
   EXECUTE 'SET LOCAL ROLE authenticated';
   SELECT count(*) INTO n FROM public.interaction_events
-  WHERE organisation_id = org_b
-     OR campaign_id IN (SELECT id FROM public.campaigns WHERE org_id = org_b);
+  WHERE (organisation_id = org_b
+     OR campaign_id IN (SELECT id FROM public.campaigns WHERE org_id = org_b))
+    AND user_id <> u_a;
   EXECUTE 'RESET ROLE';
+  SELECT count(*) INTO other_event_count FROM public.interaction_events
+  WHERE (organisation_id = org_b
+     OR campaign_id IN (SELECT id FROM public.campaigns WHERE org_id = org_b))
+    AND user_id <> u_a;
   INSERT INTO isolation_proof VALUES (
-    'orgA_cannot_select_orgB_interaction_events',
+    'orgA_cannot_select_orgB_other_users_interaction_events',
     n = 0,
-    format('rows_seen=%s', n)
+    format('rows_seen=%s other_user_rows_in_fixture=%s; own rows intentionally excluded', n, other_event_count)
   );
 
   EXECUTE 'SET LOCAL ROLE authenticated';
-  SELECT count(*) INTO n FROM public.impact_events WHERE organisation_id = org_b;
+  SELECT count(*) INTO n FROM public.impact_events
+  WHERE organisation_id = org_b
+    AND user_id <> u_a;
   EXECUTE 'RESET ROLE';
+  SELECT count(*) INTO other_impact_count FROM public.impact_events
+  WHERE organisation_id = org_b
+    AND user_id <> u_a;
   INSERT INTO isolation_proof VALUES (
-    'orgA_cannot_select_orgB_impact_events',
+    'orgA_cannot_select_orgB_other_users_impact_events',
     n = 0,
-    format('rows_seen=%s', n)
+    format('rows_seen=%s other_user_rows_in_fixture=%s; own rows intentionally excluded', n, other_impact_count)
   );
 
   SELECT id INTO camp_b FROM public.campaigns WHERE org_id = org_b LIMIT 1;
