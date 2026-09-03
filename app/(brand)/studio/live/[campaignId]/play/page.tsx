@@ -52,7 +52,6 @@ export default async function PlayCampaignPage({ params }: { params: { campaignI
         title={campaign.title}
         tagline={campaign.tagline}
         rewardLabel={rewardLabel}
-        impact={campaign.xp_value ?? 50}
       />
       <p className="mt-8 text-center">
         <Link href={`/campaign/${campaign.id}`} className="font-mono text-[10px] uppercase tracking-widest text-volt hover:underline">
