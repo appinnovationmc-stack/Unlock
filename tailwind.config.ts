@@ -6,11 +6,11 @@ const config: Config = {
     extend: {
       colors: {
         void: "#f3f6fb",
-        ink: "#e7eef7",
-        ink2: "#d9e3f0",
+        ink: "#eceff3",
+        ink2: "#e2e5ea",
         fog: "#1d1d1f",
         mute: "#6e6e73",
-        volt: "#0071e3",
+        volt: "#111111",
         magenta: "#FF3DCB",
         gold: "#FFC24B"
       },
@@ -18,9 +18,6 @@ const config: Config = {
         display: ["var(--font-display)", "sans-serif"],
         body: ["var(--font-body)", "sans-serif"],
         mono: ["var(--font-mono)", "monospace"]
-      },
-      clipPath: {
-        keyhole: "polygon(0 0, 100% 0, 100% 100%, 24px 100%, 0 calc(100% - 24px))"
       }
     }
   },
