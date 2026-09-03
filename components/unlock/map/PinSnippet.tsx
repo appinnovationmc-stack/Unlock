@@ -14,16 +14,26 @@ function safeHttp(url?: string | null) {
   return null;
 }
 
+function distanceLine(m: number | null | undefined) {
+  if (m == null || !Number.isFinite(m)) return null;
+  if (m < 25) return "You're here";
+  if (m < 1000) return `${Math.round(m)} m away`;
+  return `${(m / 1000).toFixed(1)} km away`;
+}
+
 export function PinSnippet({
   pin,
+  distanceM,
   onClose
 }: {
   pin: MapPin;
+  distanceM?: number | null;
   onClose: () => void;
 }) {
   const logo = safeHttp(pin.logo_url);
   const name = pin.brand_name || pin.campaign_title;
   const place = pin.label && pin.label !== pin.campaign_title ? pin.label : null;
+  const howFar = distanceLine(distanceM ?? null);
 
   return (
     <div
@@ -49,7 +59,9 @@ export function PinSnippet({
           <div className="min-w-0 flex-1">
             <p className="font-display text-lg text-fog truncate">{name}</p>
             {place ? <p className="text-sm text-mute truncate">{place}</p> : null}
-            <p className="text-sm text-mute mt-2">Find it. Get close. Unlock it.</p>
+            <p className="text-sm text-mute mt-2">
+              {howFar ? howFar : "Find it. Get close. Unlock it."}
+            </p>
           </div>
           <button
             type="button"
