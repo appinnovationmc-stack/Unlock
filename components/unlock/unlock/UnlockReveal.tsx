@@ -20,6 +20,7 @@ export function UnlockReveal({
 }) {
   const [reduced, setReduced] = useState(false);
   const [show, setShow] = useState(false);
+  void impact;
 
   useEffect(() => {
     const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -41,28 +42,24 @@ export function UnlockReveal({
       <div
         role="status"
         aria-live="polite"
-        aria-label={already ? "Already unlocked" : "Unlocked"}
-        className={`relative overflow-hidden clip-keyhole border border-gold/40 bg-ink2 p-8 text-center transition-opacity ${
+        aria-label={already ? "Already unlocked" : "You unlocked it"}
+        className={`relative overflow-hidden border border-magenta/30 bg-ink p-8 text-center transition-opacity ${
           reduced ? "duration-0" : "duration-500"
         } ${show ? "opacity-100" : reduced ? "opacity-100" : "opacity-0"}`}
       >
-        <p className="section-kicker text-gold mb-3">
-          {already ? "Already unlocked" : "Unlocked"}
+        <p className="section-kicker text-magenta mb-3">
+          {already ? "You already have this" : "You unlocked it"}
         </p>
         <h2 className="font-display text-3xl text-fog mb-2">{reward}</h2>
-        {!already && (
-          <p className="text-gold text-sm mb-6">
-            {impact == null ? "Impact pending" : `+${impact} impact`}
-          </p>
-        )}
+        {!already && <p className="text-mute text-sm mb-6">Added to your rewards</p>}
         <div className="flex flex-col sm:flex-row gap-3 justify-center">
           <Link href="/wallet">
-            <Button variant="ghost" className="border-gold/50 text-gold">
-              View in wallet
+            <Button variant="ghost" className="border-magenta/40 text-magenta">
+              See rewards
             </Button>
           </Link>
           <Link href="/discover">
-            <Button variant="ghost">More experiences</Button>
+            <Button variant="ghost">Explore again</Button>
           </Link>
         </div>
       </div>
