@@ -6,14 +6,13 @@ import { recordInteraction } from "@/lib/unlock/interactions/record";
 import { verifyLocationCheckin } from "@/lib/unlock/verification/location";
 import { campaignLoginHref } from "@/lib/auth/safe-next";
 
-const GPS_PRIVACY =
-  "GPS is used to verify you are at the pin. Not a follower map, and not always exact.";
+const GPS_PRIVACY = "Location is only used to see if you are at the place.";
 
 export function LocationCheckin({
   campaignId,
   locationId,
   creatorId,
-  label = "Check in here",
+  label = "I'm here",
   authenticated = false,
   onVerified
 }: {
@@ -36,7 +35,7 @@ export function LocationCheckin({
     }
     if (!navigator.geolocation) {
       setStatus("error");
-      setMessage("Location is not available on this device.");
+      setMessage("This device cannot share a location.");
       return;
     }
     setStatus("locating");
@@ -57,7 +56,7 @@ export function LocationCheckin({
 
           if (recorded.error || !recorded.eventId) {
             setStatus("error");
-            setMessage(recorded.error ?? "Could not record check-in");
+            setMessage(recorded.error ?? "Could not confirm you are here.");
             return;
           }
 
@@ -75,7 +74,7 @@ export function LocationCheckin({
           }
           if (!verified.verified) {
             setStatus("rejected");
-            setMessage("Too far from the pin. Move closer.");
+            setMessage("A little closer.");
             return;
           }
 
@@ -87,19 +86,19 @@ export function LocationCheckin({
       (err) => {
         setStatus("error");
         setMessage(
-          err.code === 1 ? "Location permission denied." : "Could not get your location."
+          err.code === 1 ? "Allow location to continue." : "Could not find you yet."
         );
       },
       { enableHighAccuracy: true, timeout: 15000, maximumAge: 60000 }
     );
   }
 
-  const buttonClass = `w-full font-mono text-[10px] tracking-widest py-2.5 border ${
+  const buttonClass = `w-full min-h-11 text-sm py-3 border ${
     status === "done"
-      ? "border-gold/40 text-gold"
+      ? "border-magenta/40 text-magenta"
       : status === "rejected"
-        ? "border-white/20 text-mute"
-        : "border-white/15 text-mute hover:text-fog hover:border-white/30"
+        ? "border-black/15 text-mute"
+        : "border-black/15 text-fog hover:border-volt"
   } disabled:opacity-50`;
 
   if (!authenticated) {
@@ -125,11 +124,11 @@ export function LocationCheckin({
         className={buttonClass}
       >
         {status === "locating" || isPending
-          ? "Checking in…"
+          ? "Finding you…"
           : status === "done"
-            ? "Checked in"
+            ? "You're here"
             : status === "rejected"
-              ? "Too far — try again"
+              ? "A little closer"
               : label}
       </button>
       <p className="text-xs text-center text-mute">{GPS_PRIVACY}</p>
