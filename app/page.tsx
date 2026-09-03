@@ -3,46 +3,51 @@ import { Button } from "@/components/ui/Button";
 
 export default function Home() {
   return (
-    <main className="min-h-screen bg-void flex flex-col items-center justify-center px-6 py-16 text-center">
-      <p className="section-kicker mb-6">Encounters · not ads</p>
+    <main className="min-h-screen bg-void">
+      <header className="px-6 pt-16 pb-10 md:pt-24 md:pb-12 text-center">
+        <p className="section-kicker mb-5">Encounters · not ads</p>
+        <h1 className="font-display text-5xl md:text-7xl font-900 leading-[0.95] tracking-tight text-fog">
+          Don't just see the ad.
+          <br />
+          <span className="text-volt">Unlock</span> it.
+        </h1>
+      </header>
 
-      <h1 className="font-display text-5xl md:text-7xl font-900 leading-[0.95] text-fog max-w-4xl">
-        Don't just see the ad.
-        <br />
-        <span className="text-volt">Unlock</span> it.
-      </h1>
+      <section className="grid md:grid-cols-2 border-t border-white/8">
+        <article className="flex flex-col items-center text-center px-8 py-20 md:py-28 md:border-r border-white/8">
+          <h2 className="font-display text-4xl md:text-5xl text-fog tracking-tight">Field</h2>
+          <p className="mt-3 text-mute text-lg">Find it. Get close. Hold to unlock.</p>
+          <div className="mt-8 flex flex-wrap justify-center gap-3">
+            <Link href="/discover">
+              <Button variant="volt">Enter the field</Button>
+            </Link>
+            <Link href="/signup">
+              <Button variant="ghost">Create account</Button>
+            </Link>
+          </div>
+        </article>
 
-      <p className="mt-6 max-w-lg text-mute text-base md:text-lg leading-relaxed">
-        Brands plant experiences in the world. You find them, complete them, claim the
-        reward — then pass it on. Creators amplify. The platform measures what actually
-        happened.
-      </p>
+        <article className="flex flex-col items-center text-center px-8 py-20 md:py-28 bg-ink/40">
+          <h2 className="font-display text-4xl md:text-5xl text-fog tracking-tight">Studio</h2>
+          <p className="mt-3 text-mute text-lg">Plant an experience. Watch who came.</p>
+          <div className="mt-8 flex flex-wrap justify-center gap-3">
+            <Link href="/for-brands">
+              <Button variant="volt">Learn more</Button>
+            </Link>
+            <Link href="/studio">
+              <Button variant="ghost">Build</Button>
+            </Link>
+          </div>
+        </article>
+      </section>
 
-      <div className="mt-10 flex flex-col sm:flex-row gap-3">
-        <Link href="/discover">
-          <Button variant="volt">Enter the field</Button>
-        </Link>
-        <Link href="/for-brands">
-          <Button variant="ghost">For brands</Button>
-        </Link>
-      </div>
-      <p className="mt-4 text-sm text-mute">
-        <Link href="/signup" className="hover:text-fog">
-          Create account
-        </Link>
-      </p>
-
-      <p className="mt-16 text-sm text-mute max-w-md leading-relaxed">
-        Find it on the map. Get close. Hold to unlock.
-      </p>
-
-      <p className="mt-12 text-sm text-mute">
-        <Link href="/studio" className="hover:text-fog">
-          Brands → Studio
-        </Link>
-        {" · "}
+      <p className="py-10 text-center text-sm text-mute">
         <Link href="/dashboard" className="hover:text-fog">
           Creators
+        </Link>
+        {" · "}
+        <Link href="/for-agencies" className="hover:text-fog">
+          Agencies
         </Link>
       </p>
     </main>
