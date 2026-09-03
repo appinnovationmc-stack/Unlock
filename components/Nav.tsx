@@ -36,17 +36,19 @@ export async function Nav() {
   const link = "text-sm text-mute hover:text-fog motion-safe:transition-colors";
 
   return (
-    <nav className="flex items-center justify-between px-6 py-4 border-b border-white/5 bg-void">
+    <nav className="sticky top-0 z-40 flex items-center justify-between px-6 py-3 border-b border-white/5 bg-void/90 backdrop-blur-md pt-[max(0.75rem,env(safe-area-inset-top))]">
       <Link href="/" aria-label="Home" className="font-display text-sm text-fog tracking-tight">
         UNLOCK
       </Link>
       <div className="flex items-center gap-5 flex-wrap justify-end">
         <Link href="/discover" className={link}>
-          Discover
+          Field
         </Link>
-        <Link href="/for-brands" className={link}>
-          For brands
-        </Link>
+        {(!user || role === "brand") && (
+          <Link href="/for-brands" className={link}>
+            Brands
+          </Link>
+        )}
         {(role === "brand" || !user) && (
           <Link href="/studio" className={link}>
             Studio
