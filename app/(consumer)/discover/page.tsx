@@ -31,7 +31,7 @@ export default async function DiscoverPage() {
       </header>
 
       <section className="page-shell-wide pb-6">
-        <div className="relative w-full h-[62vh] min-h-[360px] max-h-[720px] overflow-hidden bg-ink">
+        <div className="unlock-map-frame relative w-full h-[62vh] min-h-[360px] max-h-[720px] overflow-hidden bg-ink">
           <div className="absolute inset-0">
             <LiveMapSection pins={mapPins} />
           </div>
