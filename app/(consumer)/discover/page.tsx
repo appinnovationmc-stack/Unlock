@@ -10,6 +10,7 @@ export default async function DiscoverPage() {
   await supabase.auth.getUser();
   const field = await getLiveField();
   const mapPins = field.pins;
+  const live = mapPins.length > 0;
 
   const soon = new Set(
     field.campaigns
@@ -25,9 +26,13 @@ export default async function DiscoverPage() {
     <main className="min-h-screen bg-void">
       <header className="page-shell-wide pt-8 pb-4">
         <h1 className="font-display text-3xl md:text-5xl text-fog tracking-tight">
-          Something is waiting.
+          {live ? "Something is waiting." : "Quiet right now."}
         </h1>
-        <p className="text-mute text-sm mt-3 max-w-lg">Find it. Get close. Unlock it.</p>
+        <p className="text-mute text-sm mt-3 max-w-lg">
+          {live
+            ? "Find it. Get close. Unlock it."
+            : "When a brand plants something, it appears on this map."}
+        </p>
       </header>
 
       <section className="page-shell-wide pb-6">
@@ -37,17 +42,17 @@ export default async function DiscoverPage() {
           </div>
           <div className="absolute top-3 left-3 z-10 pointer-events-none">
             <p className="text-sm text-fog unlock-glass px-3 py-1.5">
-              {mapPins.length > 0
+              {live
                 ? mapPins.length === 1
                   ? "One nearby"
                   : `${mapPins.length} nearby`
-                : "Quiet right now"}
+                : "Nothing live"}
             </p>
           </div>
         </div>
       </section>
 
-      {mapPins.length > 0 ? (
+      {live ? (
         <FieldPinList
           pins={mapPins.map((pin) => ({
             location_id: pin.location_id,
@@ -58,13 +63,7 @@ export default async function DiscoverPage() {
             endingSoon: soon.has(pin.campaign_id)
           }))}
         />
-      ) : (
-        <section className="page-shell-wide pb-16">
-          <p className="text-mute text-base max-w-md">
-            Nothing is waiting nearby right now. When something is planted, you will see it here.
-          </p>
-        </section>
-      )}
+      ) : null}
     </main>
   );
 }
