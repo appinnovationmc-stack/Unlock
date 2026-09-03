@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { PushOptIn } from "@/components/unlock/notifications/PushOptIn";
+import { AvatarPicker } from "@/components/unlock/you/AvatarPicker";
 
 export const dynamic = "force-dynamic";
 
@@ -23,8 +24,8 @@ export default async function ProfilePage() {
   if (!consumer) {
     return (
       <main className="min-h-screen px-6 py-10 md:px-12 max-w-2xl mx-auto">
-        <h1 className="font-display text-2xl text-fog mb-2">Profile</h1>
-        <p className="text-mute text-sm">Consumer profile is available after you join as a participant.</p>
+        <h1 className="font-display text-2xl text-fog mb-2">You</h1>
+        <p className="text-mute text-sm">Join as a participant to put yourself on the map.</p>
       </main>
     );
   }
@@ -61,45 +62,33 @@ export default async function ProfilePage() {
 
   return (
     <main className="min-h-screen px-6 py-10 md:px-12 max-w-2xl mx-auto bg-void">
-      <header className="mb-10">
-        <p className="font-mono text-[10px] uppercase tracking-[0.35em] text-mute mb-2">Profile</p>
+      <header className="mb-8">
         <h1 className="font-display text-3xl text-fog">@{consumer.handle}</h1>
-        <p className="text-mute text-sm mt-2">Identity built from verified actions — not followers.</p>
+        <p className="text-mute text-sm mt-2">This is you on the map.</p>
       </header>
+      <section className="mb-8">
+        <AvatarPicker current={consumer.avatar_url} />
+      </section>
       <section className="mb-8">
         <PushOptIn />
       </section>
       <section className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-10">
-        <div className="border border-volt/25 bg-ink2 px-5 py-5 clip-keyhole-sm">
-          <p className="font-mono text-[10px] uppercase tracking-widest text-mute">Impact</p>
-          <p className="font-display text-3xl text-volt mt-1 tabular-nums">{impactLabel}</p>
-        </div>
-        <div className="border border-white/8 bg-ink2 px-5 py-5 clip-keyhole-sm">
-          <p className="font-mono text-[10px] uppercase tracking-widest text-mute">Level</p>
-          <p className="font-display text-2xl text-fog mt-1">{level == null ? "—" : level}</p>
-          <p className="font-mono text-[10px] text-mute mt-1">{impactError ? "Unavailable" : title}</p>
-        </div>
-        <div className="border border-white/8 bg-ink2 px-5 py-5 clip-keyhole-sm">
-          <p className="font-mono text-[10px] uppercase tracking-widest text-mute">Unlocks</p>
+        <div className="border border-black/10 bg-ink px-5 py-5">
+          <p className="text-xs text-mute">Unlocks</p>
           <p className="font-display text-2xl text-fog mt-1">{unlockCount ?? 0}</p>
         </div>
-        <div className="border border-white/8 bg-ink2 px-5 py-5 clip-keyhole-sm">
-          <p className="font-mono text-[10px] uppercase tracking-widest text-mute">Rewards</p>
-          <p className="font-display text-2xl text-gold mt-1">{rewardCount ?? 0}</p>
+        <div className="border border-black/10 bg-ink px-5 py-5">
+          <p className="text-xs text-mute">Rewards</p>
+          <p className="font-display text-2xl text-fog mt-1">{rewardCount ?? 0}</p>
         </div>
-        <div className="border border-white/8 bg-ink2 px-5 py-5 clip-keyhole-sm">
-          <p className="font-mono text-[10px] uppercase tracking-widest text-mute">Verified</p>
-          <p className="font-display text-2xl text-fog mt-1">{impactError ? "—" : verified == null ? "Pending" : verified}</p>
-        </div>
-        <div className="border border-white/8 bg-ink2 px-5 py-5 clip-keyhole-sm">
-          <p className="font-mono text-[10px] uppercase tracking-widest text-mute">Visits</p>
-          <p className="font-display text-2xl text-fog mt-1">{impactError ? "—" : visits == null ? "Pending" : visits}</p>
+        <div className="border border-black/10 bg-ink px-5 py-5">
+          <p className="text-xs text-mute">Visits</p>
+          <p className="font-display text-2xl text-fog mt-1">{impactError ? "—" : visits == null ? "—" : visits}</p>
         </div>
       </section>
-      <div className="flex flex-wrap gap-4 font-mono text-[10px] uppercase tracking-widest">
-        <Link href="/wallet" className="text-gold border border-gold/30 px-3 py-1.5 hover:bg-gold/10">Wallet</Link>
-        <Link href="/impact" className="text-volt border border-volt/30 px-3 py-1.5 hover:bg-volt/10">Impact board</Link>
-        <Link href="/discover" className="text-mute border border-white/10 px-3 py-1.5 hover:text-volt">Field</Link>
+      <div className="flex flex-wrap gap-4 text-sm">
+        <Link href="/wallet" className="min-h-11 flex items-center">Rewards</Link>
+        <Link href="/discover" className="min-h-11 flex items-center">Explore</Link>
       </div>
     </main>
   );
