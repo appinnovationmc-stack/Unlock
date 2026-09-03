@@ -70,7 +70,7 @@ function labelMapControls(map: maplibregl.Map) {
   }
 }
 
-function youMarkerEl() {
+function youMarkerEl(photo?: string | null) {
   const wrap = document.createElement("div");
   wrap.className = "unlock-you";
   wrap.setAttribute("aria-label", "You");
@@ -80,12 +80,15 @@ function youMarkerEl() {
   pulse.style.cssText =
     "position:absolute;width:44px;height:44px;border-radius:9999px;background:rgba(17,17,17,0.12);";
   const img = document.createElement("img");
-  img.src = "/unlock-mark.svg";
+  img.src = safeHttp(photo) ?? "/unlock-mark.svg";
   img.alt = "";
   img.width = 28;
   img.height = 28;
   img.style.cssText =
-    "width:28px;height:28px;border-radius:9999px;position:relative;box-shadow:0 2px 8px rgba(17,17,17,0.25);";
+    "width:28px;height:28px;border-radius:9999px;object-fit:cover;position:relative;box-shadow:0 2px 8px rgba(17,17,17,0.25);";
+  img.addEventListener("error", () => {
+    img.src = "/unlock-mark.svg";
+  });
   wrap.append(pulse, img);
   return wrap;
 }
@@ -145,9 +148,11 @@ function monogram(name: string) {
 
 export function LiveMap({
   pins,
+  youAvatar,
   fallbackCenter = JOBURG
 }: {
   pins: MapPin[];
+  youAvatar?: string | null;
   fallbackCenter?: { lat: number; lng: number };
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -155,6 +160,8 @@ export function LiveMap({
   const youRef = useRef<maplibregl.Marker | null>(null);
   const watchRef = useRef<number | null>(null);
   const pickRef = useRef<(pin: MapPin) => void>(() => {});
+  const avatarRef = useRef(youAvatar);
+  avatarRef.current = youAvatar;
   const [failed, setFailed] = useState(false);
   const [picked, setPicked] = useState<MapPin | null>(null);
   const [you, setYou] = useState<{ lat: number; lng: number } | null>(null);
@@ -177,7 +184,7 @@ export function LiveMap({
     const map = mapRef.current;
     if (!map) return;
     if (!youRef.current) {
-      youRef.current = new maplibregl.Marker({ element: youMarkerEl(), anchor: "center" })
+      youRef.current = new maplibregl.Marker({ element: youMarkerEl(avatarRef.current), anchor: "center" })
         .setLngLat([lng, lat])
         .addTo(map);
     } else {
@@ -267,7 +274,6 @@ export function LiveMap({
         map.jumpTo({ center: [currentPins[0].lng, currentPins[0].lat], zoom: 13 });
       }
       labelMapControls(map);
-      startWatch(false);
     };
 
     map.on("error", () => {});
