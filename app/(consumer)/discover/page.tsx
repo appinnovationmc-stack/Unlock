@@ -1,42 +1,10 @@
-import { CampaignCard } from "@/components/campaign/CampaignCard";
 import { XPBadge } from "@/components/ui/XPBadge";
-import { Button } from "@/components/ui/Button";
 import { createClient } from "@/lib/supabase/server";
-import type { Campaign } from "@/lib/types";
-import Link from "next/link";
 import { LiveMapSection } from "@/components/unlock/map/LiveMapSection";
 import { FieldPinList } from "@/components/unlock/map/FieldPinList";
-import { unescapeHtmlEntities } from "@/lib/unlock/display-text";
 import { getLiveField } from "@/lib/unlock/field/live";
 
 export const dynamic = "force-dynamic";
-
-function encounterKind(mechanics: string[] | null | undefined): string {
-  const m = mechanics ?? [];
-  if (m.includes("treasure_hunt") || m.includes("qr_scan") || m.includes("nfc_tap")) return "Hunt";
-  if (m.includes("geolocation")) return "In the wild";
-  if (m.includes("timed_challenge")) return "Timed drop";
-  if (m.includes("social_action") || m.includes("referral")) return "Relay";
-  if (m.includes("quiz") || m.includes("puzzle") || m.includes("riddle")) return "Challenge";
-  return "Encounter";
-}
-
-function uniqueLiveCampaigns(list: Campaign[], pinnedIds: Set<string>): Campaign[] {
-  const byTitle = new Map<string, Campaign>();
-  for (const c of list) {
-    const key = unescapeHtmlEntities(c.title).toLowerCase().trim();
-    if (!key) continue;
-    const existing = byTitle.get(key);
-    if (!existing) {
-      byTitle.set(key, c);
-      continue;
-    }
-    if (pinnedIds.has(c.id) && !pinnedIds.has(existing.id)) {
-      byTitle.set(key, c);
-    }
-  }
-  return [...byTitle.values()];
-}
 
 export default async function DiscoverPage() {
   const supabase = createClient();
@@ -45,16 +13,6 @@ export default async function DiscoverPage() {
   } = await supabase.auth.getUser();
   const field = await getLiveField();
   const mapPins = field.pins;
-  const pinnedIds = new Set(mapPins.map((p) => p.campaign_id));
-
-  const expByCampaign = new Map<string, string>();
-  const { data: exps } = await supabase
-    .from("experience_configs")
-    .select("campaign_id, primary_type")
-    .eq("map_visible", true);
-  for (const e of exps ?? []) {
-    expByCampaign.set(e.campaign_id, e.primary_type);
-  }
 
   let xp = 0;
   if (user) {
@@ -66,11 +24,8 @@ export default async function DiscoverPage() {
     xp = consumer?.xp ?? 0;
   }
 
-  const list = uniqueLiveCampaigns(field.campaigns, pinnedIds);
-  const unpinned = list.filter((c) => !pinnedIds.has(c.id));
-  const count = list.length;
   const soon = new Set(
-    list
+    field.campaigns
       .filter((c) => {
         if (!c.ends_at) return false;
         const t = new Date(c.ends_at).getTime();
@@ -84,14 +39,14 @@ export default async function DiscoverPage() {
       <header className="page-shell-wide pt-8 pb-4">
         <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
           <div>
-            <p className="section-kicker mb-2">Field</p>
+            <p className="section-kicker mb-2">Near you</p>
             <h1 className="font-display text-3xl md:text-5xl text-fog tracking-tight">
-              What's <span className="text-volt">happening</span>
+              Something is
               <br />
-              around you?
+              <span className="text-volt">happening</span>
             </h1>
             <p className="text-mute text-sm mt-3 max-w-lg">
-              Pins are real places. Tap one. Get close. Check in. Hold to unlock.
+              Pins are places. Walk there. Hold to unlock.
             </p>
           </div>
           {user && xp > 0 ? <XPBadge xp={xp} /> : null}
@@ -99,23 +54,21 @@ export default async function DiscoverPage() {
       </header>
 
       <section className="page-shell-wide pb-6">
-        <div className="relative w-full h-[58vh] min-h-[320px] max-h-[640px] overflow-hidden border border-white/8 bg-ink2">
+        <div className="relative w-full h-[62vh] min-h-[360px] max-h-[720px] overflow-hidden bg-ink">
           <div className="absolute inset-0">
             <LiveMapSection pins={mapPins} />
           </div>
           <div className="absolute top-3 left-3 z-10 pointer-events-none">
-            <p className="text-sm text-fog bg-void/85 px-3 py-1.5">
+            <p className="text-sm text-fog bg-void/90 px-3 py-1.5">
               {mapPins.length > 0
-                ? `${mapPins.length} live ${mapPins.length === 1 ? "place" : "places"}`
-                : count > 0
-                  ? "Live experiences — no pins on the map yet"
-                  : "The field is quiet"}
+                ? `${mapPins.length} ${mapPins.length === 1 ? "place" : "places"} live`
+                : "The field is quiet"}
             </p>
           </div>
         </div>
       </section>
 
-      {mapPins.length > 0 && (
+      {mapPins.length > 0 ? (
         <FieldPinList
           pins={mapPins.map((pin) => ({
             location_id: pin.location_id,
@@ -126,50 +79,13 @@ export default async function DiscoverPage() {
             endingSoon: soon.has(pin.campaign_id)
           }))}
         />
-      )}
-
-      {!user && count > 0 && (
-        <section className="page-shell-wide pb-8">
-          <div className="border border-white/10 px-5 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-            <div>
-              <p className="section-kicker">First time</p>
-              <p className="text-fog text-sm mt-1">Get close. Check in. Hold to unlock.</p>
-            </div>
-            <Link href={`/campaign/${mapPins[0]?.campaign_id ?? list[0].id}`}>
-              <Button variant="volt">Open one nearby</Button>
-            </Link>
-          </div>
+      ) : (
+        <section className="page-shell-wide pb-16">
+          <p className="text-mute text-base max-w-md">
+            Nothing is planted on the map right now. When a brand drops a pin, it appears here.
+          </p>
         </section>
       )}
-
-      <section className="page-shell-wide pb-16">
-        {count === 0 ? (
-          <div className="border border-white/10 px-6 py-16 text-center">
-            <p className="font-display text-xl text-fog mb-2">The field is quiet</p>
-            <p className="text-mute text-base mb-6 max-w-md mx-auto">
-              No live experiences right now. When a brand drops a pin, it will appear on this map.
-            </p>
-            <Link href="/studio">
-              <Button variant="ghost">Plant an experience</Button>
-            </Link>
-          </div>
-        ) : unpinned.length > 0 ? (
-          <>
-            <p className="section-kicker mb-4">
-              {mapPins.length > 0 ? "Also live" : "Live experiences"}
-            </p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {unpinned.map((c) => (
-                <CampaignCard
-                  key={c.id}
-                  campaign={c}
-                  kindLabel={expByCampaign.get(c.id) ?? encounterKind(c.mechanics)}
-                />
-              ))}
-            </div>
-          </>
-        ) : null}
-      </section>
     </main>
   );
 }
