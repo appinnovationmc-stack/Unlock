@@ -44,7 +44,7 @@ export async function Nav() {
   const isConsumer = role === "consumer" || (!user && !isBrand);
 
   return (
-    <nav className="sticky top-0 z-40 flex items-center justify-between px-6 py-3 border-b border-black/5 bg-void/90 backdrop-blur-md pt-[max(0.75rem,env(safe-area-inset-top))]">
+    <nav className="unlock-glass sticky top-0 z-40 flex items-center justify-between px-6 py-3 pt-[max(0.75rem,env(safe-area-inset-top))]">
       {brand}
       <div className="flex items-center gap-5 flex-wrap justify-end">
         <Link href="/discover" className={link}>
