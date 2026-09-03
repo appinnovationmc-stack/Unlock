@@ -54,36 +54,35 @@ export default async function DiscoverPage() {
         </p>
       </header>
 
-      <section className="px-4 md:px-10 pb-12">
+      <section className="px-4 md:px-10 pb-6">
         <div className="unlock-map-stage mx-auto max-w-6xl">
-          <div className="unlock-map-frame relative w-full h-[68vh] min-h-[420px] max-h-[780px]">
+          <div className="unlock-map-frame relative w-full h-[62vh] min-h-[380px] max-h-[720px]">
             <div className="absolute inset-0">
               <LiveMapSection pins={mapPins} youAvatar={youAvatar} />
             </div>
             <div className="unlock-map-vignette" aria-hidden />
             {live ? (
-              <div className="absolute top-16 left-3 z-10 pointer-events-none md:top-4 md:left-28">
+              <div className="absolute bottom-4 left-3 z-10 pointer-events-none">
                 <p className="text-sm text-fog unlock-glass px-3 py-1.5">
                   {mapPins.length === 1 ? "One nearby" : `${mapPins.length} nearby`}
                 </p>
               </div>
-            ) : (
-              <div className="absolute bottom-8 left-3 right-3 z-10 pointer-events-none md:left-1/2 md:right-auto md:-translate-x-1/2 md:w-[22rem]">
-                <div className="unlock-glass w-full px-4 py-3 pointer-events-auto">
-                  <p className="font-display text-lg text-fog">The map is the media.</p>
-                  <p className="text-mute text-sm mt-1">
-                    Plant one pin. People walk. You see who came.
-                  </p>
-                  {canPlant ? (
-                    <Link href="/studio" className="inline-block mt-3 text-sm min-h-11 leading-[44px]">
-                      Plant one
-                    </Link>
-                  ) : null}
-                </div>
-              </div>
-            )}
+            ) : null}
           </div>
         </div>
+        {!live ? (
+          <div className="unlock-glass mx-auto max-w-6xl mt-4 px-5 py-4">
+            <p className="font-display text-lg text-fog">The map is the media.</p>
+            <p className="text-mute text-sm mt-1">
+              Plant one pin. People walk. You see who came.
+            </p>
+            {canPlant ? (
+              <Link href="/studio" className="inline-block mt-3 text-sm min-h-11 leading-[44px]">
+                Plant one
+              </Link>
+            ) : null}
+          </div>
+        ) : null}
       </section>
 
       {live ? (
