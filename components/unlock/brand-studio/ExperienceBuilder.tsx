@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { createCampaign } from "@/lib/actions/campaigns";
 import { draftDrop } from "@/lib/unlock/studio/draft-drop";
+import type { DropPlan } from "@/lib/unlock/studio/plan-drop";
 import { Button } from "@/components/ui/Button";
 
 const INTENTS = [
@@ -56,16 +57,16 @@ function Chip({ active, onClick, children }: { active: boolean; onClick: () => v
   );
 }
 
-export function ExperienceBuilder() {
-  const [intent, setIntent] = useState("COLLECT");
-  const [where, setWhere] = useState("STORES");
-  const [rewardKind, setRewardKind] = useState("DISCOUNT");
+export function ExperienceBuilder({ plan }: { plan?: DropPlan }) {
+  const [intent, setIntent] = useState(plan?.intent ?? "COLLECT");
+  const [where, setWhere] = useState(plan?.where ?? "STORES");
+  const [rewardKind, setRewardKind] = useState(plan?.rewardKind ?? "DISCOUNT");
   const [verify, setVerify] = useState("location");
-  const [title, setTitle] = useState("");
-  const [tagline, setTagline] = useState("");
-  const [rewardLabel, setRewardLabel] = useState("");
+  const [title, setTitle] = useState(plan?.title ?? "");
+  const [tagline, setTagline] = useState(plan?.tagline ?? "");
+  const [rewardLabel, setRewardLabel] = useState(plan?.rewardLabel ?? "");
   const [rewardValue, setRewardValue] = useState("");
-  const [xp, setXp] = useState(50);
+  const [xp, setXp] = useState(plan?.stock ?? 20);
 
   const intentMeta = INTENTS.find((i) => i.id === intent) ?? INTENTS[6];
   const mechanics = intentMeta.mechanics;
@@ -100,9 +101,34 @@ export function ExperienceBuilder() {
     setRewardLabel(d.rewardLabel);
   }
 
+  function usePlan() {
+    if (!plan) return;
+    setIntent(plan.intent);
+    setWhere(plan.where);
+    setRewardKind(plan.rewardKind);
+    setTitle(plan.title);
+    setTagline(plan.tagline);
+    setRewardLabel(plan.rewardLabel);
+    setXp(plan.stock);
+    setVerify("location");
+  }
+
   return (
     <div className="grid lg:grid-cols-2 gap-8">
       <div className="space-y-6">
+        {plan ? (
+          <div className="border border-black/10 px-5 py-4">
+            <p className="font-display text-lg text-fog">Next drop</p>
+            <p className="text-sm text-mute mt-1">{plan.note}</p>
+            <p className="text-sm text-fog mt-3">
+              {plan.walkers} walkers · {plan.unlocks} unlocks · cap {plan.stock}
+            </p>
+            <button type="button" className="text-sm min-h-11 mt-2" onClick={usePlan}>
+              Use this plan
+            </button>
+          </div>
+        ) : null}
+
         <div>
           <h2 className="font-display text-xl text-fog">What should people actually do?</h2>
         </div>
