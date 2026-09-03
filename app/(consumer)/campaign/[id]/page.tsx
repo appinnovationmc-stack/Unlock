@@ -4,16 +4,13 @@ import { RecordReferralClick } from "@/components/unlock/interactions/RecordRefe
 import { NfcScan } from "@/components/unlock/experiences/NfcScan";
 import { QrScan } from "@/components/unlock/experiences/QrScan";
 import { ProductHuntClaim } from "@/components/campaign/ProductHuntClaim";
+import { WalkRadar } from "@/components/unlock/map/WalkRadar";
+import { getLiveField } from "@/lib/unlock/field/live";
 import { createClient } from "@/lib/supabase/server";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 
 export const dynamic = "force-dynamic";
-
-type LiveMapPinRow = {
-  location_id: string;
-  campaign_id: string;
-};
 
 export default async function CampaignPage({
   params,
@@ -62,6 +59,12 @@ export default async function CampaignPage({
       ? Math.max(0, Number(reward.stock) - Number(reward.redeemed_count ?? 0))
       : null;
 
+  const field = await getLiveField();
+  const pin = field.pins.find((p) => p.campaign_id === params.id) ?? null;
+  const campaignPinIds = field.pins
+    .filter((p) => p.campaign_id === params.id && p.location_id)
+    .map((p) => p.location_id);
+
   let experienceType: string | null = null;
   try {
     const { data: exp } = await supabase
@@ -70,14 +73,8 @@ export default async function CampaignPage({
       .eq("campaign_id", params.id)
       .maybeSingle();
     experienceType = (exp as { primary_type?: string } | null)?.primary_type ?? null;
-  } catch { /* */ }
-
-  let campaignPinIds: string[] = [];
-  const { data: livePins, error: pinError } = await supabase.rpc("get_live_map_pins");
-  if (!pinError && Array.isArray(livePins)) {
-    campaignPinIds = (livePins as LiveMapPinRow[])
-      .filter((p) => p.campaign_id === params.id && p.location_id)
-      .map((p) => p.location_id);
+  } catch {
+    /* */
   }
 
   const rewardLabel = reward?.label
@@ -114,9 +111,7 @@ export default async function CampaignPage({
       {user && campaign.status === "live" && referrerCreatorId && (
         <RecordReferralClick campaignId={campaign.id} creatorId={referrerCreatorId} />
       )}
-      {campaign.status !== "live" && (
-        <p className="mb-4 section-kicker">Preview</p>
-      )}
+      {campaign.status !== "live" && <p className="mb-4 section-kicker">Preview</p>}
 
       <p className="section-kicker mb-2">Something is waiting</p>
       <h1 className="font-display text-3xl md:text-5xl text-fog mb-3 leading-[0.95] tracking-tight">
@@ -124,22 +119,18 @@ export default async function CampaignPage({
       </h1>
       {remaining != null ? (
         <p className="text-mute text-sm mb-2">
-          {remaining === 0 ? "It\u2019s gone." : `${remaining} left`}
+          {remaining === 0 ? "It’s gone." : `${remaining} left`}
         </p>
       ) : null}
-      <p className="text-mute text-lg mb-10 leading-snug">{campaign.title}</p>
+      <p className="text-mute text-lg mb-8 leading-snug">{campaign.title}</p>
+
+      {pin && Number.isFinite(pin.lat) && Number.isFinite(pin.lng) ? (
+        <div className="mb-8">
+          <WalkRadar lat={pin.lat} lng={pin.lng} radiusM={pin.radius_m || 150} />
+        </div>
+      ) : null}
 
       <div className="grid gap-8 mb-12">
-        <div>
-          <p className="section-kicker">Where</p>
-          <p className="text-fog text-base mt-1">
-            {requireVisit
-              ? campaignPinIds.length
-                ? "On the map. Get close."
-                : "A place in the world. Get close."
-              : "From here."}
-          </p>
-        </div>
         <div>
           <p className="section-kicker">What you do</p>
           <p className="text-fog text-base mt-1">{actionHint}</p>
