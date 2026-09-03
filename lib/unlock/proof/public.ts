@@ -77,13 +77,18 @@ const LOCKED_FUNNEL: LockedMetric[] = [
 export async function getPublicBrandProof(): Promise<PublicBrandProof> {
   const supabase = createClient();
 
-  const { data: campaigns } = await supabase
-    .from("campaigns")
-    .select("id, title, tagline, description, objective, mechanics, xp_value, status")
-    .eq("status", "live")
-    .order("created_at", { ascending: false });
-
-  const liveCampaigns = (campaigns as PublicLiveCampaign[] | null) ?? [];
+  let liveCampaigns: PublicLiveCampaign[] = [];
+  const { data: expData, error: expError } = await supabase.rpc("get_live_experiences");
+  if (!expError && Array.isArray(expData) && expData.length > 0) {
+    liveCampaigns = expData as PublicLiveCampaign[];
+  } else {
+    const { data: campaigns } = await supabase
+      .from("campaigns")
+      .select("id, title, tagline, description, objective, mechanics, xp_value, status")
+      .eq("status", "live")
+      .order("created_at", { ascending: false });
+    liveCampaigns = (campaigns as PublicLiveCampaign[] | null) ?? [];
+  }
 
   let pins: LiveMapPin[] = [];
   const { data: pinData, error: pinError } = await supabase.rpc("get_live_map_pins");
