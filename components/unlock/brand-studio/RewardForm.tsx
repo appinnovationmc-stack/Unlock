@@ -1,6 +1,6 @@
 "use client";
 
-import { addCampaignReward } from "@/lib/actions/campaigns";
+import { addCampaignReward } from "@/lib/actions/tickets";
 import { Button } from "@/components/ui/Button";
 
 export function RewardForm({
@@ -12,13 +12,13 @@ export function RewardForm({
 }) {
   if (!campaigns.length) return null;
 
-  const field = "w-full bg-void border border-white/10 px-3 py-2 text-fog text-base outline-none";
+  const field = "w-full bg-void border border-black/10 px-3 py-2 text-fog text-base outline-none";
 
   return (
-    <form id="add-reward" action={addCampaignReward} className="border border-white/10 p-5 space-y-3 mt-6">
-      <p className="section-kicker">Add a reward</p>
+    <form id="add-reward" action={addCampaignReward} className="border border-black/10 p-5 space-y-3 mt-6">
+      <p className="section-kicker">What they unlock</p>
       <p className="text-mute text-sm">
-        Name what people unlock. A draft cannot go live without a reward.
+        Name the prize. Optional ticket count — like a short run. When they are gone, unlock stops.
       </p>
       <select name="campaign_id" required defaultValue={defaultCampaignId} className={field}>
         {campaigns.map((c) => (
@@ -27,10 +27,19 @@ export function RewardForm({
           </option>
         ))}
       </select>
-      <input name="label" required placeholder="Reward name (e.g. 20% off first visit)" className={field} />
-      <input name="value" placeholder="Value (R50, 20%…)" className={field} />
+      <input name="label" required placeholder="Free coffee, R100 off, the last box…" className={field} />
+      <input name="value" placeholder="Face value (R50, 20%…)" className={field} />
+      <input
+        name="stock"
+        type="number"
+        min={1}
+        step={1}
+        inputMode="numeric"
+        placeholder="Limited tickets (blank = no cap)"
+        className={field}
+      />
       <Button type="submit" variant="ghost">
-        Add reward
+        Plant the prize
       </Button>
     </form>
   );
