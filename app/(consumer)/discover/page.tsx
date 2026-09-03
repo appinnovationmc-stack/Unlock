@@ -7,10 +7,22 @@ export const dynamic = "force-dynamic";
 
 export default async function DiscoverPage() {
   const supabase = createClient();
-  await supabase.auth.getUser();
+  const {
+    data: { user }
+  } = await supabase.auth.getUser();
   const field = await getLiveField();
   const mapPins = field.pins;
   const live = mapPins.length > 0;
+
+  let youAvatar: string | null = null;
+  if (user) {
+    const { data } = await supabase
+      .from("consumers")
+      .select("avatar_url")
+      .eq("id", user.id)
+      .maybeSingle();
+    youAvatar = data?.avatar_url ?? null;
+  }
 
   const soon = new Set(
     field.campaigns
@@ -38,7 +50,7 @@ export default async function DiscoverPage() {
       <section className="page-shell-wide pb-6">
         <div className="unlock-map-frame relative w-full h-[62vh] min-h-[360px] max-h-[720px] overflow-hidden bg-ink">
           <div className="absolute inset-0">
-            <LiveMapSection pins={mapPins} />
+            <LiveMapSection pins={mapPins} youAvatar={youAvatar} />
           </div>
           <div className="absolute top-3 left-3 z-10 pointer-events-none">
             <p className="text-sm text-fog unlock-glass px-3 py-1.5">
