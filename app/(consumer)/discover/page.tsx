@@ -20,18 +20,22 @@ function encounterKind(mechanics: string[] | null | undefined): string {
   return "Encounter";
 }
 
-function uniqueLiveCampaigns(list: Campaign[]): Campaign[] {
-  const seen = new Set<string>();
-  const out: Campaign[] = [];
+/** One card per title. Prefer the copy that already has a map pin. */
+function uniqueLiveCampaigns(list: Campaign[], pinnedIds: Set<string>): Campaign[] {
+  const byTitle = new Map<string, Campaign>();
   for (const c of list) {
-    const title = unescapeHtmlEntities(c.title).toLowerCase();
-    const copy = unescapeHtmlEntities(c.tagline || c.description).toLowerCase();
-    const key = `${title}|${copy}`;
-    if (seen.has(key)) continue;
-    seen.add(key);
-    out.push(c);
+    const key = unescapeHtmlEntities(c.title).toLowerCase().trim();
+    if (!key) continue;
+    const existing = byTitle.get(key);
+    if (!existing) {
+      byTitle.set(key, c);
+      continue;
+    }
+    if (pinnedIds.has(c.id) && !pinnedIds.has(existing.id)) {
+      byTitle.set(key, c);
+    }
   }
-  return out;
+  return [...byTitle.values()];
 }
 
 export default async function DiscoverPage() {
@@ -41,6 +45,7 @@ export default async function DiscoverPage() {
   } = await supabase.auth.getUser();
   const field = await getLiveField();
   const mapPins = field.pins;
+  const pinnedIds = new Set(mapPins.map((p) => p.campaign_id));
 
   const expByCampaign = new Map<string, string>();
   const { data: exps } = await supabase
@@ -61,8 +66,7 @@ export default async function DiscoverPage() {
     xp = consumer?.xp ?? 0;
   }
 
-  const list = uniqueLiveCampaigns(field.campaigns);
-  const pinnedIds = new Set(mapPins.map((p) => p.campaign_id));
+  const list = uniqueLiveCampaigns(field.campaigns, pinnedIds);
   const unpinned = list.filter((c) => !pinnedIds.has(c.id));
   const count = list.length;
 
