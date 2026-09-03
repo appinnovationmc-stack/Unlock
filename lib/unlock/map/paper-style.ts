@@ -2,8 +2,9 @@ import type { StyleSpecification } from "maplibre-gl";
 
 /**
  * Paper field.
- * Carto Positron when NEXT_PUBLIC_CARTO_KEY is set (no watermark).
- * Esri Light Gray Canvas otherwise — no key, no Carto watermark.
+ * Carto Voyager when NEXT_PUBLIC_CARTO_KEY is set (watermark off).
+ * Esri Light Gray Canvas otherwise.
+ * Key lives in env only — never commit it.
  */
 export function paperMapStyle(): StyleSpecification {
   const key = process.env.NEXT_PUBLIC_CARTO_KEY?.trim();
@@ -14,7 +15,7 @@ export function paperMapStyle(): StyleSpecification {
       sources: {
         paper: {
           type: "raster",
-          tiles: [`https://basemaps.cartocdn.com/light_all/{z}/{x}/{y}@2x.png?${q}`],
+          tiles: [`https://basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}@2x.png?${q}`],
           tileSize: 256,
           attribution: "© OpenStreetMap © CARTO"
         }
