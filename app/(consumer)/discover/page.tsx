@@ -62,14 +62,14 @@ export default async function DiscoverPage() {
             </div>
             <div className="unlock-map-vignette" aria-hidden />
             {live ? (
-              <div className="absolute top-4 left-4 z-10 pointer-events-none">
+              <div className="absolute top-16 left-3 z-10 pointer-events-none md:top-4 md:left-28">
                 <p className="text-sm text-fog unlock-glass px-3 py-1.5">
                   {mapPins.length === 1 ? "One nearby" : `${mapPins.length} nearby`}
                 </p>
               </div>
             ) : (
-              <div className="absolute top-4 left-4 right-16 z-10 pointer-events-none">
-                <div className="unlock-glass max-w-sm px-4 py-3 pointer-events-auto">
+              <div className="absolute bottom-8 left-3 right-3 z-10 pointer-events-none md:left-1/2 md:right-auto md:-translate-x-1/2 md:w-[22rem]">
+                <div className="unlock-glass w-full px-4 py-3 pointer-events-auto">
                   <p className="font-display text-lg text-fog">The map is the media.</p>
                   <p className="text-mute text-sm mt-1">
                     Plant one pin. People walk. You see who came.
