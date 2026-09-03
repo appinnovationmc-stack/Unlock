@@ -140,7 +140,7 @@ function attachPins(
 function monogram(name: string) {
   const el = document.createElement("span");
   el.className = "unlock-map-pin";
-  el.textContent = (name.slice(0, 1) || "·").toUpperCase();
+  el.textContent = (name.slice(0, 1) || "\u00b7").toUpperCase();
   el.style.cssText =
     "width:36px;height:36px;border-radius:9999px;background:#111;color:#fff;font:600 14px Unbounded,system-ui,sans-serif;display:flex;align-items:center;justify-content:center;box-shadow:0 1px 6px rgba(29,29,31,0.2);border:2px solid #fff;";
   return el;
@@ -195,7 +195,7 @@ export function LiveMap({
       const reduced = prefersReducedMotion();
       map.easeTo({
         center: [lng, lat],
-        zoom: Math.max(map.getZoom(), 14),
+        zoom: Math.min(Math.max(map.getZoom(), 13), 15),
         duration: reduced ? 0 : 600
       });
     }
@@ -241,7 +241,8 @@ export function LiveMap({
         center,
         zoom: CITY_ZOOM,
         attributionControl: false,
-        fadeDuration: reduced ? 0 : 300
+        fadeDuration: reduced ? 0 : 300,
+        maxZoom: 18
       });
     } catch {
       setFailed(true);
@@ -311,13 +312,13 @@ export function LiveMap({
       <div ref={containerRef} className="absolute inset-0 min-h-[280px]" />
       <button
         type="button"
-        className="unlock-glass absolute top-3 right-12 z-10 min-h-11 px-3 text-sm text-fog"
+        className="unlock-glass absolute bottom-10 left-3 z-10 min-h-11 px-3 text-sm text-fog"
         onClick={() => startWatch(true)}
       >
         {you ? "I'm here" : "Find me"}
       </button>
       {locateMsg ? (
-        <p className="absolute top-16 right-3 z-10 unlock-glass px-3 py-2 text-xs text-mute max-w-[200px]">
+        <p className="absolute bottom-24 left-3 z-10 unlock-glass px-3 py-2 text-xs text-mute max-w-[200px]">
           {locateMsg}
         </p>
       ) : null}
