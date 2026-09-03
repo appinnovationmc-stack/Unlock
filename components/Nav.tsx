@@ -16,9 +16,9 @@ export async function Nav() {
 
   if (!hasEnv) {
     return (
-      <nav className="flex items-center justify-between px-6 py-4 border-b border-magenta/30 bg-magenta/10">
+      <nav className="flex items-center justify-between px-6 py-4 border-b border-black/10">
         {brand}
-        <span className="text-sm text-magenta">Set .env.local and restart</span>
+        <span className="text-sm text-mute">Set .env.local and restart</span>
       </nav>
     );
   }
@@ -34,14 +34,13 @@ export async function Nav() {
     user = u;
     if (u) role = await getCurrentRole();
   } catch {
-    // env misconfigured mid-request
+    /* env */
   }
 
-  const link = "text-sm text-mute hover:text-fog motion-safe:transition-colors min-h-11 inline-flex items-center";
+  const link = "text-sm text-mute hover:text-fog min-h-11 inline-flex items-center";
   const isBrand = role === "brand";
   const isCreator = role === "creator";
   const isAdmin = role === "admin";
-  const isConsumer = role === "consumer" || (!user && !isBrand);
 
   return (
     <nav className="unlock-glass sticky top-0 z-40 flex items-center justify-between px-6 py-3 pt-[max(0.75rem,env(safe-area-inset-top))]">
@@ -50,6 +49,19 @@ export async function Nav() {
         <Link href="/discover" className={link}>
           {isBrand ? "Field" : "Explore"}
         </Link>
+        {!user && (
+          <>
+            <Link href="/for-you" className={link}>
+              You
+            </Link>
+            <Link href="/for-brands" className={link}>
+              Brands
+            </Link>
+            <Link href="/for-creators" className={link}>
+              Creators
+            </Link>
+          </>
+        )}
         {isBrand && (
           <Link href="/studio" className={link}>
             Studio
@@ -65,13 +77,13 @@ export async function Nav() {
             Admin
           </Link>
         )}
-        {(isConsumer || role === "consumer") && user && (
+        {role === "consumer" && user && (
           <>
             <Link href="/wallet" className={link}>
               Rewards
             </Link>
             <Link href="/profile" className={link}>
-              Profile
+              You
             </Link>
           </>
         )}
