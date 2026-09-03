@@ -21,6 +21,7 @@ export type MapPin = {
 
 const JOBURG = { lat: -26.2041, lng: 28.0473 };
 const CITY_ZOOM = 12;
+const STREET_ZOOM = 13;
 
 function isValidPin(pin: MapPin): boolean {
   return (
@@ -195,7 +196,7 @@ export function LiveMap({
       const reduced = prefersReducedMotion();
       map.easeTo({
         center: [lng, lat],
-        zoom: Math.min(Math.max(map.getZoom(), 13), 15),
+        zoom: STREET_ZOOM,
         duration: reduced ? 0 : 600
       });
     }
@@ -242,7 +243,7 @@ export function LiveMap({
         zoom: CITY_ZOOM,
         attributionControl: false,
         fadeDuration: reduced ? 0 : 300,
-        maxZoom: 18
+        maxZoom: 14
       });
     } catch {
       setFailed(true);
@@ -270,9 +271,9 @@ export function LiveMap({
       if (currentPins.length > 1) {
         const bounds = new maplibregl.LngLatBounds();
         currentPins.forEach((p) => bounds.extend([p.lng, p.lat]));
-        map.fitBounds(bounds, { padding: 64, maxZoom: 14, duration: 0 });
+        map.fitBounds(bounds, { padding: 64, maxZoom: STREET_ZOOM, duration: 0 });
       } else if (currentPins.length === 1) {
-        map.jumpTo({ center: [currentPins[0].lng, currentPins[0].lat], zoom: 13 });
+        map.jumpTo({ center: [currentPins[0].lng, currentPins[0].lat], zoom: STREET_ZOOM });
       }
       labelMapControls(map);
     };
