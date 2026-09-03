@@ -58,7 +58,6 @@ export function UnlockButton({
     if (disabled || phase === "unlocking" || phase === "done") return;
     unlockedRef.current = false;
     if (reduced || prefersReducedMotion()) {
-      // No conic pulse, hold loop, or rAF when the user asks for less motion.
       finish();
       return;
     }
@@ -103,25 +102,25 @@ export function UnlockButton({
         onKeyUp={(e) => {
           if (e.key === " " || e.key === "Enter") endHold();
         }}
-        className={`relative h-28 w-28 select-none rounded-full border-2 motion-safe:transition-colors motion-safe:duration-300
+        className={`relative h-28 w-28 select-none rounded-full unlock-glass motion-safe:transition-colors
           focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-volt
           ${
             phase === "done"
-              ? "border-gold text-gold bg-gold/10"
+              ? "text-magenta"
               : phase === "unlocking"
-                ? "border-volt text-volt bg-volt/5"
-                : "border-white/25 text-fog bg-ink2 hover:border-volt/60"
+                ? "text-volt"
+                : "text-fog"
           }
           ${disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
         style={{
           background:
             phase === "holding" && !reduced
-              ? `conic-gradient(rgba(198,255,61,0.55) ${progress * 360}deg, rgba(255,255,255,0.06) 0)`
+              ? `conic-gradient(rgba(0,113,227,0.55) ${progress * 360}deg, rgba(255,255,255,0.2) 0)`
               : undefined
         }}
       >
         <span
-          className="absolute inset-2 rounded-full bg-ink2 flex items-center justify-center font-display text-2xl"
+          className="absolute inset-2 rounded-full unlock-glass flex items-center justify-center font-display text-2xl"
           aria-hidden
         >
           {phase === "done" ? "✓" : phase === "unlocking" ? "…" : "◎"}
