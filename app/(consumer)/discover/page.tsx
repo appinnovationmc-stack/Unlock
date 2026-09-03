@@ -1,4 +1,3 @@
-import { XPBadge } from "@/components/ui/XPBadge";
 import { createClient } from "@/lib/supabase/server";
 import { LiveMapSection } from "@/components/unlock/map/LiveMapSection";
 import { FieldPinList } from "@/components/unlock/map/FieldPinList";
@@ -8,21 +7,9 @@ export const dynamic = "force-dynamic";
 
 export default async function DiscoverPage() {
   const supabase = createClient();
-  const {
-    data: { user }
-  } = await supabase.auth.getUser();
+  await supabase.auth.getUser();
   const field = await getLiveField();
   const mapPins = field.pins;
-
-  let xp = 0;
-  if (user) {
-    const { data: consumer } = await supabase
-      .from("consumers")
-      .select("xp")
-      .eq("id", user.id)
-      .maybeSingle();
-    xp = consumer?.xp ?? 0;
-  }
 
   const soon = new Set(
     field.campaigns
@@ -37,20 +24,10 @@ export default async function DiscoverPage() {
   return (
     <main className="min-h-screen bg-void">
       <header className="page-shell-wide pt-8 pb-4">
-        <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
-          <div>
-            <p className="section-kicker mb-2">Near you</p>
-            <h1 className="font-display text-3xl md:text-5xl text-fog tracking-tight">
-              Something is
-              <br />
-              <span className="text-volt">happening</span>
-            </h1>
-            <p className="text-mute text-sm mt-3 max-w-lg">
-              Pins are places. Walk there. Hold to unlock.
-            </p>
-          </div>
-          {user && xp > 0 ? <XPBadge xp={xp} /> : null}
-        </div>
+        <h1 className="font-display text-3xl md:text-5xl text-fog tracking-tight">
+          Something is waiting.
+        </h1>
+        <p className="text-mute text-sm mt-3 max-w-lg">Find it. Get close. Unlock it.</p>
       </header>
 
       <section className="page-shell-wide pb-6">
@@ -59,10 +36,12 @@ export default async function DiscoverPage() {
             <LiveMapSection pins={mapPins} />
           </div>
           <div className="absolute top-3 left-3 z-10 pointer-events-none">
-            <p className="text-sm text-fog bg-void/90 px-3 py-1.5">
+            <p className="text-sm text-fog unlock-glass px-3 py-1.5">
               {mapPins.length > 0
-                ? `${mapPins.length} ${mapPins.length === 1 ? "place" : "places"} live`
-                : "The field is quiet"}
+                ? mapPins.length === 1
+                  ? "One nearby"
+                  : `${mapPins.length} nearby`
+                : "Quiet right now"}
             </p>
           </div>
         </div>
@@ -82,7 +61,7 @@ export default async function DiscoverPage() {
       ) : (
         <section className="page-shell-wide pb-16">
           <p className="text-mute text-base max-w-md">
-            Nothing is planted on the map right now. When a brand drops a pin, it appears here.
+            Nothing is waiting nearby right now. When something is planted, you will see it here.
           </p>
         </section>
       )}
