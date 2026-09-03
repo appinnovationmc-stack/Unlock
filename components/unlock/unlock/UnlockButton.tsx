@@ -1,5 +1,6 @@
 "use client";
 import { useCallback, useRef, useState, useEffect } from "react";
+import { prefersReducedMotion } from "@/lib/unlock/reduced-motion";
 
 interface UnlockButtonProps {
   onUnlock: () => void | Promise<void>;
@@ -16,32 +17,56 @@ export function UnlockButton({
 }: UnlockButtonProps) {
   const [progress, setProgress] = useState(0);
   const [phase, setPhase] = useState<"idle" | "holding" | "unlocking" | "done">("idle");
+  const [reduced, setReduced] = useState(false);
   const startRef = useRef<number | null>(null);
   const rafRef = useRef<number | null>(null);
   const unlockedRef = useRef(false);
+
+  useEffect(() => {
+    const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const sync = () => setReduced(mq.matches);
+    sync();
+    mq.addEventListener("change", sync);
+    return () => mq.removeEventListener("change", sync);
+  }, []);
+
   const clear = useCallback(() => {
     if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    rafRef.current = null;
     startRef.current = null;
   }, []);
+
+  const finish = useCallback(() => {
+    if (unlockedRef.current) return;
+    unlockedRef.current = true;
+    setPhase("unlocking");
+    void Promise.resolve(onUnlock()).finally(() => setPhase("done"));
+  }, [onUnlock]);
+
   const tick = useCallback(() => {
     if (startRef.current == null) return;
     const p = Math.min(1, (performance.now() - startRef.current) / holdMs);
     setProgress(p);
-    if (p >= 1 && !unlockedRef.current) {
-      unlockedRef.current = true;
-      setPhase("unlocking");
-      void Promise.resolve(onUnlock()).finally(() => setPhase("done"));
+    if (p >= 1) {
+      finish();
       return;
     }
     rafRef.current = requestAnimationFrame(tick);
-  }, [holdMs, onUnlock]);
+  }, [holdMs, finish]);
+
   const startHold = useCallback(() => {
     if (disabled || phase === "unlocking" || phase === "done") return;
     unlockedRef.current = false;
+    if (reduced || prefersReducedMotion()) {
+      // No conic pulse, hold loop, or rAF when the user asks for less motion.
+      finish();
+      return;
+    }
     setPhase("holding");
     startRef.current = performance.now();
     rafRef.current = requestAnimationFrame(tick);
-  }, [disabled, phase, tick]);
+  }, [disabled, phase, tick, finish, reduced]);
+
   const endHold = useCallback(() => {
     if (phase === "holding") {
       clear();
@@ -49,24 +74,8 @@ export function UnlockButton({
       setPhase("idle");
     }
   }, [phase, clear]);
+
   useEffect(() => () => clear(), [clear]);
-  useEffect(() => {
-    const down = (e: KeyboardEvent) => {
-      if (e.key === " " || e.key === "Enter") {
-        e.preventDefault();
-        startHold();
-      }
-    };
-    const up = (e: KeyboardEvent) => {
-      if (e.key === " " || e.key === "Enter") endHold();
-    };
-    window.addEventListener("keydown", down);
-    window.addEventListener("keyup", up);
-    return () => {
-      window.removeEventListener("keydown", down);
-      window.removeEventListener("keyup", up);
-    };
-  }, [startHold, endHold]);
 
   const status =
     phase === "done" ? "Unlocked" : phase === "unlocking" ? "Confirming…" : label;
@@ -85,7 +94,16 @@ export function UnlockButton({
         onPointerUp={endHold}
         onPointerLeave={endHold}
         onPointerCancel={endHold}
-        className={`relative h-28 w-28 select-none rounded-full border-2 transition-colors duration-300
+        onKeyDown={(e) => {
+          if (e.key === " " || e.key === "Enter") {
+            e.preventDefault();
+            startHold();
+          }
+        }}
+        onKeyUp={(e) => {
+          if (e.key === " " || e.key === "Enter") endHold();
+        }}
+        className={`relative h-28 w-28 select-none rounded-full border-2 motion-safe:transition-colors motion-safe:duration-300
           focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-volt
           ${
             phase === "done"
@@ -97,7 +115,7 @@ export function UnlockButton({
           ${disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
         style={{
           background:
-            phase === "holding"
+            phase === "holding" && !reduced
               ? `conic-gradient(rgba(198,255,61,0.55) ${progress * 360}deg, rgba(255,255,255,0.06) 0)`
               : undefined
         }}

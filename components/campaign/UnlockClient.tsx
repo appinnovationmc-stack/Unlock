@@ -1,5 +1,8 @@
 "use client";
+
+import { useMemo } from "react";
 import { UnlockExperience } from "@/components/unlock/unlock/UnlockExperience";
+import { PersistReferrer, readStoredReferrer } from "@/components/campaign/PersistReferrer";
 
 export function UnlockClient({
   campaignId,
@@ -18,15 +21,22 @@ export function UnlockClient({
   authenticated?: boolean;
   pinLocationIds?: string[];
 }) {
+  const resolvedRef = useMemo(() => {
+    return referrerCreatorId || readStoredReferrer(campaignId);
+  }, [campaignId, referrerCreatorId]);
+
   return (
-    <UnlockExperience
-      campaignId={campaignId}
-      rewardLabel={rewardLabel}
-      campaignTitle={campaignTitle}
-      referrerCreatorId={referrerCreatorId}
-      requireVisit={requireVisit}
-      authenticated={authenticated}
-      pinLocationIds={pinLocationIds}
-    />
+    <>
+      <PersistReferrer campaignId={campaignId} referrerCreatorId={referrerCreatorId} />
+      <UnlockExperience
+        campaignId={campaignId}
+        rewardLabel={rewardLabel}
+        campaignTitle={campaignTitle}
+        referrerCreatorId={resolvedRef}
+        requireVisit={requireVisit}
+        authenticated={authenticated}
+        pinLocationIds={pinLocationIds}
+      />
+    </>
   );
 }

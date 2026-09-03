@@ -1,65 +1,18 @@
-import { CampaignCard } from "@/components/campaign/CampaignCard";
 import { XPBadge } from "@/components/ui/XPBadge";
-import { Button } from "@/components/ui/Button";
 import { createClient } from "@/lib/supabase/server";
-import type { Campaign, ImpactScore } from "@/lib/types";
-import Link from "next/link";
 import { LiveMapSection } from "@/components/unlock/map/LiveMapSection";
-import { unescapeHtmlEntities } from "@/lib/unlock/display-text";
-import type { MapPin } from "@/components/unlock/map/LiveMap";
+import { FieldPinList } from "@/components/unlock/map/FieldPinList";
+import { getLiveField } from "@/lib/unlock/field/live";
 
 export const dynamic = "force-dynamic";
-
-function encounterKind(mechanics: string[] | null | undefined): string {
-  const m = mechanics ?? [];
-  if (m.includes("treasure_hunt") || m.includes("qr_scan") || m.includes("nfc_tap")) return "Hunt";
-  if (m.includes("geolocation")) return "In the wild";
-  if (m.includes("timed_challenge")) return "Timed drop";
-  if (m.includes("social_action") || m.includes("referral")) return "Relay";
-  if (m.includes("quiz") || m.includes("puzzle") || m.includes("riddle")) return "Challenge";
-  return "Encounter";
-}
-
-/** Hide duplicate live rows that share the same title + copy (e.g. two "find taboo" cards). */
-function uniqueLiveCampaigns(list: Campaign[]): Campaign[] {
-  const seen = new Set<string>();
-  const out: Campaign[] = [];
-  for (const c of list) {
-    const title = unescapeHtmlEntities(c.title).toLowerCase();
-    const copy = unescapeHtmlEntities(c.tagline || c.description).toLowerCase();
-    const key = `${title}|${copy}`;
-    if (seen.has(key)) continue;
-    seen.add(key);
-    out.push(c);
-  }
-  return out;
-}
 
 export default async function DiscoverPage() {
   const supabase = createClient();
   const {
     data: { user }
   } = await supabase.auth.getUser();
-  const { data: campaigns } = await supabase
-    .from("campaigns")
-    .select("*")
-    .eq("status", "live")
-    .order("created_at", { ascending: false });
-
-  let mapPins: MapPin[] = [];
-  const { data: pins, error: pinError } = await supabase.rpc("get_live_map_pins");
-  if (!pinError && Array.isArray(pins)) {
-    mapPins = pins as MapPin[];
-  }
-
-  const expByCampaign = new Map<string, string>();
-  const { data: exps } = await supabase
-    .from("experience_configs")
-    .select("campaign_id, primary_type")
-    .eq("map_visible", true);
-  for (const e of exps ?? []) {
-    expByCampaign.set(e.campaign_id, e.primary_type);
-  }
+  const field = await getLiveField();
+  const mapPins = field.pins;
 
   let xp = 0;
   if (user) {
@@ -71,78 +24,68 @@ export default async function DiscoverPage() {
     xp = consumer?.xp ?? 0;
   }
 
-  const list = uniqueLiveCampaigns((campaigns as Campaign[]) ?? []);
-  const count = list.length;
+  const soon = new Set(
+    field.campaigns
+      .filter((c) => {
+        if (!c.ends_at) return false;
+        const t = new Date(c.ends_at).getTime();
+        return Number.isFinite(t) && t - Date.now() < 72 * 60 * 60 * 1000 && t > Date.now();
+      })
+      .map((c) => c.id)
+  );
 
   return (
     <main className="min-h-screen bg-void">
-      <header className="page-shell-wide pt-10 pb-6">
+      <header className="page-shell-wide pt-8 pb-4">
         <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
           <div>
-            <p className="section-kicker mb-2">Field</p>
+            <p className="section-kicker mb-2">Near you</p>
             <h1 className="font-display text-3xl md:text-5xl text-fog tracking-tight">
-              What&apos;s <span className="text-volt">happening</span>
+              Something is
               <br />
-              around you?
+              <span className="text-volt">happening</span>
             </h1>
+            <p className="text-mute text-sm mt-3 max-w-lg">
+              Pins are places. Walk there. Hold to unlock.
+            </p>
           </div>
           {user && xp > 0 ? <XPBadge xp={xp} /> : null}
         </div>
       </header>
-      <section className="page-shell-wide py-0 pb-8">
-        <div className="relative aspect-[16/9] md:aspect-[21/9] max-h-[420px] w-full min-h-[280px] overflow-hidden border border-white/8 bg-ink2">
-          <div className="absolute inset-0 min-h-[280px]">
+
+      <section className="page-shell-wide pb-6">
+        <div className="relative w-full h-[62vh] min-h-[360px] max-h-[720px] overflow-hidden bg-ink">
+          <div className="absolute inset-0">
             <LiveMapSection pins={mapPins} />
           </div>
-          <div className="absolute bottom-3 left-3 pointer-events-none z-10">
-            <p className="text-sm text-fog bg-void/80 px-3 py-1.5">
+          <div className="absolute top-3 left-3 z-10 pointer-events-none">
+            <p className="text-sm text-fog bg-void/90 px-3 py-1.5">
               {mapPins.length > 0
-                ? `${mapPins.length} pin${mapPins.length === 1 ? "" : "s"} · ${count} experience${count === 1 ? "" : "s"}`
-                : count > 0
-                  ? `${count} experience${count === 1 ? "" : "s"}`
-                  : "No live pins yet"}
+                ? `${mapPins.length} ${mapPins.length === 1 ? "place" : "places"} live`
+                : "The field is quiet"}
             </p>
           </div>
         </div>
       </section>
-      {!user && list.length > 0 && (
-        <section className="page-shell-wide pb-8">
-          <div className="border border-white/10 px-5 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-            <div>
-              <p className="section-kicker">First time</p>
-              <p className="text-fog text-sm mt-1">Get close. Check in. Hold to unlock.</p>
-            </div>
-            <Link href={`/campaign/${list[0].id}`}>
-              <Button variant="volt">Try one experience</Button>
-            </Link>
-          </div>
+
+      {mapPins.length > 0 ? (
+        <FieldPinList
+          pins={mapPins.map((pin) => ({
+            location_id: pin.location_id,
+            campaign_id: pin.campaign_id,
+            campaign_title: pin.campaign_title,
+            label: pin.label,
+            radius_m: pin.radius_m,
+            endingSoon: soon.has(pin.campaign_id)
+          }))}
+        />
+      ) : (
+        <section className="page-shell-wide pb-16">
+          <p className="text-mute text-base max-w-md">
+            Nothing is planted on the map right now. When a brand drops a pin, it appears here.
+          </p>
         </section>
       )}
-
-      <section className="page-shell-wide pb-16">
-        {list.length === 0 ? (
-          <div className="border border-white/10 px-6 py-16 text-center">
-            <p className="font-display text-xl text-fog mb-2">The world is quiet</p>
-            <p className="text-mute text-base mb-6 max-w-md mx-auto">No live experiences right now.</p>
-            <Link href="/studio">
-              <Button variant="ghost">Plant an experience</Button>
-            </Link>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {list.map((c) => (
-              <CampaignCard
-                key={c.id}
-                campaign={c}
-                kindLabel={expByCampaign.get(c.id) ?? encounterKind(c.mechanics)}
-              />
-            ))}
-          </div>
-        )}
-      </section>
-      <footer className="px-6 pb-10 text-center">
-        <p className="text-sm text-mute">Actions are value. Verified actions are higher value.</p>
-      </footer>
     </main>
   );
 }

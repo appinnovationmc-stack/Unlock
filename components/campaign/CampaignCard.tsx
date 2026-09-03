@@ -42,8 +42,8 @@ export function CampaignCard({
   return (
     <Link
       href={`/campaign/${campaign.id}`}
-      className="group relative block clip-keyhole bg-ink2 noise-overlay overflow-hidden
-        border border-white/5 hover:border-white/20 transition-colors duration-200"
+      className="group relative block bg-ink2 overflow-hidden
+        border border-white/5 hover:border-white/15 motion-safe:transition-colors"
     >
       <div className="aspect-[4/3] w-full bg-ink2 flex flex-col justify-between p-5 relative">
         {art ? (
@@ -57,9 +57,9 @@ export function CampaignCard({
         <span className="relative z-[1] section-kicker self-start border border-white/15 px-2 py-0.5 bg-void/50">
           {kindLabel}
         </span>
-        <div className="relative z-[1] flex flex-wrap gap-1.5">
-          {(campaign.mechanics ?? []).slice(0, 3).map((m) => (
-            <span key={m} className="text-xs text-void bg-fog/90 px-2 py-0.5">
+        <div className="relative z-[1]">
+          {(campaign.mechanics ?? []).slice(0, 1).map((m) => (
+            <span key={m} className="text-xs text-mute">
               {mechanicLabels[m] ?? m}
             </span>
           ))}

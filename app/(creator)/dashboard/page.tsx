@@ -1,6 +1,8 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import Link from "next/link";
+import { formatMoney } from "@/lib/finance/money";
+import { CopyReferralLink } from "@/components/creator/CopyReferralLink";
 
 export const dynamic = "force-dynamic";
 
@@ -46,6 +48,12 @@ export default async function CreatorDashboard() {
     .eq("referrer_creator_id", user.id).eq("converted", true);
   const { data: campaigns } = await supabase.from("campaigns").select("id, title").eq("status", "live").order("created_at", { ascending: false });
 
+  let wallet = { pending_cents: 0, available_cents: 0, lifetime_earned_cents: 0 };
+  try {
+    const { data: w } = await supabase.from("creator_wallets").select("pending_cents, available_cents, lifetime_earned_cents").eq("creator_id", user.id).maybeSingle();
+    if (w) wallet = w as typeof wallet;
+  } catch { /* */ }
+
   return (
     <main className="min-h-screen px-6 py-10 md:px-12 bg-void">
       <header className="mb-10 flex flex-wrap items-start justify-between gap-4">
@@ -79,8 +87,9 @@ export default async function CreatorDashboard() {
       </section>
       <section className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-10">
         <div className="border border-gold/20 bg-ink2 px-5 py-4 clip-keyhole-sm">
-          <p className="font-mono text-[10px] uppercase tracking-widest text-mute">Earnings</p>
-          <p className="font-display text-2xl text-gold mt-1">R{(creator.earnings_cents / 100).toFixed(2)}</p>
+          <p className="font-mono text-[10px] uppercase tracking-widest text-mute">Available</p>
+          <p className="font-display text-2xl text-gold mt-1">{formatMoney(wallet.available_cents)}</p>
+          <p className="font-mono text-[10px] text-mute mt-1">Pending {formatMoney(wallet.pending_cents)}</p>
         </div>
         <div className="border border-white/5 bg-ink2 px-5 py-4 clip-keyhole-sm">
           <p className="font-mono text-[10px] uppercase tracking-widest text-mute">Referral conversions</p>
@@ -100,7 +109,8 @@ export default async function CreatorDashboard() {
             <p className="font-display text-fog">{c.title}</p>
             <div className="flex gap-3 font-mono text-xs">
               <Link href={`/campaign/${c.id}`} className="text-mute hover:text-volt">Open</Link>
-              <Link href={`/campaign/${c.id}?ref=${user.id}`} className="text-volt hover:underline">Your referral link</Link>
+              <Link href={`/campaign/${c.id}?ref=${user.id}`} className="text-volt hover:underline">Open with ref</Link>
+              <CopyReferralLink href={`/campaign/${c.id}?ref=${user.id}`} />
             </div>
           </div>
         ))}

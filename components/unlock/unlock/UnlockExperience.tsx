@@ -131,7 +131,7 @@ export function UnlockExperience({
           <Link
             href={campaignLoginHref(campaignId)}
             aria-label="Hold to unlock"
-            className="relative h-28 w-28 select-none rounded-full border-2 border-white/25 text-fog bg-ink2 hover:border-volt/60 transition-colors duration-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-volt"
+            className="relative h-28 w-28 select-none rounded-full border-2 border-white/25 text-fog bg-ink2 hover:border-volt/60 motion-safe:transition-colors motion-safe:duration-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-volt"
           >
             <span
               className="absolute inset-2 rounded-full bg-ink2 flex items-center justify-center font-display text-2xl"

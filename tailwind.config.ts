@@ -1,19 +1,17 @@
 import type { Config } from "tailwindcss";
 
-// UNLOCK design tokens.
-// Palette: violet-black void (not pure #000), volt for one word / primary action,
-// magenta + gold reserved only for "reward won" moments — never decorative chrome.
+// Light store canvas. fog is type. volt is the single action colour.
 const config: Config = {
   content: ["./app/**/*.{ts,tsx}", "./components/**/*.{ts,tsx}"],
   theme: {
     extend: {
       colors: {
-        void: "#0B0A14",
-        ink: "#15132A",
-        ink2: "#1E1B3A",
-        fog: "#ECE9F7",
-        mute: "#8B87A8",
-        volt: "#C6FF3D",
+        void: "#ffffff",
+        ink: "#f5f5f7",
+        ink2: "#e8e8ed",
+        fog: "#1d1d1f",
+        mute: "#6e6e73",
+        volt: "#0071e3",
         magenta: "#FF3DCB",
         gold: "#FFC24B"
       },

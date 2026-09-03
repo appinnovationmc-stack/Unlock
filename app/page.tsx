@@ -3,56 +3,51 @@ import { Button } from "@/components/ui/Button";
 
 export default function Home() {
   return (
-    <main className="min-h-screen bg-void flex flex-col items-center justify-center px-6 py-16 text-center">
-      <p className="section-kicker mb-6">Encounters · not ads</p>
+    <main className="min-h-screen bg-void">
+      <header className="px-6 pt-16 pb-10 md:pt-24 md:pb-12 text-center">
+        <p className="section-kicker mb-5">Encounters · not ads</p>
+        <h1 className="font-display text-5xl md:text-7xl font-900 leading-[0.95] tracking-tight text-fog">
+          Don't just see the ad.
+          <br />
+          <span className="text-volt">Unlock</span> it.
+        </h1>
+      </header>
 
-      <h1 className="font-display text-5xl md:text-7xl font-900 leading-[0.95] text-fog max-w-4xl">
-        Don&apos;t just see the ad.
-        <br />
-        <span className="text-volt">Unlock</span> it.
-      </h1>
-
-      <p className="mt-6 max-w-lg text-mute text-base md:text-lg leading-relaxed">
-        Brands plant experiences in the world. You find them, complete them, claim the
-        reward — then pass it on. Creators amplify. The platform measures what actually
-        happened.
-      </p>
-
-      <div className="mt-10 flex flex-col sm:flex-row gap-3">
-        <Link href="/discover">
-          <Button variant="volt">Enter the field</Button>
-        </Link>
-        <Link href="/for-brands">
-          <Button variant="ghost">For brands</Button>
-        </Link>
-      </div>
-      <p className="mt-4 text-sm text-mute">
-        <Link href="/signup" className="hover:text-fog">
-          Create account
-        </Link>
-      </p>
-
-      <div className="mt-16 grid grid-cols-1 sm:grid-cols-3 gap-6 max-w-3xl text-left w-full">
-        {[
-          ["01", "Encounter", "Something appears — a drop, a hunt, a challenge."],
-          ["02", "Act", "You play. Not scroll. Not fill a form."],
-          ["03", "Broadcast", "Reward in hand. Share it. Creators get paid for real reach."]
-        ].map(([n, t, d]) => (
-          <div key={n} className="border border-white/10 bg-ink2/40 px-5 py-4 clip-keyhole-sm">
-            <p className="section-kicker">{n}</p>
-            <p className="font-display text-fog mt-1">{t}</p>
-            <p className="text-mute text-sm mt-2 leading-relaxed">{d}</p>
+      <section className="grid md:grid-cols-2 border-t border-white/8">
+        <article className="flex flex-col items-center text-center px-8 py-20 md:py-28 md:border-r border-white/8">
+          <h2 className="font-display text-4xl md:text-5xl text-fog tracking-tight">Field</h2>
+          <p className="mt-3 text-mute text-lg">Find it. Get close. Hold to unlock.</p>
+          <div className="mt-8 flex flex-wrap justify-center gap-3">
+            <Link href="/discover">
+              <Button variant="volt">Enter the field</Button>
+            </Link>
+            <Link href="/signup">
+              <Button variant="ghost">Create account</Button>
+            </Link>
           </div>
-        ))}
-      </div>
+        </article>
 
-      <p className="mt-12 text-sm text-mute">
-        <Link href="/studio" className="hover:text-fog">
-          Brands → Studio
-        </Link>
-        {" · "}
+        <article className="flex flex-col items-center text-center px-8 py-20 md:py-28 bg-ink/40">
+          <h2 className="font-display text-4xl md:text-5xl text-fog tracking-tight">Studio</h2>
+          <p className="mt-3 text-mute text-lg">Plant an experience. Watch who came.</p>
+          <div className="mt-8 flex flex-wrap justify-center gap-3">
+            <Link href="/for-brands">
+              <Button variant="volt">Learn more</Button>
+            </Link>
+            <Link href="/studio">
+              <Button variant="ghost">Build</Button>
+            </Link>
+          </div>
+        </article>
+      </section>
+
+      <p className="py-10 text-center text-sm text-mute">
         <Link href="/dashboard" className="hover:text-fog">
           Creators
+        </Link>
+        {" · "}
+        <Link href="/for-agencies" className="hover:text-fog">
+          Agencies
         </Link>
       </p>
     </main>

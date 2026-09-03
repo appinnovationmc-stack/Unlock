@@ -67,8 +67,6 @@ export default async function CampaignPage({
     experienceType = (exp as { primary_type?: string } | null)?.primary_type ?? null;
   } catch { /* */ }
 
-  // Public pin ids only — same surface as Discover (get_live_map_pins).
-  // Do not read campaign_locations from the consumer page.
   let campaignPinIds: string[] = [];
   const { data: livePins, error: pinError } = await supabase.rpc("get_live_map_pins");
   if (!pinError && Array.isArray(livePins)) {
@@ -132,33 +130,33 @@ export default async function CampaignPage({
         <p className="mb-4 text-sm text-mute">Opened via creator path</p>
       )}
 
-      <h1 className="font-display text-3xl md:text-5xl text-fog mb-3 leading-tight">
-        {campaign.title}
+      <p className="section-kicker mb-2">What you unlock</p>
+      <h1 className="font-display text-3xl md:text-5xl text-fog mb-3 leading-[0.95] tracking-tight">
+        {rewardLabel}
       </h1>
-      <p className="text-mute text-lg mb-8 leading-snug">{actionLine}</p>
+      <p className="text-mute text-lg mb-10 leading-snug">{campaign.title}</p>
 
-      <div className="grid gap-6 mb-10">
+      <div className="grid gap-8 mb-12">
         <div>
-          <p className="section-kicker">What is this</p>
-          <p className="text-fog text-base mt-1 leading-relaxed">
-            {campaign.description ||
-              campaign.tagline ||
-              "A brand experience. Not a banner — a moment you complete."}
+          <p className="section-kicker">Where</p>
+          <p className="text-fog text-base mt-1">
+            {requireVisit
+              ? campaignPinIds.length
+                ? `${campaignPinIds.length} live ${campaignPinIds.length === 1 ? "place" : "places"}`
+                : "A place in the world. Get close."
+              : "From here. No store pin."}
           </p>
         </div>
         <div>
           <p className="section-kicker">What you do</p>
           <p className="text-fog text-base mt-1">{actionHint}</p>
         </div>
-        <div>
-          <p className="section-kicker">What you get</p>
-          <p className="text-fog text-base mt-1">
-            {rewardLabel}
-            {reward?.label ? (
-              <span className="text-mute"> · +{campaign.xp_value} XP</span>
-            ) : null}
-          </p>
-        </div>
+        {campaign.description ? (
+          <div>
+            <p className="section-kicker">The brief</p>
+            <p className="text-mute text-base mt-1 leading-relaxed">{actionLine}</p>
+          </div>
+        ) : null}
       </div>
 
       {mechanics.includes("nfc_tap") && campaign.status === "live" && (

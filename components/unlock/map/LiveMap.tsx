@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import * as maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
+import { prefersReducedMotion } from "@/lib/unlock/reduced-motion";
 
 export type MapPin = {
   location_id: string;
@@ -43,11 +44,29 @@ function isValidPin(pin: MapPin): boolean {
   );
 }
 
-function attachPins(map: maplibregl.Map, pins: MapPin[]) {
+function labelMapControls(map: maplibregl.Map) {
+  const root = map.getContainer();
+  const labels: [string, string][] = [
+    [".maplibregl-ctrl-zoom-in", "Zoom in"],
+    [".maplibregl-ctrl-zoom-out", "Zoom out"],
+    [".maplibregl-ctrl-compass", "Reset bearing"],
+    [".maplibregl-ctrl-attrib-button", "Map attribution"]
+  ];
+  for (const [sel, label] of labels) {
+    const el = root.querySelector(sel);
+    if (el instanceof HTMLElement) {
+      el.setAttribute("aria-label", label);
+      el.setAttribute("title", label);
+    }
+  }
+}
+
+function attachPins(map: maplibregl.Map, pins: MapPin[], reduced: boolean) {
   pins.forEach((pin) => {
     const wrap = document.createElement("a");
     wrap.href = `/campaign/${pin.campaign_id}`;
     wrap.className = "unlock-map-pin-wrap";
+    wrap.setAttribute("aria-label", pin.label || pin.campaign_title);
     wrap.style.cssText =
       "display:flex;align-items:center;gap:6px;cursor:pointer;max-width:180px;text-decoration:none;";
     wrap.title = pin.label || pin.campaign_title;
@@ -72,10 +91,10 @@ function attachPins(map: maplibregl.Map, pins: MapPin[]) {
   if (pins.length > 1) {
     const bounds = new maplibregl.LngLatBounds();
     pins.forEach((p) => bounds.extend([p.lng, p.lat]));
-    map.fitBounds(bounds, { padding: 56, maxZoom: 14, duration: 0 });
+    // Never flyTo — jump/fit with duration 0 when reduced motion is on.
+    map.fitBounds(bounds, { padding: 56, maxZoom: 14, duration: reduced ? 0 : 0 });
   } else if (pins.length === 1) {
-    map.setCenter([pins[0].lng, pins[0].lat]);
-    map.setZoom(13);
+    map.jumpTo({ center: [pins[0].lng, pins[0].lat], zoom: 13 });
   }
 }
 
@@ -101,6 +120,7 @@ export function LiveMap({
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
     const currentPins = pins.filter(isValidPin);
+    const reduced = prefersReducedMotion();
 
     const center: [number, number] =
       currentPins.length > 0
@@ -114,7 +134,8 @@ export function LiveMap({
         style: STREET_STYLE,
         center,
         zoom: CITY_ZOOM,
-        attributionControl: false
+        attributionControl: false,
+        fadeDuration: reduced ? 0 : 300
       });
     } catch {
       setFailed(true);
@@ -123,6 +144,7 @@ export function LiveMap({
 
     map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-right");
     map.addControl(new maplibregl.AttributionControl({ compact: true }), "bottom-right");
+    labelMapControls(map);
 
     const resize = () => {
       try {
@@ -137,7 +159,8 @@ export function LiveMap({
       if (pinsAttached) return;
       pinsAttached = true;
       resize();
-      attachPins(map, currentPins);
+      attachPins(map, currentPins, reduced);
+      labelMapControls(map);
     };
 
     map.on("error", () => {
@@ -145,6 +168,10 @@ export function LiveMap({
     });
     map.once("load", placePins);
     map.once("style.load", () => {
+      if (reduced) {
+        placePins();
+        return;
+      }
       requestAnimationFrame(placePins);
     });
     const fallback = window.setTimeout(placePins, 2500);
@@ -152,7 +179,8 @@ export function LiveMap({
     const ro =
       typeof ResizeObserver !== "undefined" ? new ResizeObserver(() => resize()) : null;
     if (containerRef.current && ro) ro.observe(containerRef.current);
-    requestAnimationFrame(resize);
+    if (reduced) resize();
+    else requestAnimationFrame(resize);
 
     mapRef.current = map;
     return () => {

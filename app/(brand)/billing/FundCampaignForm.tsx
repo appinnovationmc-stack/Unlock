@@ -123,9 +123,10 @@ export function FundCampaignForm({
           />
         </label>
       </div>
-      <p className="font-mono text-[10px] text-mute">
-        Platform fee is calculated automatically from your commercial rule (default 15%). Allocations
-        must not exceed total.
+      <p className="font-mono text-[10px] text-mute leading-relaxed">
+        Platform fee is calculated from your commercial rule (default 15%). Allocations must not
+        exceed total. Visit campaigns only bill verified check-ins when Performance is above zero
+        (default R20 CPE) or a creator offer rate exists. Unlock and XP do not spend this budget.
       </p>
       {error && <p className="text-magenta font-mono text-xs">{error}</p>}
       {ok && <p className="text-volt font-mono text-xs">Campaign funded.</p>}

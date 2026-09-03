@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 // Converts a base64url VAPID public key to the Uint8Array PushManager expects.
 function urlBase64ToUint8Array(base64Url: string) {
   const padding = "=".repeat((4 - (base64Url.length % 4)) % 4);
-  const base64 = (base64Url + padding).replace(/-/g, "+").replace(/_/g, "/");
+  const base64 = (base64Url + padding).replace(/-/g, "+").replace(/\//g, "/");
   const raw = atob(base64);
   return Uint8Array.from([...raw].map((c) => c.charCodeAt(0)));
 }
@@ -128,7 +128,7 @@ export function PushOptIn() {
     return (
       <div className="border border-white/8 bg-ink2/80 px-4 py-3 flex items-center justify-between gap-4">
         <p className="font-mono text-[11px] text-mute leading-relaxed">
-          This browser is subscribed. Pushes are not sent yet — the server has no Web Push sender.
+          Notifications are on for this browser. Alerts only fire when a real event happens.
         </p>
         <button
           type="button"
