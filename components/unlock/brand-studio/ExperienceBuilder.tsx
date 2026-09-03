@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { createCampaign } from "@/lib/actions/campaigns";
+import { draftDrop } from "@/lib/unlock/studio/draft-drop";
 import { Button } from "@/components/ui/Button";
 
 const INTENTS = [
@@ -80,23 +81,29 @@ export function ExperienceBuilder() {
           : "Complete the moment. Take the reward.";
 
   const measureHints = useMemo(() => {
-    const base = ["CAMPAIGN_VIEW", "REWARD_UNLOCK"];
-    if (intent === "VISIT") base.push("LOCATION_CHECKIN");
-    if (intent === "COLLECT") base.push("QR_SCAN", "PRODUCT_INTERACTION");
-    if (intent === "SHARE") base.push("SHARE", "REFERRAL_CLICK");
-    if (intent === "BUY") base.push("PURCHASE", "REFERRAL_CONVERSION");
-    if (intent === "SOLVE" || intent === "PLAY") base.push("CHALLENGE_COMPLETE");
+    const base = ["They opened it", "They unlocked it"];
+    if (intent === "VISIT") base.push("They arrived");
+    if (intent === "COLLECT") base.push("They scanned");
+    if (intent === "SHARE") base.push("They passed it on");
+    if (intent === "BUY") base.push("They bought");
+    if (intent === "SOLVE" || intent === "PLAY") base.push("They finished it");
     return base;
   }, [intent]);
 
   const field =
     "mt-1 w-full bg-void border border-white/10 focus:border-volt px-3 py-2 text-fog text-base outline-none";
 
+  function writeTheDrop() {
+    const d = draftDrop(intent, where, rewardKind);
+    setTitle(d.title);
+    setTagline(d.tagline);
+    setRewardLabel(d.rewardLabel);
+  }
+
   return (
     <div className="grid lg:grid-cols-2 gap-8">
       <div className="space-y-6">
         <div>
-          <p className="section-kicker mb-1">Intent</p>
           <h2 className="font-display text-xl text-fog">What should people actually do?</h2>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -116,7 +123,7 @@ export function ExperienceBuilder() {
         <p className="text-mute text-sm">{intentMeta.hint}</p>
 
         <div>
-          <p className="section-kicker mb-2">Where?</p>
+          <p className="text-sm text-mute mb-2">Where?</p>
           <div className="flex flex-wrap gap-2">
             {WHERE.map((w) => (
               <Chip key={w.id} active={where === w.id} onClick={() => setWhere(w.id)}>
@@ -127,7 +134,7 @@ export function ExperienceBuilder() {
         </div>
 
         <div>
-          <p className="section-kicker mb-2">What do they get?</p>
+          <p className="text-sm text-mute mb-2">What do they get?</p>
           <div className="flex flex-wrap gap-2 mb-3">
             {REWARDS.map((r) => (
               <Chip key={r.id} active={rewardKind === r.id} onClick={() => setRewardKind(r.id)}>
@@ -139,20 +146,20 @@ export function ExperienceBuilder() {
             <input
               value={rewardLabel}
               onChange={(e) => setRewardLabel(e.target.value)}
-              placeholder="Reward label"
+              placeholder="What they unlock"
               className={field}
             />
             <input
               value={rewardValue}
               onChange={(e) => setRewardValue(e.target.value)}
-              placeholder="Value (R50, 20%…)"
+              placeholder="R50, 20%…"
               className={field}
             />
           </div>
         </div>
 
         <div>
-          <p className="section-kicker mb-2">How do we verify?</p>
+          <p className="text-sm text-mute mb-2">How do we know they did it?</p>
           <div className="flex flex-wrap gap-2">
             {VERIFY.map((v) => (
               <Chip key={v.id} active={verify === v.id} onClick={() => setVerify(v.id)}>
@@ -163,17 +170,17 @@ export function ExperienceBuilder() {
         </div>
 
         <div>
-          <p className="section-kicker mb-2">We will measure</p>
+          <p className="text-sm text-mute mb-2">You will see</p>
           <div className="flex flex-wrap gap-2">
             {measureHints.map((m) => (
-              <span key={m} className="text-xs text-mute border border-white/10 px-2 py-1">
+              <span key={m} className="text-xs text-mute border border-black/10 px-2 py-1">
                 {m}
               </span>
             ))}
           </div>
         </div>
 
-        <form action={createCampaign} className="space-y-4 border border-white/10 p-5">
+        <form action={createCampaign} className="space-y-4 border border-black/10 p-5">
           <input type="hidden" name="objective" value={intent.toLowerCase()} />
           {mechanics.map((m) => (
             <input key={m} type="hidden" name="mechanics" value={m} />
@@ -185,29 +192,32 @@ export function ExperienceBuilder() {
           <input type="hidden" name="where" value={where} />
           <input type="hidden" name="description" value={previewHint} />
 
+          <button type="button" className="text-sm min-h-11" onClick={writeTheDrop}>
+            Write the drop
+          </button>
+
           <label className="block">
-            <span className="text-sm text-mute">Title *</span>
+            <span className="text-sm text-mute">Title</span>
             <input
               name="title"
               required
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder="e.g. The Midnight Drop"
+              placeholder="Write the drop if you want a start"
               className={field}
             />
           </label>
           <label className="block">
-            <span className="text-sm text-mute">Tagline</span>
+            <span className="text-sm text-mute">Line people see</span>
             <input
               name="tagline"
               value={tagline}
               onChange={(e) => setTagline(e.target.value)}
-              placeholder="One line that hooks participation"
               className={field}
             />
           </label>
           <label className="block">
-            <span className="text-sm text-mute">Impact on unlock</span>
+            <span className="text-sm text-mute">How many can unlock this</span>
             <input
               type="number"
               min={0}
@@ -220,42 +230,29 @@ export function ExperienceBuilder() {
 
           <div className="flex gap-3 pt-2">
             <Button type="submit" name="status" value="draft" variant="ghost" className="flex-1">
-              Save draft
+              Save
             </Button>
             <Button type="submit" name="status" value="live" variant="volt" className="flex-1">
-              Start — then drop a pin
+              Next — drop a pin
             </Button>
           </div>
         </form>
       </div>
 
       <div className="lg:sticky lg:top-8 h-fit">
-        <p className="section-kicker mb-3">Consumer preview</p>
-        <div className="border border-white/10 bg-void clip-keyhole overflow-hidden">
-          <div className="aspect-[4/3] relative bg-ink2 flex items-center justify-center">
+        <p className="text-sm text-mute mb-3">What they will see</p>
+        <div className="border border-black/10 bg-void overflow-hidden">
+          <div className="aspect-[4/3] relative bg-ink flex items-center justify-center">
             <div className="relative z-10 text-center px-6">
-              <p className="section-kicker mb-2">{intent}</p>
               <p className="font-display text-2xl text-fog mb-1">{previewTitle}</p>
               {tagline ? <p className="text-mute text-sm mb-4">{tagline}</p> : null}
               <p className="text-mute text-sm mb-6 max-w-xs mx-auto">{previewHint}</p>
-              <div className="inline-flex flex-col items-center gap-2">
-                <span className="h-16 w-16 rounded-full border-2 border-white/25 flex items-center justify-center text-xl text-fog">
-                  ◎
-                </span>
-                <span className="text-sm text-mute">Hold to unlock</span>
-              </div>
               <p className="mt-4 text-sm text-fog">{previewReward}</p>
-              {rewardValue ? <p className="text-sm text-mute">{rewardValue}</p> : null}
             </div>
-          </div>
-          <div className="px-4 py-3 border-t border-white/5 flex justify-between text-sm text-mute">
-            <span>{where}</span>
-            <span>Verify: {verify}</span>
-            <span>+{xp} Impact</span>
           </div>
         </div>
         <p className="mt-3 text-mute text-sm">
-          Saving starts a draft. Next: add a pin, add a reward, fund, preview, then publish. Verify is stored on the experience. Visit check-ins stay gated.
+          Save. Drop a pin. Cap how many can unlock it. Publish. The map is the media.
         </p>
       </div>
     </div>
