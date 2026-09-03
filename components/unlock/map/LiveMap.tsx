@@ -313,13 +313,13 @@ export function LiveMap({
       <div ref={containerRef} className="absolute inset-0 min-h-[280px]" />
       <button
         type="button"
-        className="unlock-glass absolute bottom-10 left-3 z-10 min-h-11 px-3 text-sm text-fog"
+        className="unlock-glass absolute top-3 left-3 z-20 min-h-11 px-3 text-sm text-fog"
         onClick={() => startWatch(true)}
       >
         {you ? "I'm here" : "Find me"}
       </button>
       {locateMsg ? (
-        <p className="absolute bottom-24 left-3 z-10 unlock-glass px-3 py-2 text-xs text-mute max-w-[200px]">
+        <p className="absolute top-16 left-3 z-20 unlock-glass px-3 py-2 text-xs text-mute max-w-[200px]">
           {locateMsg}
         </p>
       ) : null}
