@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import * as maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { prefersReducedMotion } from "@/lib/unlock/reduced-motion";
+import { paperMapStyle } from "@/lib/unlock/map/paper-style";
 import { PinSnippet } from "./PinSnippet";
 
 export type MapPin = {
@@ -20,20 +21,6 @@ export type MapPin = {
 
 const JOBURG = { lat: -26.2041, lng: 28.0473 };
 const CITY_ZOOM = 12;
-
-/** Quiet paper basemap — belongs with the light UNLOCK chrome, not a tourist street map. */
-const PAPER_STYLE: maplibregl.StyleSpecification = {
-  version: 8,
-  sources: {
-    paper: {
-      type: "raster",
-      tiles: ["https://basemaps.cartocdn.com/light_all/{z}/{x}/{y}@2x.png"],
-      tileSize: 256,
-      attribution: "© OpenStreetMap © CARTO"
-    }
-  },
-  layers: [{ id: "paper", type: "raster", source: "paper" }]
-};
 
 function isValidPin(pin: MapPin): boolean {
   return (
@@ -243,7 +230,7 @@ export function LiveMap({
     try {
       map = new maplibregl.Map({
         container: containerRef.current,
-        style: PAPER_STYLE,
+        style: paperMapStyle(),
         center,
         zoom: CITY_ZOOM,
         attributionControl: false,
