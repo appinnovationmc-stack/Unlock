@@ -7,7 +7,7 @@ export default function Home() {
       <p className="section-kicker mb-6">Encounters · not ads</p>
 
       <h1 className="font-display text-5xl md:text-7xl font-900 leading-[0.95] text-fog max-w-4xl">
-        Don&apos;t just see the ad.
+        Don't just see the ad.
         <br />
         <span className="text-volt">Unlock</span> it.
       </h1>
@@ -32,19 +32,9 @@ export default function Home() {
         </Link>
       </p>
 
-      <div className="mt-16 grid grid-cols-1 sm:grid-cols-3 gap-6 max-w-3xl text-left w-full">
-        {[
-          ["01", "Encounter", "Something appears — a drop, a hunt, a challenge."],
-          ["02", "Act", "You play. Not scroll. Not fill a form."],
-          ["03", "Broadcast", "Reward in hand. Share it. Creators get paid for real reach."]
-        ].map(([n, t, d]) => (
-          <div key={n} className="border border-white/10 bg-ink2/40 px-5 py-4 clip-keyhole-sm">
-            <p className="section-kicker">{n}</p>
-            <p className="font-display text-fog mt-1">{t}</p>
-            <p className="text-mute text-sm mt-2 leading-relaxed">{d}</p>
-          </div>
-        ))}
-      </div>
+      <p className="mt-16 text-sm text-mute max-w-md leading-relaxed">
+        Find it on the map. Get close. Hold to unlock.
+      </p>
 
       <p className="mt-12 text-sm text-mute">
         <Link href="/studio" className="hover:text-fog">
