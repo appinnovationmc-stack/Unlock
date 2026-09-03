@@ -1,9 +1,9 @@
 import type { StyleSpecification } from "maplibre-gl";
 
 /**
- * Original paper field.
- * Carto light_all when NEXT_PUBLIC_CARTO_KEY is set.
- * Esri Light Gray Canvas + labels otherwise.
+ * Paper field at city zoom. Real streets when you go closer.
+ * Carto light_all covers both if NEXT_PUBLIC_CARTO_KEY is set.
+ * Without a key: Esri Light Gray to z13, Esri World Street from z13.
  */
 export function paperMapStyle(): StyleSpecification {
   const key = process.env.NEXT_PUBLIC_CARTO_KEY?.trim();
@@ -16,6 +16,7 @@ export function paperMapStyle(): StyleSpecification {
           type: "raster",
           tiles: [`https://basemaps.cartocdn.com/light_all/{z}/{x}/{y}@2x.png?${q}`],
           tileSize: 256,
+          maxzoom: 18,
           attribution: "© OpenStreetMap © CARTO"
         }
       },
@@ -32,6 +33,7 @@ export function paperMapStyle(): StyleSpecification {
           "https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}"
         ],
         tileSize: 256,
+        maxzoom: 13,
         attribution: "Tiles © Esri"
       },
       labels: {
@@ -39,12 +41,24 @@ export function paperMapStyle(): StyleSpecification {
         tiles: [
           "https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Reference/MapServer/tile/{z}/{y}/{x}"
         ],
-        tileSize: 256
+        tileSize: 256,
+        maxzoom: 13
+      },
+      streets: {
+        type: "raster",
+        tiles: [
+          "https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}"
+        ],
+        tileSize: 256,
+        minzoom: 13,
+        maxzoom: 19,
+        attribution: "Tiles © Esri"
       }
     },
     layers: [
-      { id: "paper", type: "raster", source: "paper" },
-      { id: "labels", type: "raster", source: "labels" }
+      { id: "paper", type: "raster", source: "paper", maxzoom: 14 },
+      { id: "labels", type: "raster", source: "labels", maxzoom: 14 },
+      { id: "streets", type: "raster", source: "streets", minzoom: 13 }
     ]
   };
 }
