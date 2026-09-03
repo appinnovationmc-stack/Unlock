@@ -42,7 +42,7 @@ export function PinSnippet({
               className="h-12 w-12 rounded-full object-cover bg-ink shrink-0"
             />
           ) : (
-            <span className="h-12 w-12 rounded-full bg-ink text-fog font-display flex items-center justify-center shrink-0">
+            <span className="h-12 w-12 rounded-full bg-volt text-white font-display flex items-center justify-center shrink-0">
               {name.slice(0, 1).toUpperCase()}
             </span>
           )}
@@ -62,7 +62,7 @@ export function PinSnippet({
         </div>
         <Link
           href={`/campaign/${pin.campaign_id}`}
-          className="mt-4 flex min-h-11 items-center justify-center rounded-full bg-volt text-void text-sm"
+          className="mt-4 flex min-h-11 items-center justify-center rounded-full bg-volt text-white text-sm"
         >
           Go there
         </Link>
