@@ -52,10 +52,15 @@ export default async function CampaignPage({
 
   const { data: reward } = await supabase
     .from("rewards")
-    .select("label, value")
+    .select("label, value, stock, redeemed_count")
     .eq("campaign_id", params.id)
     .limit(1)
     .maybeSingle();
+
+  const ticketsLeft =
+    reward && reward.stock != null
+      ? Math.max(0, Number(reward.stock) - Number(reward.redeemed_count ?? 0))
+      : null;
 
   let experienceType: string | null = null;
   try {
@@ -96,18 +101,10 @@ export default async function CampaignPage({
     experienceType === "VISIT";
 
   const actionHint = isProductHunt
-    ? "Find the product. Enter the code. Prove it. Unlock."
+    ? "Find it. Prove it. Unlock."
     : requireVisit
-      ? "Get close. Check in. Hold to unlock."
-      : mechanics.includes("qr_scan")
-        ? "Hunt it down. Scan. Unlock."
-        : mechanics.includes("nfc_tap")
-          ? "On Android Chrome, hold near the tag. On iPhone, use QR."
-          : mechanics.includes("quiz") || mechanics.includes("puzzle")
-            ? "Face the challenge. Tap through. Claim what you earn."
-            : "Hold the seal. Complete the moment. Take the reward.";
-
-  const actionLine = campaign.tagline || actionHint;
+      ? "Find it. Get close. Unlock it."
+      : "Hold to unlock.";
 
   return (
     <main className="page-shell min-h-screen">
@@ -118,22 +115,18 @@ export default async function CampaignPage({
         <RecordReferralClick campaignId={campaign.id} creatorId={referrerCreatorId} />
       )}
       {campaign.status !== "live" && (
-        <p className="mb-4 section-kicker border border-white/15 px-3 py-2 inline-block">
-          Preview · {campaign.status}
-        </p>
+        <p className="mb-4 section-kicker">Preview</p>
       )}
 
-      {experienceType && (
-        <p className="mb-3 section-kicker">{experienceType}</p>
-      )}
-      {referrerCreatorId && (
-        <p className="mb-4 text-sm text-mute">Opened via creator path</p>
-      )}
-
-      <p className="section-kicker mb-2">What you unlock</p>
+      <p className="section-kicker mb-2">Something is waiting</p>
       <h1 className="font-display text-3xl md:text-5xl text-fog mb-3 leading-[0.95] tracking-tight">
         {rewardLabel}
       </h1>
+      {ticketsLeft != null ? (
+        <p className="text-mute text-sm mb-2">
+          {ticketsLeft === 0 ? "The last ticket is gone." : `${ticketsLeft} left`}
+        </p>
+      ) : null}
       <p className="text-mute text-lg mb-10 leading-snug">{campaign.title}</p>
 
       <div className="grid gap-8 mb-12">
@@ -142,21 +135,15 @@ export default async function CampaignPage({
           <p className="text-fog text-base mt-1">
             {requireVisit
               ? campaignPinIds.length
-                ? `${campaignPinIds.length} live ${campaignPinIds.length === 1 ? "place" : "places"}`
+                ? "On the map. Get close."
                 : "A place in the world. Get close."
-              : "From here. No store pin."}
+              : "From here."}
           </p>
         </div>
         <div>
           <p className="section-kicker">What you do</p>
           <p className="text-fog text-base mt-1">{actionHint}</p>
         </div>
-        {campaign.description ? (
-          <div>
-            <p className="section-kicker">The brief</p>
-            <p className="text-mute text-base mt-1 leading-relaxed">{actionLine}</p>
-          </div>
-        ) : null}
       </div>
 
       {mechanics.includes("nfc_tap") && campaign.status === "live" && (
@@ -186,10 +173,10 @@ export default async function CampaignPage({
 
       <div className="mt-12 flex justify-center gap-6 text-sm">
         <Link href="/discover" className="text-mute hover:text-fog">
-          ← Field
+          Explore
         </Link>
         <Link href="/wallet" className="text-mute hover:text-fog">
-          Collection →
+          Rewards
         </Link>
       </div>
     </main>
