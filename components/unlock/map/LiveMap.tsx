@@ -19,21 +19,20 @@ export type MapPin = {
 };
 
 const JOBURG = { lat: -26.2041, lng: 28.0473 };
-const CITY_ZOOM = 11;
+const CITY_ZOOM = 12;
 
-const STREET_STYLE: maplibregl.StyleSpecification = {
+/** Quiet paper basemap — belongs with the light UNLOCK chrome, not a tourist street map. */
+const PAPER_STYLE: maplibregl.StyleSpecification = {
   version: 8,
   sources: {
-    esri: {
+    paper: {
       type: "raster",
-      tiles: [
-        "https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}"
-      ],
+      tiles: ["https://basemaps.cartocdn.com/light_all/{z}/{x}/{y}@2x.png"],
       tileSize: 256,
-      attribution: "Tiles © Esri"
+      attribution: "© OpenStreetMap © CARTO"
     }
   },
-  layers: [{ id: "esri", type: "raster", source: "esri" }]
+  layers: [{ id: "paper", type: "raster", source: "paper" }]
 };
 
 function isValidPin(pin: MapPin): boolean {
@@ -57,6 +56,16 @@ function safeHttp(url?: string | null) {
   return null;
 }
 
+function haversineM(a: { lat: number; lng: number }, b: { lat: number; lng: number }) {
+  const R = 6371000;
+  const dLat = ((b.lat - a.lat) * Math.PI) / 180;
+  const dLng = ((b.lng - a.lng) * Math.PI) / 180;
+  const s =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos((a.lat * Math.PI) / 180) * Math.cos((b.lat * Math.PI) / 180) * Math.sin(dLng / 2) ** 2;
+  return 2 * R * Math.asin(Math.min(1, Math.sqrt(s)));
+}
+
 function labelMapControls(map: maplibregl.Map) {
   const root = map.getContainer();
   const labels: [string, string][] = [
@@ -74,10 +83,29 @@ function labelMapControls(map: maplibregl.Map) {
   }
 }
 
+function youMarkerEl() {
+  const wrap = document.createElement("div");
+  wrap.className = "unlock-you";
+  wrap.setAttribute("aria-label", "You");
+  wrap.style.cssText =
+    "width:44px;height:44px;display:flex;align-items:center;justify-content:center;pointer-events:none;";
+  const pulse = document.createElement("span");
+  pulse.style.cssText =
+    "position:absolute;width:44px;height:44px;border-radius:9999px;background:rgba(17,17,17,0.12);";
+  const img = document.createElement("img");
+  img.src = "/unlock-mark.svg";
+  img.alt = "";
+  img.width = 28;
+  img.height = 28;
+  img.style.cssText =
+    "width:28px;height:28px;border-radius:9999px;position:relative;box-shadow:0 2px 8px rgba(17,17,17,0.25);";
+  wrap.append(pulse, img);
+  return wrap;
+}
+
 function attachPins(
   map: maplibregl.Map,
   pins: MapPin[],
-  reduced: boolean,
   onPick: (pin: MapPin) => void
 ) {
   pins.forEach((pin) => {
@@ -103,7 +131,7 @@ function attachPins(
       img.height = 36;
       img.className = "unlock-map-pin";
       img.style.cssText =
-        "width:36px;height:36px;border-radius:9999px;object-fit:cover;background:#fff;box-shadow:0 1px 6px rgba(29,29,31,0.2);";
+        "width:36px;height:36px;border-radius:9999px;object-fit:cover;background:#fff;box-shadow:0 1px 6px rgba(29,29,31,0.2);border:2px solid #fff;";
       img.addEventListener("error", () => {
         img.remove();
         wrap.append(monogram(name));
@@ -117,14 +145,6 @@ function attachPins(
       .setLngLat([pin.lng, pin.lat])
       .addTo(map);
   });
-
-  if (pins.length > 1) {
-    const bounds = new maplibregl.LngLatBounds();
-    pins.forEach((p) => bounds.extend([p.lng, p.lat]));
-    map.fitBounds(bounds, { padding: 56, maxZoom: 14, duration: reduced ? 0 : 0 });
-  } else if (pins.length === 1) {
-    map.jumpTo({ center: [pins[0].lng, pins[0].lat], zoom: 13 });
-  }
 }
 
 function monogram(name: string) {
@@ -132,7 +152,7 @@ function monogram(name: string) {
   el.className = "unlock-map-pin";
   el.textContent = (name.slice(0, 1) || "·").toUpperCase();
   el.style.cssText =
-    "width:36px;height:36px;border-radius:9999px;background:#1d1d1f;color:#fff;font:600 14px Unbounded,system-ui,sans-serif;display:flex;align-items:center;justify-content:center;box-shadow:0 1px 6px rgba(29,29,31,0.2);";
+    "width:36px;height:36px;border-radius:9999px;background:#111;color:#fff;font:600 14px Unbounded,system-ui,sans-serif;display:flex;align-items:center;justify-content:center;box-shadow:0 1px 6px rgba(29,29,31,0.2);border:2px solid #fff;";
   return el;
 }
 
@@ -145,9 +165,13 @@ export function LiveMap({
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
+  const youRef = useRef<maplibregl.Marker | null>(null);
+  const watchRef = useRef<number | null>(null);
   const pickRef = useRef<(pin: MapPin) => void>(() => {});
   const [failed, setFailed] = useState(false);
   const [picked, setPicked] = useState<MapPin | null>(null);
+  const [you, setYou] = useState<{ lat: number; lng: number } | null>(null);
+  const [locateMsg, setLocateMsg] = useState<string | null>(null);
   pickRef.current = setPicked;
 
   const validPins = useMemo(() => pins.filter(isValidPin), [pins]);
@@ -158,6 +182,52 @@ export function LiveMap({
         .join("|"),
     [validPins]
   );
+
+  const pickedDistance =
+    picked && you ? Math.round(haversineM(you, { lat: picked.lat, lng: picked.lng })) : null;
+
+  function placeYou(lat: number, lng: number, fly: boolean) {
+    const map = mapRef.current;
+    if (!map) return;
+    if (!youRef.current) {
+      youRef.current = new maplibregl.Marker({ element: youMarkerEl(), anchor: "center" })
+        .setLngLat([lng, lat])
+        .addTo(map);
+    } else {
+      youRef.current.setLngLat([lng, lat]);
+    }
+    setYou({ lat, lng });
+    if (fly) {
+      const reduced = prefersReducedMotion();
+      map.easeTo({
+        center: [lng, lat],
+        zoom: Math.max(map.getZoom(), 14),
+        duration: reduced ? 0 : 600
+      });
+    }
+  }
+
+  function startWatch(flyOnce: boolean) {
+    if (!navigator.geolocation) {
+      setLocateMsg("This device cannot share a location.");
+      return;
+    }
+    setLocateMsg(null);
+    if (watchRef.current != null) {
+      navigator.geolocation.clearWatch(watchRef.current);
+    }
+    let first = flyOnce;
+    watchRef.current = navigator.geolocation.watchPosition(
+      (pos) => {
+        placeYou(pos.coords.latitude, pos.coords.longitude, first);
+        first = false;
+      },
+      (err) => {
+        setLocateMsg(err.code === 1 ? "Allow location to see yourself here." : "Could not find you yet.");
+      },
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 8000 }
+    );
+  }
 
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
@@ -173,7 +243,7 @@ export function LiveMap({
     try {
       map = new maplibregl.Map({
         container: containerRef.current,
-        style: STREET_STYLE,
+        style: PAPER_STYLE,
         center,
         zoom: CITY_ZOOM,
         attributionControl: false,
@@ -201,27 +271,33 @@ export function LiveMap({
       if (pinsAttached) return;
       pinsAttached = true;
       resize();
-      attachPins(map, currentPins, reduced, (pin) => pickRef.current(pin));
+      attachPins(map, currentPins, (pin) => pickRef.current(pin));
+      if (currentPins.length > 1) {
+        const bounds = new maplibregl.LngLatBounds();
+        currentPins.forEach((p) => bounds.extend([p.lng, p.lat]));
+        map.fitBounds(bounds, { padding: 64, maxZoom: 14, duration: 0 });
+      } else if (currentPins.length === 1) {
+        map.jumpTo({ center: [currentPins[0].lng, currentPins[0].lat], zoom: 13 });
+      }
       labelMapControls(map);
+      startWatch(false);
     };
 
     map.on("error", () => {});
     map.once("load", placePins);
-    map.once("style.load", () => {
-      if (reduced) placePins();
-      else requestAnimationFrame(placePins);
-    });
+    map.once("style.load", () => requestAnimationFrame(placePins));
     const fallback = window.setTimeout(placePins, 2500);
 
     const ro =
       typeof ResizeObserver !== "undefined" ? new ResizeObserver(() => resize()) : null;
     if (containerRef.current && ro) ro.observe(containerRef.current);
-    if (reduced) resize();
-    else requestAnimationFrame(resize);
+    requestAnimationFrame(resize);
 
     mapRef.current = map;
     return () => {
       window.clearTimeout(fallback);
+      if (watchRef.current != null) navigator.geolocation.clearWatch(watchRef.current);
+      youRef.current = null;
       ro?.disconnect();
       map.remove();
       mapRef.current = null;
@@ -240,12 +316,30 @@ export function LiveMap({
   return (
     <div className="unlock-live-map relative w-full h-full min-h-[280px]">
       <div ref={containerRef} className="absolute inset-0 min-h-[280px]" />
+      <button
+        type="button"
+        className="unlock-glass absolute top-3 right-12 z-10 min-h-11 px-3 text-sm text-fog"
+        onClick={() => startWatch(true)}
+      >
+        {you ? "I'm here" : "Find me"}
+      </button>
+      {locateMsg ? (
+        <p className="absolute top-16 right-3 z-10 unlock-glass px-3 py-2 text-xs text-mute max-w-[200px]">
+          {locateMsg}
+        </p>
+      ) : null}
       {validPins.length === 0 && (
         <div className="absolute inset-x-0 bottom-12 flex justify-center pointer-events-none z-10">
-          <p className="text-sm text-mute unlock-glass px-3 py-2">The field is quiet.</p>
+          <p className="text-sm text-mute unlock-glass px-3 py-2">Quiet right now.</p>
         </div>
       )}
-      {picked ? <PinSnippet pin={picked} onClose={() => setPicked(null)} /> : null}
+      {picked ? (
+        <PinSnippet
+          pin={picked}
+          distanceM={pickedDistance}
+          onClose={() => setPicked(null)}
+        />
+      ) : null}
     </div>
   );
 }
