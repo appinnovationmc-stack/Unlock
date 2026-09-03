@@ -43,20 +43,18 @@ export function UnlockReveal({
         role="status"
         aria-live="polite"
         aria-label={already ? "Already unlocked" : "You unlocked it"}
-        className={`relative overflow-hidden border border-magenta/30 bg-ink p-8 text-center transition-opacity ${
+        className={`relative overflow-hidden border border-black/10 bg-ink p-8 text-center transition-opacity ${
           reduced ? "duration-0" : "duration-500"
         } ${show ? "opacity-100" : reduced ? "opacity-100" : "opacity-0"}`}
       >
-        <p className="section-kicker text-magenta mb-3">
+        <p className="section-kicker mb-3" style={{ color: "#0071e3" }}>
           {already ? "You already have this" : "You unlocked it"}
         </p>
         <h2 className="font-display text-3xl text-fog mb-2">{reward}</h2>
         {!already && <p className="text-mute text-sm mb-6">Added to your rewards</p>}
         <div className="flex flex-col sm:flex-row gap-3 justify-center">
           <Link href="/wallet">
-            <Button variant="ghost" className="border-magenta/40 text-magenta">
-              See rewards
-            </Button>
+            <Button variant="ghost">See rewards</Button>
           </Link>
           <Link href="/discover">
             <Button variant="ghost">Explore again</Button>
