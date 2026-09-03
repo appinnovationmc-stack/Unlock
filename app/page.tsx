@@ -12,7 +12,7 @@ export default function Home() {
         <h1 className="font-display text-5xl md:text-7xl font-900 leading-[0.95] tracking-tight text-fog">
           Don't just see the ad.
           <br />
-          <span className="text-magenta">Unlock</span> it.
+          <span style={{ color: "#0071e3" }}>Unlock</span> it.
         </h1>
       </header>
 
