@@ -1,11 +1,14 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/Button";
+import { UnlockMark } from "@/components/ui/UnlockMark";
 
 export default function Home() {
   return (
     <main className="min-h-screen bg-void">
       <header className="px-6 pt-16 pb-10 md:pt-24 md:pb-12 text-center">
-        <p className="section-kicker mb-5">Encounters · not ads</p>
+        <div className="flex justify-center mb-6">
+          <UnlockMark size={56} />
+        </div>
         <h1 className="font-display text-5xl md:text-7xl font-900 leading-[0.95] tracking-tight text-fog">
           Don't just see the ad.
           <br />
@@ -13,13 +16,13 @@ export default function Home() {
         </h1>
       </header>
 
-      <section className="grid md:grid-cols-2 border-t border-white/8">
-        <article className="flex flex-col items-center text-center px-8 py-20 md:py-28 md:border-r border-white/8">
-          <h2 className="font-display text-4xl md:text-5xl text-fog tracking-tight">Field</h2>
-          <p className="mt-3 text-mute text-lg">Find it. Get close. Hold to unlock.</p>
+      <section className="grid md:grid-cols-2 border-t border-black/10">
+        <article className="flex flex-col items-center text-center px-8 py-20 md:py-28 md:border-r border-black/10">
+          <h2 className="font-display text-4xl md:text-5xl text-fog tracking-tight">Explore</h2>
+          <p className="mt-3 text-mute text-lg">Find it. Get close. Unlock it.</p>
           <div className="mt-8 flex flex-wrap justify-center gap-3">
             <Link href="/discover">
-              <Button variant="volt">Enter the field</Button>
+              <Button variant="volt">Something is waiting</Button>
             </Link>
             <Link href="/signup">
               <Button variant="ghost">Create account</Button>
@@ -27,9 +30,9 @@ export default function Home() {
           </div>
         </article>
 
-        <article className="flex flex-col items-center text-center px-8 py-20 md:py-28 bg-ink/40">
+        <article className="flex flex-col items-center text-center px-8 py-20 md:py-28 bg-ink">
           <h2 className="font-display text-4xl md:text-5xl text-fog tracking-tight">Studio</h2>
-          <p className="mt-3 text-mute text-lg">Plant an experience. Watch who came.</p>
+          <p className="mt-3 text-mute text-lg">Plant a moment. Watch who came.</p>
           <div className="mt-8 flex flex-wrap justify-center gap-3">
             <Link href="/for-brands">
               <Button variant="volt">Learn more</Button>
@@ -40,16 +43,6 @@ export default function Home() {
           </div>
         </article>
       </section>
-
-      <p className="py-10 text-center text-sm text-mute">
-        <Link href="/dashboard" className="hover:text-fog">
-          Creators
-        </Link>
-        {" · "}
-        <Link href="/for-agencies" className="hover:text-fog">
-          Agencies
-        </Link>
-      </p>
     </main>
   );
 }
