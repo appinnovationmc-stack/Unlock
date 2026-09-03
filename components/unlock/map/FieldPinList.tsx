@@ -32,46 +32,46 @@ export function FieldPinList({ pins }: { pins: FieldPin[] }) {
   return (
     <section className="page-shell-wide pb-10">
       <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3 mb-3">
-        <p className="section-kicker">On the field now</p>
+        <p className="section-kicker">Nearby</p>
         <div className="flex gap-2">
           <input
             type="search"
             value={q}
             onChange={(e) => setQ(e.target.value)}
-            placeholder="Search the field"
-            className="bg-ink border border-white/10 px-3 py-1.5 text-sm text-fog outline-none focus:border-volt w-full sm:w-56"
+            placeholder="Look for a place"
+            className="bg-ink border border-black/10 px-3 py-1.5 text-sm text-fog outline-none focus:border-volt w-full sm:w-56"
           />
           <button
             type="button"
             onClick={() => setOnlySoon((v) => !v)}
-            className={`text-sm px-3 py-1.5 border ${onlySoon ? "border-volt text-volt" : "border-white/10 text-mute"}`}
+            className={`text-sm px-3 py-1.5 border min-h-11 ${
+              onlySoon ? "border-volt text-volt" : "border-black/10 text-mute"
+            }`}
           >
             Ending soon
           </button>
         </div>
       </div>
       {visible.length === 0 ? (
-        <p className="border border-white/8 px-4 py-8 text-mute text-sm">Nothing matches that search.</p>
+        <p className="px-4 py-8 text-mute text-sm">Nothing matches.</p>
       ) : (
-        <ul className="divide-y divide-white/8 border border-white/8">
+        <ul className="divide-y divide-black/10 border border-black/10">
           {visible.map((pin) => (
             <li key={pin.location_id}>
               <Link
                 href={`/campaign/${pin.campaign_id}`}
-                className="flex items-center gap-4 px-4 py-4 hover:bg-white/[0.03] transition-colors"
+                className="flex items-center gap-4 px-4 py-4 hover:bg-black/[0.03] min-h-11"
               >
-                <span className="h-2.5 w-2.5 rounded-full bg-volt shrink-0" aria-hidden />
                 <span className="min-w-0 flex-1">
                   <span className="block font-display text-fog truncate">
                     {unescapeHtmlEntities(pin.label || pin.campaign_title)}
                   </span>
                   <span className="block text-sm text-mute truncate">
                     {unescapeHtmlEntities(pin.campaign_title)}
-                    {pin.radius_m ? ` · ${pin.radius_m}m radius` : ""}
                     {pin.endingSoon ? " · ending soon" : ""}
                   </span>
                 </span>
-                <span className="text-sm text-volt shrink-0">Enter</span>
+                <span className="text-sm text-volt shrink-0">Go</span>
               </Link>
             </li>
           ))}
