@@ -57,7 +57,7 @@ export default async function CampaignPage({
     .limit(1)
     .maybeSingle();
 
-  const ticketsLeft =
+  const remaining =
     reward && reward.stock != null
       ? Math.max(0, Number(reward.stock) - Number(reward.redeemed_count ?? 0))
       : null;
@@ -122,9 +122,9 @@ export default async function CampaignPage({
       <h1 className="font-display text-3xl md:text-5xl text-fog mb-3 leading-[0.95] tracking-tight">
         {rewardLabel}
       </h1>
-      {ticketsLeft != null ? (
+      {remaining != null ? (
         <p className="text-mute text-sm mb-2">
-          {ticketsLeft === 0 ? "The last ticket is gone." : `${ticketsLeft} left`}
+          {remaining === 0 ? "It\u2019s gone." : `${remaining} left`}
         </p>
       ) : null}
       <p className="text-mute text-lg mb-10 leading-snug">{campaign.title}</p>
