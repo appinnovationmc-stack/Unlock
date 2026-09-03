@@ -6,7 +6,7 @@ import type { Campaign } from "@/lib/types";
 import Link from "next/link";
 import { LiveMapSection } from "@/components/unlock/map/LiveMapSection";
 import { unescapeHtmlEntities } from "@/lib/unlock/display-text";
-import type { MapPin } from "@/components/unlock/map/LiveMap";
+import { getLiveField } from "@/lib/unlock/field/live";
 
 export const dynamic = "force-dynamic";
 
@@ -39,17 +39,8 @@ export default async function DiscoverPage() {
   const {
     data: { user }
   } = await supabase.auth.getUser();
-  const { data: campaigns } = await supabase
-    .from("campaigns")
-    .select("*")
-    .eq("status", "live")
-    .order("created_at", { ascending: false });
-
-  let mapPins: MapPin[] = [];
-  const { data: pins, error: pinError } = await supabase.rpc("get_live_map_pins");
-  if (!pinError && Array.isArray(pins)) {
-    mapPins = pins as MapPin[];
-  }
+  const field = await getLiveField();
+  const mapPins = field.pins;
 
   const expByCampaign = new Map<string, string>();
   const { data: exps } = await supabase
@@ -70,7 +61,7 @@ export default async function DiscoverPage() {
     xp = consumer?.xp ?? 0;
   }
 
-  const list = uniqueLiveCampaigns((campaigns as Campaign[]) ?? []);
+  const list = uniqueLiveCampaigns(field.campaigns);
   const pinnedIds = new Set(mapPins.map((p) => p.campaign_id));
   const unpinned = list.filter((c) => !pinnedIds.has(c.id));
   const count = list.length;
