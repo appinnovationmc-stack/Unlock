@@ -77,7 +77,7 @@ export function UnlockButton({
   useEffect(() => () => clear(), [clear]);
 
   const status =
-    phase === "done" ? "Unlocked" : phase === "unlocking" ? "Confirming…" : label;
+    phase === "done" ? "Unlocked" : phase === "unlocking" ? "Opening…" : label;
 
   return (
     <div className="flex flex-col items-center gap-3 py-2">
@@ -103,19 +103,19 @@ export function UnlockButton({
           if (e.key === " " || e.key === "Enter") endHold();
         }}
         className={`relative h-28 w-28 select-none rounded-full unlock-glass motion-safe:transition-colors
-          focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-volt
+          focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fog
           ${
             phase === "done"
               ? "text-magenta"
               : phase === "unlocking"
-                ? "text-volt"
+                ? "text-fog"
                 : "text-fog"
           }
           ${disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
         style={{
           background:
             phase === "holding" && !reduced
-              ? `conic-gradient(rgba(0,113,227,0.55) ${progress * 360}deg, rgba(255,255,255,0.2) 0)`
+              ? `conic-gradient(rgba(17,17,17,0.7) ${progress * 360}deg, rgba(255,255,255,0.25) 0)`
               : undefined
         }}
       >
