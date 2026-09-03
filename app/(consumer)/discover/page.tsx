@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import type { Campaign } from "@/lib/types";
 import Link from "next/link";
 import { LiveMapSection } from "@/components/unlock/map/LiveMapSection";
+import { FieldPinList } from "@/components/unlock/map/FieldPinList";
 import { unescapeHtmlEntities } from "@/lib/unlock/display-text";
 import { getLiveField } from "@/lib/unlock/field/live";
 
@@ -20,7 +21,6 @@ function encounterKind(mechanics: string[] | null | undefined): string {
   return "Encounter";
 }
 
-/** One card per title. Prefer the copy that already has a map pin. */
 function uniqueLiveCampaigns(list: Campaign[], pinnedIds: Set<string>): Campaign[] {
   const byTitle = new Map<string, Campaign>();
   for (const c of list) {
@@ -69,6 +69,15 @@ export default async function DiscoverPage() {
   const list = uniqueLiveCampaigns(field.campaigns, pinnedIds);
   const unpinned = list.filter((c) => !pinnedIds.has(c.id));
   const count = list.length;
+  const soon = new Set(
+    list
+      .filter((c) => {
+        if (!c.ends_at) return false;
+        const t = new Date(c.ends_at).getTime();
+        return Number.isFinite(t) && t - Date.now() < 72 * 60 * 60 * 1000 && t > Date.now();
+      })
+      .map((c) => c.id)
+  );
 
   return (
     <main className="min-h-screen bg-void">
@@ -77,7 +86,7 @@ export default async function DiscoverPage() {
           <div>
             <p className="section-kicker mb-2">Field</p>
             <h1 className="font-display text-3xl md:text-5xl text-fog tracking-tight">
-              What&apos;s <span className="text-volt">happening</span>
+              What's <span className="text-volt">happening</span>
               <br />
               around you?
             </h1>
@@ -107,34 +116,16 @@ export default async function DiscoverPage() {
       </section>
 
       {mapPins.length > 0 && (
-        <section className="page-shell-wide pb-10">
-          <p className="section-kicker mb-3">On the field now</p>
-          <ul className="divide-y divide-white/8 border border-white/8">
-            {mapPins.map((pin) => (
-              <li key={pin.location_id}>
-                <Link
-                  href={`/campaign/${pin.campaign_id}`}
-                  className="flex items-center gap-4 px-4 py-4 hover:bg-white/[0.03] transition-colors"
-                >
-                  <span
-                    className="h-2.5 w-2.5 rounded-full bg-volt shrink-0"
-                    aria-hidden
-                  />
-                  <span className="min-w-0 flex-1">
-                    <span className="block font-display text-fog truncate">
-                      {unescapeHtmlEntities(pin.label || pin.campaign_title)}
-                    </span>
-                    <span className="block text-sm text-mute truncate">
-                      {unescapeHtmlEntities(pin.campaign_title)}
-                      {pin.radius_m ? ` · ${pin.radius_m}m radius` : ""}
-                    </span>
-                  </span>
-                  <span className="text-sm text-volt shrink-0">Enter</span>
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </section>
+        <FieldPinList
+          pins={mapPins.map((pin) => ({
+            location_id: pin.location_id,
+            campaign_id: pin.campaign_id,
+            campaign_title: pin.campaign_title,
+            label: pin.label,
+            radius_m: pin.radius_m,
+            endingSoon: soon.has(pin.campaign_id)
+          }))}
+        />
       )}
 
       {!user && count > 0 && (
