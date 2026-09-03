@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import * as maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { prefersReducedMotion } from "@/lib/unlock/reduced-motion";
+import { PinSnippet } from "./PinSnippet";
 
 export type MapPin = {
   location_id: string;
@@ -13,12 +14,13 @@ export type MapPin = {
   lat: number;
   lng: number;
   radius_m: number;
+  logo_url?: string | null;
+  brand_name?: string | null;
 };
 
 const JOBURG = { lat: -26.2041, lng: 28.0473 };
 const CITY_ZOOM = 11;
 
-/** Esri World Street Map — public raster, no API key, no Carto watermark. Tile path is z/y/x. */
 const STREET_STYLE: maplibregl.StyleSpecification = {
   version: 8,
   sources: {
@@ -44,6 +46,17 @@ function isValidPin(pin: MapPin): boolean {
   );
 }
 
+function safeHttp(url?: string | null) {
+  if (!url) return null;
+  try {
+    const u = new URL(url);
+    if (u.protocol === "http:" || u.protocol === "https:") return url;
+  } catch {
+    /* */
+  }
+  return null;
+}
+
 function labelMapControls(map: maplibregl.Map) {
   const root = map.getContainer();
   const labels: [string, string][] = [
@@ -61,29 +74,46 @@ function labelMapControls(map: maplibregl.Map) {
   }
 }
 
-function attachPins(map: maplibregl.Map, pins: MapPin[], reduced: boolean) {
+function attachPins(
+  map: maplibregl.Map,
+  pins: MapPin[],
+  reduced: boolean,
+  onPick: (pin: MapPin) => void
+) {
   pins.forEach((pin) => {
-    const wrap = document.createElement("a");
-    wrap.href = `/campaign/${pin.campaign_id}`;
+    const wrap = document.createElement("button");
+    wrap.type = "button";
     wrap.className = "unlock-map-pin-wrap";
-    wrap.setAttribute("aria-label", pin.label || pin.campaign_title);
+    const name = pin.brand_name || pin.campaign_title;
+    wrap.setAttribute("aria-label", name);
     wrap.style.cssText =
-      "display:flex;align-items:center;gap:6px;cursor:pointer;max-width:180px;text-decoration:none;";
-    wrap.title = pin.label || pin.campaign_title;
+      "display:flex;align-items:center;justify-content:center;cursor:pointer;border:0;padding:0;background:transparent;width:44px;height:44px;";
+    wrap.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      onPick(pin);
+    });
 
-    const el = document.createElement("span");
-    el.className = "unlock-map-pin";
-    el.style.cssText =
-      "flex-shrink:0;width:12px;height:12px;border-radius:9999px;background:#C6FF3D;border:2px solid #0B0A14;";
+    const logo = safeHttp(pin.logo_url);
+    if (logo) {
+      const img = document.createElement("img");
+      img.src = logo;
+      img.alt = "";
+      img.width = 36;
+      img.height = 36;
+      img.className = "unlock-map-pin";
+      img.style.cssText =
+        "width:36px;height:36px;border-radius:9999px;object-fit:cover;background:#fff;box-shadow:0 1px 6px rgba(29,29,31,0.2);";
+      img.addEventListener("error", () => {
+        img.remove();
+        wrap.append(monogram(name));
+      });
+      wrap.append(img);
+    } else {
+      wrap.append(monogram(name));
+    }
 
-    const caption = document.createElement("span");
-    caption.textContent = pin.label || pin.campaign_title;
-    caption.style.cssText =
-      "font-family:Inter,system-ui,sans-serif;font-size:12px;color:#ECE9F7;background:rgba(11,10,20,0.88);padding:4px 8px;line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;";
-
-    wrap.append(el, caption);
-
-    new maplibregl.Marker({ element: wrap, anchor: "left" })
+    new maplibregl.Marker({ element: wrap, anchor: "center" })
       .setLngLat([pin.lng, pin.lat])
       .addTo(map);
   });
@@ -91,16 +121,21 @@ function attachPins(map: maplibregl.Map, pins: MapPin[], reduced: boolean) {
   if (pins.length > 1) {
     const bounds = new maplibregl.LngLatBounds();
     pins.forEach((p) => bounds.extend([p.lng, p.lat]));
-    // Never flyTo — jump/fit with duration 0 when reduced motion is on.
     map.fitBounds(bounds, { padding: 56, maxZoom: 14, duration: reduced ? 0 : 0 });
   } else if (pins.length === 1) {
     map.jumpTo({ center: [pins[0].lng, pins[0].lat], zoom: 13 });
   }
 }
 
-/**
- * Real map surface for UNLOCK World discovery.
- */
+function monogram(name: string) {
+  const el = document.createElement("span");
+  el.className = "unlock-map-pin";
+  el.textContent = (name.slice(0, 1) || "·").toUpperCase();
+  el.style.cssText =
+    "width:36px;height:36px;border-radius:9999px;background:#1d1d1f;color:#fff;font:600 14px Unbounded,system-ui,sans-serif;display:flex;align-items:center;justify-content:center;box-shadow:0 1px 6px rgba(29,29,31,0.2);";
+  return el;
+}
+
 export function LiveMap({
   pins,
   fallbackCenter = JOBURG
@@ -110,10 +145,17 @@ export function LiveMap({
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
+  const pickRef = useRef<(pin: MapPin) => void>(() => {});
   const [failed, setFailed] = useState(false);
+  const [picked, setPicked] = useState<MapPin | null>(null);
+  pickRef.current = setPicked;
+
   const validPins = useMemo(() => pins.filter(isValidPin), [pins]);
   const pinKey = useMemo(
-    () => validPins.map((p) => `${p.location_id}:${p.lat}:${p.lng}:${p.campaign_id}`).join("|"),
+    () =>
+      validPins
+        .map((p) => `${p.location_id}:${p.lat}:${p.lng}:${p.campaign_id}:${p.logo_url ?? ""}`)
+        .join("|"),
     [validPins]
   );
 
@@ -150,7 +192,7 @@ export function LiveMap({
       try {
         map.resize();
       } catch {
-        /* container may be unmounting */
+        /* */
       }
     };
 
@@ -159,20 +201,15 @@ export function LiveMap({
       if (pinsAttached) return;
       pinsAttached = true;
       resize();
-      attachPins(map, currentPins, reduced);
+      attachPins(map, currentPins, reduced, (pin) => pickRef.current(pin));
       labelMapControls(map);
     };
 
-    map.on("error", () => {
-      /* raster 404s shouldn't blank the map; constructor already succeeded */
-    });
+    map.on("error", () => {});
     map.once("load", placePins);
     map.once("style.load", () => {
-      if (reduced) {
-        placePins();
-        return;
-      }
-      requestAnimationFrame(placePins);
+      if (reduced) placePins();
+      else requestAnimationFrame(placePins);
     });
     const fallback = window.setTimeout(placePins, 2500);
 
@@ -189,16 +226,13 @@ export function LiveMap({
       map.remove();
       mapRef.current = null;
     };
-    // pinKey captures coordinate/id changes without a new array identity each render
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pinKey, fallbackCenter.lat, fallbackCenter.lng]);
 
   if (failed) {
     return (
       <div className="absolute inset-0 flex items-center justify-center bg-ink2 min-h-[280px]">
-        <p className="text-sm text-mute px-4 text-center">
-          Map failed to load — experiences are still listed below
-        </p>
+        <p className="text-sm text-mute px-4 text-center">Map failed to load</p>
       </div>
     );
   }
@@ -208,11 +242,10 @@ export function LiveMap({
       <div ref={containerRef} className="absolute inset-0 min-h-[280px]" />
       {validPins.length === 0 && (
         <div className="absolute inset-x-0 bottom-12 flex justify-center pointer-events-none z-10">
-          <p className="text-sm text-mute bg-void/80 px-3 py-2">
-            No field pins yet — experiences still listed below
-          </p>
+          <p className="text-sm text-mute unlock-glass px-3 py-2">The field is quiet.</p>
         </div>
       )}
+      {picked ? <PinSnippet pin={picked} onClose={() => setPicked(null)} /> : null}
     </div>
   );
 }
