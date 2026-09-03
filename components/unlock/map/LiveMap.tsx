@@ -315,11 +315,6 @@ export function LiveMap({
           {locateMsg}
         </p>
       ) : null}
-      {validPins.length === 0 && (
-        <div className="absolute inset-x-0 bottom-12 flex justify-center pointer-events-none z-10">
-          <p className="text-sm text-mute unlock-glass px-3 py-2">Quiet right now.</p>
-        </div>
-      )}
       {picked ? (
         <PinSnippet
           pin={picked}
