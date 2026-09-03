@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { getMyOrgId } from "@/lib/actions/campaigns";
 
-/** Brand plants a reward. Optional stock is a Wonka run — unlock_campaign already stops at stock. */
+/** Optional stock cap. unlock_campaign already stops when redeemed_count >= stock. */
 export async function addCampaignReward(formData: FormData) {
   const supabase = createClient();
   const orgId = await getMyOrgId();
@@ -21,7 +21,7 @@ export async function addCampaignReward(formData: FormData) {
     redirect(`/studio?error=${encodeURIComponent("Reward needs a name")}`);
   }
   if (stockRaw !== "" && (!Number.isFinite(stock) || (stock as number) < 1)) {
-    redirect(`/studio?error=${encodeURIComponent("Ticket count must be a whole number, or blank")}`);
+    redirect(`/studio?error=${encodeURIComponent("How many must be a whole number, or blank")}`);
   }
 
   const { data: campaign } = await supabase
