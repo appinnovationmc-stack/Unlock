@@ -129,7 +129,7 @@ export function UnlockExperience({
         )}
         <div className="flex flex-col items-center gap-3 py-2">
           <Link
-            href={campaignLoginHref(campaignId)}
+            href={{ pathname: "/login", query: { next: `/campaign/${campaignId}` } }}
             aria-label="Hold to unlock"
             className="relative h-28 w-28 select-none rounded-full border-2 border-white/25 text-fog bg-ink2 hover:border-volt/60 motion-safe:transition-colors motion-safe:duration-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-volt"
           >

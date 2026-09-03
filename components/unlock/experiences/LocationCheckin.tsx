@@ -105,7 +105,10 @@ export function LocationCheckin({
   if (!authenticated) {
     return (
       <div className="space-y-2">
-        <Link href={campaignLoginHref(campaignId)} className={`${buttonClass} block text-center`}>
+        <Link
+          href={{ pathname: "/login", query: { next: `/campaign/${campaignId}` } }}
+          className={`${buttonClass} block text-center`}
+        >
           {label}
         </Link>
         <p className="text-xs text-center text-mute">{GPS_PRIVACY}</p>
