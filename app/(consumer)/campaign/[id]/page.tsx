@@ -81,9 +81,23 @@ export default async function CampaignPage({
 
   const { data: missions } = await supabase
     .from("missions")
-    .select("id, title, description, experience_type, mission_steps ( title, description, sort_order )")
+    .select("id, title, description, experience_type, mission_steps ( title, description, sort_order, required_event_type )")
     .eq("campaign_id", params.id)
     .order("sort_order", { ascending: true });
+
+  const doneTypes = new Set<string>();
+  if (user) {
+    const { data: ev } = await supabase
+      .from("interaction_events")
+      .select("event_type, verification_status")
+      .eq("user_id", user.id)
+      .eq("campaign_id", params.id);
+    for (const e of ev ?? []) {
+      if (e.verification_status === "verified" || e.event_type === "SHARE" || e.event_type === "CONTENT_SUBMITTED") {
+        doneTypes.add(e.event_type);
+      }
+    }
+  }
 
   const { data: brand } = await supabase
     .from("organizations")
@@ -168,14 +182,19 @@ export default async function CampaignPage({
                     ) : null}
                     {steps.length > 0 ? (
                       <ol className="mt-2 space-y-1 text-sm text-fog">
-                        {steps.map((step, i) => (
-                          <li key={`${mission.id}-${i}`}>
-                            {i + 1}. {step.title}
-                            {step.description ? (
-                              <span className="text-mute"> — {step.description}</span>
-                            ) : null}
-                          </li>
-                        ))}
+                        {steps.map((step, i) => {
+                          const done = step.required_event_type
+                            ? doneTypes.has(step.required_event_type)
+                            : false;
+                          return (
+                            <li key={`${mission.id}-${i}`}>
+                              {done ? "☑" : "☐"} {i + 1}. {step.title}
+                              {step.description ? (
+                                <span className="text-mute"> — {step.description}</span>
+                              ) : null}
+                            </li>
+                          );
+                        })}
                       </ol>
                     ) : null}
                   </li>
