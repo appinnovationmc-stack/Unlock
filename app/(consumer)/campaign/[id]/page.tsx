@@ -2,6 +2,7 @@ import { UnlockClient } from "@/components/campaign/UnlockClient";
 import { RecordCampaignView } from "@/components/unlock/interactions/RecordView";
 import { RecordReferralClick } from "@/components/unlock/interactions/RecordReferralClick";
 import { ShareDrop } from "@/components/unlock/interactions/ShareDrop";
+import { ClaimPost } from "@/components/unlock/interactions/ClaimPost";
 import { NfcScan } from "@/components/unlock/experiences/NfcScan";
 import { QrScan } from "@/components/unlock/experiences/QrScan";
 import { ProductHuntClaim } from "@/components/campaign/ProductHuntClaim";
@@ -213,6 +214,11 @@ export default async function CampaignPage({
       <div className="mt-6">
         <ShareDrop campaignId={campaign.id} title={campaign.title} referrerId={user?.id ?? referrerCreatorId} />
       </div>
+      {user ? (
+        <div className="mt-4">
+          <ClaimPost campaignId={campaign.id} userId={user.id} />
+        </div>
+      ) : null}
 
       <div className="mt-12 flex justify-center gap-6 text-sm">
         <Link href="/discover" className="text-mute hover:text-fog">
