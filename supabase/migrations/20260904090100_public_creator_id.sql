@@ -1,4 +1,9 @@
-create or replace function public.get_public_creator(p_handle text)
+-- Postgres will not CREATE OR REPLACE a function when the TABLE() return
+-- signature inserts a column. Drop first, then recreate + grant.
+
+drop function if exists public.get_public_creator(text);
+
+create function public.get_public_creator(p_handle text)
 returns table (
   id uuid,
   handle text,
@@ -7,7 +12,11 @@ returns table (
   store_visits integer,
   conversions integer
 )
-language sql stable security definer set search_path = public as $$
+language sql
+stable
+security definer
+set search_path = public
+as $$
   select
     c.id,
     c.handle,
@@ -20,3 +29,7 @@ language sql stable security definer set search_path = public as $$
   where lower(c.handle) = lower(trim(p_handle))
   limit 1;
 $$;
+
+revoke all on function public.get_public_creator(text) from public;
+revoke all on function public.get_public_creator(text) from anon;
+grant execute on function public.get_public_creator(text) to anon, authenticated;
