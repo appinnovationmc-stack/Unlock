@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 
 type Row = { id: string; body: string; created_at: string; user_id: string };
@@ -18,6 +18,23 @@ export function Comments({
   const [body, setBody] = useState("");
   const [msg, setMsg] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [faces, setFaces] = useState<Record<string, { handle: string | null; avatar_url: string | null }>>({});
+
+  useEffect(() => {
+    const ids = Array.from(new Set(rows.map((r) => r.user_id)));
+    if (ids.length === 0) return;
+    const supabase = createClient();
+    void supabase
+      .from("consumers")
+      .select("id, handle, avatar_url")
+      .in("id", ids)
+      .then(({ data }) => {
+        if (!data) return;
+        const next: Record<string, { handle: string | null; avatar_url: string | null }> = {};
+        for (const c of data) next[c.id] = { handle: c.handle, avatar_url: c.avatar_url };
+        setFaces(next);
+      });
+  }, [rows]);
 
   async function post(e: React.FormEvent) {
     e.preventDefault();
@@ -68,24 +85,39 @@ export function Comments({
 
   return (
     <section className="space-y-3">
-      <p className="section-kicker">Notes from the field</p>
-      {rows.length === 0 ? <p className="text-sm text-mute">Quiet so far.</p> : null}
-      <ul className="space-y-3">
+      <p className="section-kicker">On the hunt</p>
+      {rows.length === 0 ? <p className="text-sm text-mute">No notes yet.</p> : null}
+      <ul className="space-y-4">
         {rows.map((r) => (
-          <li key={r.id} className="text-sm">
-            <p className="text-fog">{r.body}</p>
-            <p className="text-mute text-xs mt-1">
-              {new Date(r.created_at).toLocaleString()}
-              {userId === r.user_id ? (
-                <button type="button" className="ml-3" onClick={() => remove(r.id)}>
-                  Remove
-                </button>
-              ) : userId ? (
-                <button type="button" className="ml-3" onClick={() => report(r.id)}>
-                  Report
-                </button>
-              ) : null}
-            </p>
+          <li key={r.id} className="text-sm flex gap-3">
+            {faces[r.user_id]?.avatar_url ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={faces[r.user_id].avatar_url ?? ""}
+                alt=""
+                className="w-8 h-8 rounded-full object-cover shrink-0"
+              />
+            ) : (
+              <span className="w-8 h-8 rounded-full bg-black/10 shrink-0" />
+            )}
+            <div className="min-w-0">
+              <p className="text-xs text-mute mb-1">
+                {faces[r.user_id]?.handle ? `@${faces[r.user_id].handle}` : "Hunter"}
+              </p>
+              <p className="text-fog">{r.body}</p>
+              <p className="text-mute text-xs mt-1">
+                {new Date(r.created_at).toLocaleString()}
+                {userId === r.user_id ? (
+                  <button type="button" className="ml-3" onClick={() => remove(r.id)}>
+                    Remove
+                  </button>
+                ) : userId ? (
+                  <button type="button" className="ml-3" onClick={() => report(r.id)}>
+                    Report
+                  </button>
+                ) : null}
+              </p>
+            </div>
           </li>
         ))}
       </ul>
