@@ -28,8 +28,9 @@ export function ShareDrop({
     const code = referrerId ? proofCode(referrerId, campaignId) : null;
     const text = code ? `${title}\n${url}\n${code}` : `${title}\n${url}`;
 
+    const canShare = typeof navigator.share === "function";
     try {
-      if (navigator.share) {
+      if (canShare) {
         await navigator.share({ title, text, url });
       } else {
         await navigator.clipboard.writeText(text);
@@ -47,7 +48,7 @@ export function ShareDrop({
       campaignId,
       creatorId: referrerId ?? undefined,
       verificationMethod: "authenticated_session",
-      metadata: { channel: navigator.share ? "sheet" : "copy", url, code },
+      metadata: { channel: canShare ? "sheet" : "copy", url, code },
       idempotencyKey: `share:${campaignId}:${new Date().toISOString().slice(0, 13)}`
     });
 
