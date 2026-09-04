@@ -155,7 +155,8 @@ export default async function CampaignPage({
   const requireVisit =
     campaignPinIds.length > 0 ||
     mechanics.includes("geolocation") ||
-    mechanics.includes("treasure_hunt") ||n    experienceType === "VISIT";
+    mechanics.includes("treasure_hunt") ||
+    experienceType === "VISIT";
 
   const actionHint = isProductHunt
     ? "Find it. Prove it. Unlock."
