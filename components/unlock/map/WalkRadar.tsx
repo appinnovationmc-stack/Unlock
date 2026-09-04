@@ -22,6 +22,10 @@ export function mapsWalkUrl(lat: number, lng: number) {
   return `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}&travelmode=walking`;
 }
 
+export function appleWalkUrl(lat: number, lng: number) {
+  return `https://maps.apple.com/?daddr=${lat},${lng}&dirflg=w`;
+}
+
 export function WalkRadar({
   lat,
   lng,
@@ -55,16 +59,20 @@ export function WalkRadar({
       <p className="font-display text-lg text-fog">
         {metres == null ? "Find it" : line(metres)}
       </p>
-      {inRange ? <p className="text-sm text-fog">In range. Hold to unlock.</p> : null}
+      {inRange ? (
+        <p className="text-sm text-fog">You're here. Check in, then hold.</p>
+      ) : metres != null ? (
+        <p className="text-sm text-mute">Get closer to unlock.</p>
+      ) : null}
       {msg ? <p className="text-xs text-mute">{msg}</p> : null}
-      <a
-        href={mapsWalkUrl(lat, lng)}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="inline-flex min-h-11 items-center text-sm"
-      >
-        Walk there
-      </a>
+      <div className="flex flex-wrap gap-3 text-sm">
+        <a href={mapsWalkUrl(lat, lng)} target="_blank" rel="noopener noreferrer" className="min-h-11 inline-flex items-center">
+          Google Maps
+        </a>
+        <a href={appleWalkUrl(lat, lng)} target="_blank" rel="noopener noreferrer" className="min-h-11 inline-flex items-center">
+          Apple Maps
+        </a>
+      </div>
     </div>
   );
 }
