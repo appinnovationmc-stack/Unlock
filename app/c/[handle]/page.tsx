@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { notFound } from "next/navigation";
 import Link from "next/link";
+import { FollowButton } from "@/components/unlock/social/FollowButton";
 
 export const dynamic = "force-dynamic";
 
@@ -15,6 +16,20 @@ export default async function PublicCreatorPage({
   const row = Array.isArray(data) ? data[0] : data;
   if (error || !row?.handle) return notFound();
 
+  const {
+    data: { user }
+  } = await supabase.auth.getUser();
+  let following = false;
+  if (user && row.id) {
+    const { data: rel } = await supabase
+      .from("user_follows")
+      .select("follower_id")
+      .eq("follower_id", user.id)
+      .eq("following_id", row.id)
+      .maybeSingle();
+    following = !!rel;
+  }
+
   const { data: live } = await supabase
     .from("campaigns")
     .select("id, title")
@@ -27,8 +42,13 @@ export default async function PublicCreatorPage({
       <p className="section-kicker mb-2">Creator</p>
       <h1 className="font-display text-4xl text-fog">@{row.handle}</h1>
       <p className="text-mute text-sm mt-2 max-w-lg">
-        Measured by walks they caused. Not by followers.
+        Measured by walks they caused. Not by follower count.
       </p>
+      {row.id ? (
+        <div className="mt-4">
+          <FollowButton me={user?.id ?? null} them={row.id} initially={following} />
+        </div>
+      ) : null}
       <section className="grid grid-cols-2 gap-4 mt-8 mb-10">
         <div className="unlock-glass px-4 py-4">
           <p className="text-xs text-mute">Impact</p>
