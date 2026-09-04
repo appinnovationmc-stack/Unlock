@@ -77,6 +77,18 @@ export default async function CampaignPage({
     /* */
   }
 
+  const { data: missions } = await supabase
+    .from("missions")
+    .select("id, title, description, experience_type, mission_steps ( title, description, sort_order )")
+    .eq("campaign_id", params.id)
+    .order("sort_order", { ascending: true });
+
+  const { data: brand } = await supabase
+    .from("organizations")
+    .select("name, industry")
+    .eq("id", campaign.org_id)
+    .maybeSingle();
+
   const rewardLabel = reward?.label
     ? `${reward.label}${reward.value ? " — " + reward.value : ""}`
     : "+" + (campaign.xp_value ?? 0) + " XP";
@@ -113,7 +125,7 @@ export default async function CampaignPage({
       )}
       {campaign.status !== "live" && <p className="mb-4 section-kicker">Preview</p>}
 
-      <p className="section-kicker mb-2">Something is waiting</p>
+      <p className="section-kicker mb-2">{brand?.name ?? "Something is waiting"}</p>
       <h1 className="font-display text-3xl md:text-5xl text-fog mb-3 leading-[0.95] tracking-tight">
         {rewardLabel}
       </h1>
@@ -123,6 +135,7 @@ export default async function CampaignPage({
         </p>
       ) : null}
       <p className="text-mute text-lg mb-8 leading-snug">{campaign.title}</p>
+      {campaign.tagline ? <p className="text-mute text-base -mt-6 mb-8">{campaign.tagline}</p> : null}
 
       {pin && Number.isFinite(pin.lat) && Number.isFinite(pin.lng) ? (
         <div className="mb-8">
@@ -135,6 +148,40 @@ export default async function CampaignPage({
           <p className="section-kicker">What you do</p>
           <p className="text-fog text-base mt-1">{actionHint}</p>
         </div>
+        {missions && missions.length > 0 ? (
+          <div>
+            <p className="section-kicker">The walk</p>
+            <ul className="mt-3 space-y-4">
+              {missions.map((mission) => {
+                const steps = Array.isArray(mission.mission_steps)
+                  ? [...mission.mission_steps].sort(
+                      (a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0)
+                    )
+                  : [];
+                return (
+                  <li key={mission.id}>
+                    <p className="font-display text-lg text-fog">{mission.title}</p>
+                    {mission.description ? (
+                      <p className="text-mute text-sm mt-1">{mission.description}</p>
+                    ) : null}
+                    {steps.length > 0 ? (
+                      <ol className="mt-2 space-y-1 text-sm text-fog">
+                        {steps.map((step, i) => (
+                          <li key={`${mission.id}-${i}`}>
+                            {i + 1}. {step.title}
+                            {step.description ? (
+                              <span className="text-mute"> — {step.description}</span>
+                            ) : null}
+                          </li>
+                        ))}
+                      </ol>
+                    ) : null}
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        ) : null}
       </div>
 
       {mechanics.includes("nfc_tap") && campaign.status === "live" && (
