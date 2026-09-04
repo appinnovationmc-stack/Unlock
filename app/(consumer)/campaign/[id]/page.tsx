@@ -22,12 +22,41 @@ export default async function CampaignPage({
   searchParams: { ref?: string; code?: string };
 }) {
   const supabase = createClient();
+  const field = await getLiveField();
+  const pin = field.pins.find((p) => p.campaign_id === params.id) ?? null;
 
-  const { data: campaign } = await supabase
-    .from("campaigns")
-    .select("*")
-    .eq("id", params.id)
-    .maybeSingle();
+  let campaign: {
+    id: string;
+    org_id?: string | null;
+    title: string;
+    tagline?: string | null;
+    description?: string | null;
+    status: string;
+    mechanics?: string[] | null;
+    xp_value?: number | null;
+    brand_name?: string | null;
+  } | null = null;
+
+  const { data: published } = await supabase.rpc("get_public_campaign", { p_id: params.id });
+  const pubRow = Array.isArray(published) ? published[0] : published;
+  if (pubRow?.id) campaign = pubRow as typeof campaign;
+
+  if (!campaign) {
+    const { data: row } = await supabase.from("campaigns").select("*").eq("id", params.id).maybeSingle();
+    if (row) campaign = row as typeof campaign;
+  }
+
+  if (!campaign && pin) {
+    campaign = {
+      id: pin.campaign_id,
+      title: pin.campaign_title,
+      tagline: pin.label,
+      status: "live",
+      mechanics: ["geolocation"],
+      xp_value: 0,
+      brand_name: pin.brand_name
+    };
+  }
 
   if (!campaign) return notFound();
 
@@ -36,7 +65,7 @@ export default async function CampaignPage({
   } = await supabase.auth.getUser();
 
   let isOwner = false;
-  if (user && campaign.status !== "live") {
+  if (user && campaign.status !== "live" && campaign.org_id) {
     const { data: membership } = await supabase
       .from("org_members")
       .select("org_id")
@@ -61,8 +90,6 @@ export default async function CampaignPage({
       ? Math.max(0, Number(reward.stock) - Number(reward.redeemed_count ?? 0))
       : null;
 
-  const field = await getLiveField();
-  const pin = field.pins.find((p) => p.campaign_id === params.id) ?? null;
   const campaignPinIds = field.pins
     .filter((p) => p.campaign_id === params.id && p.location_id)
     .map((p) => p.location_id);
@@ -99,11 +126,15 @@ export default async function CampaignPage({
     }
   }
 
-  const { data: brand } = await supabase
-    .from("organizations")
-    .select("name, industry")
-    .eq("id", campaign.org_id)
-    .maybeSingle();
+  let brandName = campaign.brand_name ?? pin?.brand_name ?? null;
+  if (!brandName && campaign.org_id) {
+    const { data: brand } = await supabase
+      .from("organizations")
+      .select("name")
+      .eq("id", campaign.org_id)
+      .maybeSingle();
+    brandName = brand?.name ?? null;
+  }
 
   const rewardLabel = reward?.label
     ? `${reward.label}${reward.value ? " — " + reward.value : ""}`
@@ -141,7 +172,7 @@ export default async function CampaignPage({
       )}
       {campaign.status !== "live" && <p className="mb-4 section-kicker">Preview</p>}
 
-      <p className="section-kicker mb-2">{brand?.name ?? "Something is waiting"}</p>
+      <p className="section-kicker mb-2">{brandName ?? "Something is waiting"}</p>
       <h1 className="font-display text-3xl md:text-5xl text-fog mb-3 leading-[0.95] tracking-tight">
         {rewardLabel}
       </h1>
