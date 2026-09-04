@@ -39,7 +39,7 @@ export function ShareDrop({
       try {
         await navigator.clipboard.writeText(text);
       } catch {
-        window.prompt("Copy this drop", text);
+        window.prompt("Copy this find", text);
       }
     }
 
@@ -62,7 +62,7 @@ export function ShareDrop({
         ? "Link sent"
         : state === "need-login"
           ? "Log in to count it"
-          : "Share this drop"}
+          : "Share find"}
     </button>
   );
 }
