@@ -53,7 +53,7 @@ export function ReactFire({
   return (
     <div>
       <button type="button" className="unlock-glass min-h-11 px-4 text-sm" onClick={toggle}>
-        {on ? "Hunting" : "Hunt this"} · {count}
+        {on ? "On the hunt" : "Join the hunt"} · {count}
       </button>
       {msg ? <p className="text-xs text-mute mt-1">{msg}</p> : null}
     </div>
