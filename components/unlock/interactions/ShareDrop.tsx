@@ -3,6 +3,12 @@
 import { useState } from "react";
 import { recordInteraction } from "@/lib/unlock/interactions/record";
 
+function proofCode(userId: string, campaignId: string) {
+  const a = userId.replace(/-/g, "").slice(0, 4).toUpperCase();
+  const b = campaignId.replace(/-/g, "").slice(0, 4).toUpperCase();
+  return `ULK-${a}${b}`;
+}
+
 export function ShareDrop({
   campaignId,
   title,
@@ -19,19 +25,20 @@ export function ShareDrop({
       ? `/campaign/${campaignId}?ref=${referrerId}`
       : `/campaign/${campaignId}`;
     const url = `${window.location.origin}${path}`;
-    const text = `${title}\n${url}`;
+    const code = referrerId ? proofCode(referrerId, campaignId) : null;
+    const text = code ? `${title}\n${url}\n${code}` : `${title}\n${url}`;
 
     try {
       if (navigator.share) {
         await navigator.share({ title, text, url });
       } else {
-        await navigator.clipboard.writeText(url);
+        await navigator.clipboard.writeText(text);
       }
     } catch {
       try {
-        await navigator.clipboard.writeText(url);
+        await navigator.clipboard.writeText(text);
       } catch {
-        window.prompt("Copy this drop", url);
+        window.prompt("Copy this drop", text);
       }
     }
 
@@ -40,7 +47,7 @@ export function ShareDrop({
       campaignId,
       creatorId: referrerId ?? undefined,
       verificationMethod: "authenticated_session",
-      metadata: { channel: navigator.share ? "sheet" : "copy", url },
+      metadata: { channel: navigator.share ? "sheet" : "copy", url, code },
       idempotencyKey: `share:${campaignId}:${new Date().toISOString().slice(0, 13)}`
     });
 
