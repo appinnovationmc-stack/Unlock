@@ -7,6 +7,7 @@ import { NfcScan } from "@/components/unlock/experiences/NfcScan";
 import { QrScan } from "@/components/unlock/experiences/QrScan";
 import { ProductHuntClaim } from "@/components/campaign/ProductHuntClaim";
 import { WalkRadar } from "@/components/unlock/map/WalkRadar";
+import { SocialRail } from "@/components/unlock/social/SocialRail";
 import { getLiveField } from "@/lib/unlock/field/live";
 import { createClient } from "@/lib/supabase/server";
 import { notFound } from "next/navigation";
@@ -35,6 +36,7 @@ export default async function CampaignPage({
     mechanics?: string[] | null;
     xp_value?: number | null;
     brand_name?: string | null;
+    ends_at?: string | null;
   } | null = null;
 
   const { data: published } = await supabase.rpc("get_public_campaign", { p_id: params.id });
@@ -153,8 +155,7 @@ export default async function CampaignPage({
   const requireVisit =
     campaignPinIds.length > 0 ||
     mechanics.includes("geolocation") ||
-    mechanics.includes("treasure_hunt") ||
-    experienceType === "VISIT";
+    mechanics.includes("treasure_hunt") ||n    experienceType === "VISIT";
 
   const actionHint = isProductHunt
     ? "Find it. Prove it. Unlock."
@@ -269,6 +270,7 @@ export default async function CampaignPage({
           <ClaimPost campaignId={campaign.id} userId={user.id} />
         </div>
       ) : null}
+      <SocialRail campaignId={campaign.id} userId={user?.id ?? null} title={campaign.title} endsAt={campaign.ends_at} />
 
       <div className="mt-12 flex justify-center gap-6 text-sm">
         <Link href="/discover" className="text-mute hover:text-fog">
