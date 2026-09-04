@@ -96,7 +96,7 @@ export function SocialRail({
       <ShareUnlock campaignId={campaignId} userId={userId} title={title} />
       {posts.length > 0 ? (
         <section className="space-y-3">
-          <p className="section-kicker">From people who found it</p>
+          <p className="section-kicker">See what people found</p>
           <ul className="grid gap-4 sm:grid-cols-2">
             {posts.map((post) => (
               <li key={post.id} className="border border-black/10 p-3">
