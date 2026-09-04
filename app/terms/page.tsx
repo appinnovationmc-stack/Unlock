@@ -21,7 +21,7 @@ export default function TermsPage() {
           processing times.
         </p>
         <p>
-          You must not attempt to escalate privileges, access other organisations' data, manipulate
+          You must not attempt to escalate privileges, access other organisations&apos; data, manipulate
           balances, or forge attribution.
         </p>
         <p className="font-mono text-xs text-mute">

@@ -7,7 +7,7 @@ export default function ForYouPage() {
     <main className="page-shell min-h-screen">
       <UnlockMark size={40} />
       <h1 className="font-display text-4xl md:text-6xl text-fog tracking-tight mt-6">
-        Don't just see the ad.
+        Don&apos;t just see the ad.
         <br />
         Unlock it.
       </h1>

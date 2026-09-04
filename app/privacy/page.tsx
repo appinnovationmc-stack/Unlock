@@ -7,7 +7,7 @@ export default function PrivacyPage() {
       <h1 className="font-display text-3xl text-fog mt-1 mb-8">Privacy Policy</h1>
       <div className="space-y-4 text-mute text-sm leading-relaxed">
         <p>
-          Unlock ("we", "the platform") processes account data needed to run interactive
+          Unlock (&quot;we&quot;, &quot;the platform&quot;) processes account data needed to run interactive
           advertising campaigns: email, role, organisation membership, campaign participation,
           reward claims, and attribution events.
         </p>

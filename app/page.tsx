@@ -10,7 +10,7 @@ export default function Home() {
           <UnlockMark size={56} />
         </div>
         <h1 className="font-display text-5xl md:text-7xl font-900 leading-[0.95] tracking-tight text-fog">
-          Don't just see the ad.
+          Don&apos;t just see the ad.
           <br />
           <span style={{ color: "#0071e3" }}>Unlock</span> it.
         </h1>

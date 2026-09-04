@@ -168,7 +168,7 @@ export function ProductHuntClaim({
       </div>
 
       <div>
-        <label className="text-sm text-mute block mb-1">Where'd you find it?</label>
+        <label className="text-sm text-mute block mb-1">Where&apos;d you find it?</label>
         <input
           type="text"
           value={storeLocation}
