@@ -30,18 +30,21 @@ export function ClaimPost({
     const { error } = await supabase.rpc("claim_social_post", {
       p_campaign_id: campaignId,
       p_post_url: url.trim(),
-      p_platform: platform,
-      p_proof_code: code
+      p_platform: platform
     });
     setBusy(false);
-    setMsg(error ? error.message : "Claim in. If the link carries your code it verifies now. If not, a brand can confirm it.");
+    setMsg(
+      error
+        ? error.message
+        : "Claim in. Pending until someone checks the post. Putting the code in the URL does not verify it."
+    );
   }
 
   return (
     <form onSubmit={submit} className="unlock-glass p-4 space-y-3">
       <p className="font-display text-fog">Posted it?</p>
       <p className="text-mute text-sm">
-        Put this code in the caption or the link, then paste the public post.
+        Put this code in the caption, then paste the public Instagram, TikTok, or X link. A person still has to look.
       </p>
       <p className="font-mono text-sm text-fog">{code}</p>
       <label className="block text-sm text-mute">
@@ -54,7 +57,6 @@ export function ClaimPost({
           <option value="instagram">Instagram</option>
           <option value="tiktok">TikTok</option>
           <option value="x">X</option>
-          <option value="other">Other</option>
         </select>
       </label>
       <label className="block text-sm text-mute">
