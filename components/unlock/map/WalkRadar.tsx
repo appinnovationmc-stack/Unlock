@@ -13,7 +13,8 @@ function haversineM(a: { lat: number; lng: number }, b: { lat: number; lng: numb
 }
 
 function line(m: number) {
-  if (m < 25) return "You're here";
+  if (m < 25) return "You're here.";
+  if (m < 80) return "You're almost there.";
   if (m < 1000) return `${Math.round(m)} m away`;
   return `${(m / 1000).toFixed(1)} km away`;
 }
@@ -56,15 +57,19 @@ export function WalkRadar({
 
   return (
     <div className="border border-black/10 px-4 py-4 space-y-2">
+      <p className="section-kicker">Something is waiting here</p>
       <p className="font-display text-lg text-fog">
         {metres == null ? "Find it" : line(metres)}
       </p>
       {inRange ? (
-        <p className="text-sm text-fog">You're here. Check in, then hold.</p>
+        <p className="text-sm text-fog">Check in, then hold to unlock.</p>
       ) : metres != null ? (
-        <p className="text-sm text-mute">Get closer to unlock.</p>
-      ) : null}
+        <p className="text-sm text-mute">Get closer.</p>
+      ) : (
+        <p className="text-sm text-mute">Allow location to see how far.</p>
+      )}
       {msg ? <p className="text-xs text-mute">{msg}</p> : null}
+      <p className="text-xs text-mute pt-1">Get directions</p>
       <div className="flex flex-wrap gap-3 text-sm">
         <a href={mapsWalkUrl(lat, lng)} target="_blank" rel="noopener noreferrer" className="min-h-11 inline-flex items-center">
           Google Maps
