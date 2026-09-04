@@ -17,9 +17,20 @@ export function HuntPulse({
 
   return (
     <div className="space-y-1 text-sm text-mute">
-      {hunting > 0 ? <p>{hunting} hunting this in the last day</p> : <p>Be first to hunt this.</p>}
-      {unlocked > 0 ? <p>{unlocked} unlocked</p> : null}
-      {last ? <p>Last unlock {last}</p> : null}
+      {hunting > 0 ? (
+        <p>
+          {hunting} {hunting === 1 ? "person is" : "people are"} hunting this
+        </p>
+      ) : (
+        <p>Be first on the hunt.</p>
+      )}
+      {unlocked > 0 ? (
+        <p>
+          {unlocked} unlocked{last ? ` · last ${last}` : ""}
+        </p>
+      ) : last ? (
+        <p>Someone unlocked this {last}</p>
+      ) : null}
       {remaining ? <p>Ends {remaining}</p> : null}
     </div>
   );
