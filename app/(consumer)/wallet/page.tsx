@@ -266,7 +266,7 @@ export default async function WalletPage() {
         {trailError ? (
           <p className="text-mute text-sm">Unavailable</p>
         ) : trail.length === 0 ? (
-          <p className="text-mute text-sm">Pending — no verified events yet.</p>
+          <p className="text-mute text-sm">No verified events yet.</p>
         ) : (
           <div className="border border-white/8 divide-y divide-white/5">
             {trail.map((row) => {
@@ -289,7 +289,7 @@ export default async function WalletPage() {
       <h2 className="font-display text-lg text-fog mb-4">Rewards</h2>
       {claimRows.length === 0 ? (
         <div className="border border-white/5 p-6 text-center">
-          <p className="text-mute font-mono text-sm mb-3">Nothing collected yet.</p>
+          <p className="text-mute font-mono text-sm mb-3">No claims yet. Verified rewards will appear here after you unlock them.</p>
           <Link href="/discover" className="text-volt font-mono text-[10px]">
             Enter the field →
           </Link>

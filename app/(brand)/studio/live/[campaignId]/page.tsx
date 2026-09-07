@@ -1,6 +1,5 @@
 import { LiveCommandCentre } from "@/components/unlock/analytics/LiveCommandCentre";
 import { LiveRealtimeListener } from "@/components/unlock/analytics/LiveRealtimeListener";
-import { PlayExperience } from "@/components/unlock/brand-studio/PlayExperience";
 import { createClient } from "@/lib/supabase/server";
 import { getMyOrgId } from "@/lib/actions/campaigns";
 import { getCampaignLiveEvents } from "@/lib/actions/live";
@@ -227,16 +226,6 @@ export default async function LiveCampaignPage({ params }: { params: { campaignI
     /* visit_spend_cents column exists only after visit CPE SQL is applied */
   }
 
-  const { data: reward } = await supabase
-    .from("rewards")
-    .select("label, value")
-    .eq("campaign_id", params.campaignId)
-    .limit(1)
-    .maybeSingle();
-  const rewardLabel = reward
-    ? `${reward.label}${reward.value ? " — " + reward.value : ""}`
-    : "Demo reward";
-
   return (
     <main className="min-h-screen px-6 py-10 md:px-12 bg-void space-y-12">
       <div className="flex justify-end">
@@ -257,17 +246,10 @@ export default async function LiveCampaignPage({ params }: { params: { campaignI
       <p className="text-sm text-mute text-center">
         {primaryType ? <>Type · {primaryType} · </> : null}
         {pinCount} location pin{pinCount === 1 ? "" : "s"} ·{" "}
-        <a href={`/studio/live/${campaign.id}/play`} className="hover:text-fog">
-          Play demo
-        </a>
-        {" · "}
         <a href={`/campaign/${campaign.id}`} className="hover:text-fog">
           Open as consumer
         </a>
       </p>
-      <section className="max-w-md mx-auto">
-        <PlayExperience title={campaign.title} rewardLabel={rewardLabel} />
-      </section>
     </main>
   );
 }

@@ -12,6 +12,11 @@ const LiveMap = dynamic(() => import("./LiveMap").then((m) => m.LiveMap), {
   )
 });
 
+/**
+ * Public Discover map stays visible logged out.
+ * Geolocation starts only from LiveMap's "Find me" (user gesture).
+ * Campaign WalkRadar / check-in gate GPS behind auth separately.
+ */
 export function LiveMapSection({
   pins,
   youAvatar

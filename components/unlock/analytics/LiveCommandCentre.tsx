@@ -189,18 +189,13 @@ export function LiveCommandCentre({
           <p className="text-sm text-mute mt-2">
             {status}. Tap a number to see the rows behind it.
           </p>
+          {events.length === 0 && (
+            <p className="text-sm text-mute mt-3">No live events yet. Verified activity will appear here.</p>
+          )}
         </div>
-        <div className="flex gap-2">
-          <Link
-            href={`/studio/live/${campaignId}/play`}
-            className="text-sm text-mute border border-white/10 px-3 py-1.5 hover:text-fog"
-          >
-            Play demo
-          </Link>
-          <Link href="/studio" className="text-sm text-mute border border-white/10 px-3 py-1.5 hover:text-fog">
-            Studio
-          </Link>
-        </div>
+        <Link href="/studio" className="text-sm text-mute border border-white/10 px-3 py-1.5 hover:text-fog">
+          Studio
+        </Link>
       </header>
       <section className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
         {metric("People", stats.participating, "people")}
@@ -328,7 +323,7 @@ export function LiveCommandCentre({
         {visible.length === 0 ? (
           <p className="text-mute text-sm border border-white/10 px-4 py-8">
             {events.length === 0
-              ? "No events yet. Counts stay empty until people actually show up."
+              ? "No live events yet. Counts stay empty until people actually show up."
               : "No rows match this filter in the loaded events."}
           </p>
         ) : (
