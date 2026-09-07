@@ -40,30 +40,33 @@ export function LiveMapSection({
     };
   }, []);
 
-  if (auth === "authenticated") {
-    return (
-      <LiveMap
-        pins={pins}
-        youAvatar={youAvatar}
-        fallbackCenter={{ lat: -26.2041, lng: 28.0473 }}
-      />
-    );
-  }
+  const map = (
+    <LiveMap
+      pins={pins}
+      youAvatar={youAvatar}
+      fallbackCenter={{ lat: -26.2041, lng: 28.0473 }}
+    />
+  );
+
+  if (auth === "authenticated") return map;
 
   return (
-    <div className="absolute inset-0 flex items-center justify-center bg-ink2 min-h-[280px] px-6 text-center">
-      <div>
-        <p className="text-sm text-mute">
-          {auth === "checking" ? "Checking access…" : "Log in to use your location."}
-        </p>
-        {auth === "logged-out" ? (
-          <Link
-            href="/login"
-            className="inline-flex items-center min-h-11 mt-3 bg-volt text-void px-4 py-2 text-sm hover:bg-volt/90"
-          >
-            Log in
-          </Link>
-        ) : null}
+    <div className="relative w-full h-full">
+      {map}
+      <div className="absolute inset-0 z-30 flex items-center justify-center bg-ink2/70 px-6 text-center">
+        <div>
+          <p className="text-sm text-mute">
+            {auth === "checking" ? "Checking access…" : "Log in to use your location."}
+          </p>
+          {auth === "logged-out" ? (
+            <Link
+              href="/login"
+              className="inline-flex items-center min-h-11 mt-3 bg-volt text-void px-4 py-2 text-sm hover:bg-volt/90"
+            >
+              Log in
+            </Link>
+          ) : null}
+        </div>
       </div>
     </div>
   );
