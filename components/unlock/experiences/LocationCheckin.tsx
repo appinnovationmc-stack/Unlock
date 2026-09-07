@@ -104,7 +104,10 @@ export function LocationCheckin({
   if (!authenticated) {
     return (
       <div className="space-y-2">
-        <Link href={campaignLoginHref(campaignId)} className={`${buttonClass} block text-center`}>
+        <Link
+          href={`/login?next=${encodeURIComponent(`/campaign/${campaignId}`)}`}
+          className={`${buttonClass} block text-center`}
+        >
           {label}
         </Link>
       </div>
