@@ -105,12 +105,11 @@ export function LocationCheckin({
     return (
       <div className="space-y-2">
         <Link
-          href={{ pathname: "/login", query: { next: `/campaign/${campaignId}` } }}
+          href={`/login?next=${encodeURIComponent(`/campaign/${campaignId}`)}`}
           className={`${buttonClass} block text-center`}
         >
           {label}
         </Link>
-        <p className="text-xs text-center text-mute">{GPS_PRIVACY}</p>
       </div>
     );
   }
