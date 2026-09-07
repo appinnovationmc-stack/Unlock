@@ -44,11 +44,15 @@ export function WalkRadar({
 
   useEffect(() => {
     let active = true;
-    createClient().auth.getUser().then(({ data }) => {
-      if (active) setAuth(data.user ? "authenticated" : "logged-out");
-    }).catch(() => {
+    try {
+      createClient().auth.getUser().then(({ data }) => {
+        if (active) setAuth(data.user ? "authenticated" : "logged-out");
+      }).catch(() => {
+        if (active) setAuth("logged-out");
+      });
+    } catch {
       if (active) setAuth("logged-out");
-    });
+    }
     return () => {
       active = false;
     };
