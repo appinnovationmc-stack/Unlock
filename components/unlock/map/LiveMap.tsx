@@ -164,6 +164,7 @@ export function LiveMap({
   const avatarRef = useRef(youAvatar);
   avatarRef.current = youAvatar;
   const [failed, setFailed] = useState(false);
+  const [retryKey, setRetryKey] = useState(0);
   const [picked, setPicked] = useState<MapPin | null>(null);
   const [you, setYou] = useState<{ lat: number; lng: number } | null>(null);
   const [locateMsg, setLocateMsg] = useState<string | null>(null);
@@ -278,7 +279,7 @@ export function LiveMap({
       labelMapControls(map);
     };
 
-    map.on("error", () => {});
+    map.on("error", () => setFailed(true));
     map.once("load", placePins);
     map.once("style.load", () => requestAnimationFrame(placePins));
     const fallback = window.setTimeout(placePins, 2500);
@@ -298,12 +299,24 @@ export function LiveMap({
       mapRef.current = null;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pinKey, fallbackCenter.lat, fallbackCenter.lng]);
+  }, [pinKey, fallbackCenter.lat, fallbackCenter.lng, retryKey]);
 
   if (failed) {
     return (
-      <div className="absolute inset-0 flex items-center justify-center bg-ink2 min-h-[280px]">
-        <p className="text-sm text-mute px-4 text-center">Map failed to load</p>
+      <div className="absolute inset-0 flex items-center justify-center bg-ink2 min-h-[280px] px-4 text-center">
+        <div>
+          <p className="text-sm text-mute">The map could not load.</p>
+          <button
+            type="button"
+            onClick={() => {
+              setFailed(false);
+              setRetryKey((key) => key + 1);
+            }}
+            className="mt-3 min-h-11 bg-volt text-void px-4 py-2 text-sm hover:bg-volt/90"
+          >
+            Try again
+          </button>
+        </div>
       </div>
     );
   }

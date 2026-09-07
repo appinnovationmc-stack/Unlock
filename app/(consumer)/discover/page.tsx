@@ -47,10 +47,10 @@ export default async function DiscoverPage() {
     <main className="min-h-screen bg-void">
       <header className="page-shell-wide pt-6 pb-3">
         <h1 className="font-display text-3xl md:text-5xl text-fog tracking-tight">
-          {live ? "Something is waiting." : "Quiet right now."}
+          {live ? "Something is waiting." : "No live pins right now."}
         </h1>
         <p className="text-mute text-sm mt-2 max-w-lg">
-          {live ? "Find it. Get close. Unlock it." : "A brand plants a pin. The city walks to it."}
+          {live ? "Find it. Get close. Unlock it." : "There are no live campaigns in the field. Check back when a brand publishes one."}
         </p>
       </header>
 
@@ -72,13 +72,13 @@ export default async function DiscoverPage() {
         </div>
         {!live ? (
           <div className="unlock-glass mx-auto max-w-6xl mt-4 px-5 py-4">
-            <p className="font-display text-lg text-fog">The map is the media.</p>
+            <p className="font-display text-lg text-fog">The field is empty for now.</p>
             <p className="text-mute text-sm mt-1">
-              Plant one pin. People walk. You see who came.
+              Check back after a campaign goes live.
             </p>
             {canPlant ? (
               <Link href="/studio" className="inline-block mt-3 text-sm min-h-11 leading-[44px]">
-                Plant one
+                Build a campaign
               </Link>
             ) : null}
           </div>
