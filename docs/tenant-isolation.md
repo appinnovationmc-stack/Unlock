@@ -13,8 +13,7 @@ Use the Supabase SQL editor (or `psql`) for project
 inspect catalogs and `SET ROLE anon` / `SET ROLE authenticated`:
 
 ```sh
-psql "$DATABASE_URL" --set ON_ERROR_STOP=1 \\
-  --file supabase/tests/tenant_isolation.sql
+psql "$DATABASE_URL" --set ON_ERROR_STOP=1 --file supabase/tests/tenant_isolation.sql
 ```
 
 Run it against the database, not through the anon REST key. Cross-org and
