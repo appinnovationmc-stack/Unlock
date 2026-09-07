@@ -1,6 +1,8 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
+import { createClient } from "@/lib/supabase/client";
 
 function haversineM(a: { lat: number; lng: number }, b: { lat: number; lng: number }) {
   const R = 6371000;
@@ -36,10 +38,24 @@ export function WalkRadar({
   lng: number;
   radiusM?: number;
 }) {
+  const [auth, setAuth] = useState<"checking" | "authenticated" | "logged-out">("checking");
   const [here, setHere] = useState<{ lat: number; lng: number } | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
 
   useEffect(() => {
+    let active = true;
+    createClient().auth.getUser().then(({ data }) => {
+      if (active) setAuth(data.user ? "authenticated" : "logged-out");
+    }).catch(() => {
+      if (active) setAuth("logged-out");
+    });
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (auth !== "authenticated") return;
     if (!navigator.geolocation) {
       setMsg("This device cannot share a location.");
       return;
@@ -50,7 +66,7 @@ export function WalkRadar({
       { enableHighAccuracy: true, maximumAge: 4000, timeout: 15000 }
     );
     return () => navigator.geolocation.clearWatch(id);
-  }, []);
+  }, [auth]);
 
   const metres = here ? Math.round(haversineM(here, { lat, lng })) : null;
   const inRange = metres != null && metres <= radiusM;
@@ -59,14 +75,21 @@ export function WalkRadar({
     <div className="border border-black/10 px-4 py-4 space-y-2">
       <p className="section-kicker">Something is waiting here</p>
       <p className="font-display text-lg text-fog">
-        {metres == null ? "Find it" : line(metres)}
+        {auth === "logged-out" ? "Log in to find it" : metres == null ? "Find it" : line(metres)}
       </p>
-      {inRange ? (
+      {auth === "logged-out" ? (
+        <>
+          <p className="text-sm text-mute">Log in before sharing your location.</p>
+          <Link href="/login" className="inline-flex items-center min-h-11 bg-volt text-void px-4 py-2 text-sm">
+            Log in
+          </Link>
+        </>
+      ) : inRange ? (
         <p className="text-sm text-fog">Check in, then hold to unlock.</p>
       ) : metres != null ? (
         <p className="text-sm text-mute">Get closer.</p>
       ) : (
-        <p className="text-sm text-mute">Allow location to see how far.</p>
+        <p className="text-sm text-mute">{auth === "checking" ? "Checking access…" : "Allow location to see how far."}</p>
       )}
       {msg ? <p className="text-xs text-mute">{msg}</p> : null}
       <p className="text-xs text-mute pt-1">Get directions</p>
