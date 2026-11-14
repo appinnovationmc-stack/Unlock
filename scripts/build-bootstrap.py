@@ -15,4 +15,3 @@ for path in sorted((root / 'supabase/migrations').glob('*.sql')):
     sql = re.sub(r'drop policy (?!if exists)', 'drop policy if exists ', sql, flags=re.I)
     print('-- SOURCE:', path.name)
     print(sql)
-
