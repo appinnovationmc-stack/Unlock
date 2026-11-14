@@ -8,13 +8,13 @@ F01's critical location/reward tenant ownership constraints were applied to `unl
 
 The complete historical schema plus repair SQL replays on PostgreSQL 17 with real PostGIS. `npm run test:database` verifies authenticated cross-tenant write rejection, forbidden direct payment intent writes, wrong-amount settlement rollback, recovery after an injected ledger failure, eight concurrent payment deliveries crediting exactly once, eight consumers competing for one reward, net budget/fee separation, campaign close/release, closed-campaign protection, merchant redemption authorization and atomic analytics, protection against owner reversal of moderation, idempotent top-ups, and eight concurrent GPS requests producing one verified billable visit.
 
-Production build passes. Clean dependency installation passes. Payment signature tests and existing model/static gates pass. The production dependency audit reports zero vulnerabilities. Existing image optimization lint warnings are non-blocking.
+Production build passes. Clean dependency installation passes, including the final PostCSS lockfile. Payment signature tests and existing model/static gates pass. The production dependency audit reports zero vulnerabilities. Existing image optimization lint warnings are non-blocking.
 
 The application changes include strict payment environment configuration, durable authorized intent creation, atomic settlement RPC integration, modern/legacy Paystack signature verification, disabled unsigned sandbox completion, financial error visibility, SQL revenue aggregation, merchant reward fulfilment, manual bank payout evidence, budget top-ups, support request storage/admin inbox, and updated operator/privacy/reward/funding terms.
 
-## Rollout pending deployment account access
+## Database deployed; application rollout pending
 
-The wider application changes and `supabase/repairs/audit_commercial_readiness.sql` must be deployed together after final review and integrated provider acceptance. The repair file is not yet a recorded production migration. Live payment controls default to disabled. Historical sandbox/manual credits and the existing campaign budget require cash reconciliation before their holds can be released.
+The database repair was applied successfully as `20261114080905_audit_commercial_repairs`. Post-deployment queries confirm live/test controls are disabled, anonymous settlement execution is denied, authenticated direct credit execution is denied, and one historical account is held. The application branch is pushed; its hosting deployment and integrated provider acceptance remain outstanding. The user confirmed there are no live credentials yet. Historical sandbox/manual credits and the existing campaign budget require cash reconciliation before their holds can be released.
 
 The operator is Maobane Innovations. `support@maobaneinnovations.co.za` is the selected public contact; its mailbox has not been provisioned or delivery-tested. In-app support/privacy/deletion/refund requests are implemented. Manual South African bank transfers are the chosen initial payout method, with processing state and required unique receipt evidence.
 
