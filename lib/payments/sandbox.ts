@@ -35,7 +35,7 @@ export class SandboxPaymentProvider implements PaymentProvider {
       return { success: false, error: "Amount must be positive", isSandbox: true };
     }
 
-    const ref = `sandbox_${randomUUID().replace(/-/g, "")}`;
+    const ref = params.idempotencyKey;
     store.set(ref, {
       amountCents: params.amountCents,
       currency: params.currency,
@@ -95,17 +95,7 @@ export class SandboxPaymentProvider implements PaymentProvider {
     _signatureHeader: string | null,
     _secret: string
   ): Promise<WebhookVerificationResult> {
-    try {
-      const payload = typeof rawBody === "string" ? JSON.parse(rawBody) : JSON.parse(rawBody.toString());
-      return {
-        valid: true,
-        eventId: payload.event_id || `sandbox_evt_${Date.now()}`,
-        eventType: payload.event || "charge.success",
-        payload
-      };
-    } catch {
-      return { valid: false, eventId: "", eventType: "", payload: null, error: "Invalid JSON" };
-    }
+    return { valid: false, eventId: "", eventType: "", payload: null, error: "Sandbox webhooks are disabled" };
   }
 }
 

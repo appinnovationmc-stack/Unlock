@@ -5,11 +5,12 @@ import { Button } from "@/components/ui/Button";
 import { safeNextPath } from "@/lib/auth/safe-next";
 import { UnlockMark } from "@/components/ui/UnlockMark";
 
-export default function LoginPage({
-  searchParams
+export default async function LoginPage({
+  searchParams: searchParamsPromise
 }: {
-  searchParams: { error?: string; reset?: string; next?: string; redirect?: string };
+  searchParams: Promise<{ error?: string; reset?: string; next?: string; redirect?: string }>;
 }) {
+  const searchParams = await searchParamsPromise;
   const next = safeNextPath(searchParams.next ?? searchParams.redirect, "");
 
   return (

@@ -1,5 +1,5 @@
 /**
- * Concurrent unlock idempotency (no live DB / GPS).
+ * SQL contract and sequential model checks (not database concurrency tests).
  *
  * Existing coverage:
  *   npm run test:finance  — scripts/test-finance-logic.mjs
@@ -58,13 +58,15 @@ function latestUnlockCampaignSql(files) {
 }
 
 function extractUnlockBody(sql) {
-  const marker = "function public.unlock_campaign(";
-  const idx = sql.lastIndexOf(marker);
-  if (idx < 0) return "";
-  const as$$ = sql.indexOf("as $$", idx);
-  const end = sql.indexOf("$$;", as$$ + 1);
-  if (as$$ < 0 || end < 0) return sql.slice(idx);
-  return sql.slice(idx, end);
+  const definitions = [...sql.matchAll(/create (?:or replace )?function public\.unlock_campaign\s*\(/gi)];
+  const idx = definitions.at(-1)?.index;
+  if (idx === undefined) return "";
+  const rest = sql.slice(idx);
+  const delimiter = rest.match(/as\s+(\$[a-zA-Z_]*\$)/i);
+  if (!delimiter) return "";
+  const end = rest.indexOf(delimiter[1] + ";", delimiter.index + delimiter[0].length);
+  return rest.slice(0, end);
+
 }
 
 const files = allMigrations();
@@ -234,8 +236,8 @@ const unlockBody = extractUnlockBody(latestUnlock.sql);
 
   const winners = results.filter((r) => !r.already_unlocked);
   const dupes = results.filter((r) => r.already_unlocked);
-  assert(winners.length === 1, `concurrent same-user unlocks: one winner (got ${winners.length})`);
-  assert(dupes.length === 7, `concurrent same-user unlocks: seven already_unlocked (got ${dupes.length})`);
+  assert(winners.length === 1, `sequential same-user model: one winner (got ${winners.length})`);
+  assert(dupes.length === 7, `sequential same-user model: seven already_unlocked (got ${dupes.length})`);
   assert(s.conversions.size === 1, "ONE conversion (unique index campaign+consumer where conversion)");
   assert(s.participations.size === 1, "ONE campaign_participations row");
   assert(s.rewards.size === 1, "ONE reward_claim (reward_id, consumer_id)");
@@ -308,5 +310,5 @@ const unlockBody = extractUnlockBody(latestUnlock.sql);
   assert(!/p_lat|p_lng|geolocation/.test(action), "unlock action does not require live GPS");
 }
 
-console.log("\nUnlock concurrency tests finished.");
+console.log("\nUnlock static contract checks finished; database tests are separate.");
 if (process.exitCode) process.exit(1);

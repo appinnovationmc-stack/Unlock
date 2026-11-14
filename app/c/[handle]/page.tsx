@@ -6,12 +6,13 @@ import { FollowButton } from "@/components/unlock/social/FollowButton";
 export const dynamic = "force-dynamic";
 
 export default async function PublicCreatorPage({
-  params
+  params: paramsPromise
 }: {
-  params: { handle: string };
+  params: Promise<{ handle: string }>;
 }) {
+  const params = await paramsPromise;
   const handle = decodeURIComponent(params.handle).replace(/^@/, "");
-  const supabase = createClient();
+  const supabase = await createClient();
   const { data, error } = await supabase.rpc("get_public_creator", { p_handle: handle });
   const row = Array.isArray(data) ? data[0] : data;
   if (error || !row?.handle) return notFound();

@@ -7,7 +7,7 @@ import { getMyOrgId } from "@/lib/actions/campaigns";
 
 /** Optional stock cap. unlock_campaign already stops when redeemed_count >= stock. */
 export async function addCampaignReward(formData: FormData) {
-  const supabase = createClient();
+  const supabase = await createClient();
   const orgId = await getMyOrgId();
   if (!orgId) redirect("/onboarding");
 

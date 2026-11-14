@@ -1,6 +1,7 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
+import type { Route } from "next";
 import { redirect } from "next/navigation";
 import type { AuthRole } from "@/lib/types";
 import { safeNextPath } from "@/lib/auth/safe-next";
@@ -13,7 +14,7 @@ export async function signUp(formData: FormData) {
   const handle = String(formData.get("handle") ?? "").trim();
   const role = String(formData.get("role")) as AuthRole;
 
-  const supabase = createClient();
+  const supabase = await createClient();
 
   // Never accept client-claimed admin on signup
   const safeRole = role === "admin" ? "consumer" : role;
@@ -50,7 +51,7 @@ export async function logIn(formData: FormData) {
   const requestedNext = String(formData.get("next") ?? "");
   const next = requestedNext ? safeNextPath(requestedNext, "") : "";
 
-  const supabase = createClient();
+  const supabase = await createClient();
   const { data, error } = await supabase.auth.signInWithPassword({ email, password });
 
   if (error) {
@@ -60,7 +61,7 @@ export async function logIn(formData: FormData) {
     return redirect(`/login?${q.toString()}`);
   }
 
-  if (next) redirect(next);
+  if (next) redirect(next as Route);
 
   const user = data.user;
   if (!user) redirect("/discover");
@@ -82,7 +83,7 @@ export async function logIn(formData: FormData) {
 }
 
 export async function logOut() {
-  const supabase = createClient();
+  const supabase = await createClient();
   await supabase.auth.signOut();
   redirect("/login");
 }
@@ -93,7 +94,7 @@ export async function requestPasswordReset(formData: FormData) {
     return redirect(`/forgot-password?error=${encodeURIComponent("Email is required")}`);
   }
 
-  const supabase = createClient();
+  const supabase = await createClient();
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL;
   const vercel = process.env.VERCEL_URL;
   const origin = siteUrl || (vercel ? `https://${vercel}` : "http://localhost:3000");
@@ -122,7 +123,7 @@ export async function updatePassword(formData: FormData) {
     );
   }
 
-  const supabase = createClient();
+  const supabase = await createClient();
   const {
     data: { user }
   } = await supabase.auth.getUser();
@@ -151,7 +152,7 @@ export async function updatePassword(formData: FormData) {
  * Never trust user_metadata.role for admin.
  */
 export async function getCurrentRole(): Promise<AuthRole | null> {
-  const supabase = createClient();
+  const supabase = await createClient();
   const {
     data: { user }
   } = await supabase.auth.getUser();

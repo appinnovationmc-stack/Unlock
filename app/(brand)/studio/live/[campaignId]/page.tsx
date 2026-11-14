@@ -16,8 +16,9 @@ const INTERACT_TYPES = [
   "REVIEW_SUBMITTED"
 ];
 
-export default async function LiveCampaignPage({ params }: { params: { campaignId: string } }) {
-  const supabase = createClient();
+export default async function LiveCampaignPage({ params: paramsPromise }: { params: Promise<{ campaignId: string }> }) {
+  const params = await paramsPromise;
+  const supabase = await createClient();
   const {
     data: { user }
   } = await supabase.auth.getUser();

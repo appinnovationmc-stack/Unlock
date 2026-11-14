@@ -6,7 +6,7 @@ import { revalidatePath } from "next/cache";
 import type { CampaignMechanicType, CampaignStatus } from "@/lib/types";
 
 export async function getMyOrgId() {
-  const supabase = createClient();
+  const supabase = await createClient();
   const {
     data: { user }
   } = await supabase.auth.getUser();
@@ -76,7 +76,7 @@ function verificationRequired(verify: string): string[] {
 }
 
 export async function createCampaign(formData: FormData) {
-  const supabase = createClient();
+  const supabase = await createClient();
   const orgId = await getMyOrgId();
   if (!orgId) redirect("/onboarding");
 
@@ -204,18 +204,21 @@ export async function createCampaign(formData: FormData) {
 }
 
 async function assertCanGoLive(
-  supabase: ReturnType<typeof createClient>,
+  supabase: Awaited<ReturnType<typeof createClient>>,
   orgId: string,
   campaignId: string
 ) {
   const { data: c } = await supabase
     .from("campaigns")
-    .select("title")
+    .select("title, mechanics")
     .eq("id", campaignId)
     .eq("org_id", orgId)
     .single();
   if (!c?.title) {
     return "Cannot publish: missing title";
+  }
+  if ((c.mechanics || []).some((mechanic: string) => !["geolocation", "referral"].includes(mechanic))) {
+    return "Paid launch currently supports location visits and referrals. Remove other mechanics before publishing.";
   }
   const { count: pinCount } = await supabase
     .from("campaign_locations")
@@ -241,7 +244,7 @@ export async function updateCampaignStatus(formData: FormData) {
   const campaignId = String(formData.get("campaign_id"));
   const nextStatus = String(formData.get("status")) as CampaignStatus;
 
-  const supabase = createClient();
+  const supabase = await createClient();
   const orgId = await getMyOrgId();
   if (!orgId) redirect("/onboarding");
 
@@ -297,7 +300,7 @@ export async function publishCampaign(formData: FormData) {
 }
 
 export async function addCampaignLocation(formData: FormData) {
-  const supabase = createClient();
+  const supabase = await createClient();
   const orgId = await getMyOrgId();
   if (!orgId) redirect("/onboarding");
 
@@ -344,7 +347,7 @@ export async function addCampaignLocation(formData: FormData) {
 }
 
 export async function addCampaignReward(formData: FormData) {
-  const supabase = createClient();
+  const supabase = await createClient();
   const orgId = await getMyOrgId();
   if (!orgId) redirect("/onboarding");
 
@@ -385,12 +388,12 @@ export async function addCampaignReward(formData: FormData) {
 }
 
 export async function removeCampaignLocation(formData: FormData) {
-  const supabase = createClient();
+  const supabase = await createClient();
   const orgId = await getMyOrgId();
   if (!orgId) redirect("/onboarding");
 
   const locationId = String(formData.get("location_id") ?? "").trim();
-  if (!locationId) redirect("/studio?error=" + encodeURIComponent("Missing location"));
+  if (!locationId) redirect(`/studio?error=${encodeURIComponent("Missing location")}`);
 
   const { error } = await supabase
     .from("campaign_locations")

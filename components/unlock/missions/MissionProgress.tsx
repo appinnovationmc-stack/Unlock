@@ -7,7 +7,7 @@ export async function MissionProgress({
   campaignId: string;
   userId?: string | null;
 }) {
-  const supabase = createClient();
+  const supabase = await createClient();
 
   let missions: { id: string; title: string; description: string | null; sort_order: number }[] = [];
   try {

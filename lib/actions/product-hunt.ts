@@ -9,7 +9,7 @@ export async function claimProductCode(
   proofPhotoUrl: string | null,
   storeLocation: string | null
 ) {
-  const supabase = createClient();
+  const supabase = await createClient();
   const {
     data: { user }
   } = await supabase.auth.getUser();
@@ -43,7 +43,7 @@ export async function claimProductCode(
 }
 
 export async function confirmProductClaim(claimId: string, campaignId: string) {
-  const supabase = createClient();
+  const supabase = await createClient();
   const {
     data: { user }
   } = await supabase.auth.getUser();

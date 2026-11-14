@@ -38,7 +38,7 @@ function methodFor(eventType: InteractionEventType, requested?: VerificationMeth
 }
 
 export async function recordInteraction(input: RecordInteractionInput) {
-  const supabase = createClient();
+  const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { eventId: null, error: "You need to log in." };
 

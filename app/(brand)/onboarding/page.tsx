@@ -6,11 +6,12 @@ import { redirect } from "next/navigation";
 export const dynamic = "force-dynamic";
 
 export default async function OnboardingPage({
-  searchParams
+  searchParams: searchParamsPromise
 }: {
-  searchParams: { error?: string };
+  searchParams: Promise<{ error?: string }>;
 }) {
-  const supabase = createClient();
+  const searchParams = await searchParamsPromise;
+  const supabase = await createClient();
   const {
     data: { user }
   } = await supabase.auth.getUser();

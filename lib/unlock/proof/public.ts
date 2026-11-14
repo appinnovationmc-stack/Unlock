@@ -75,7 +75,7 @@ const LOCKED_FUNNEL: LockedMetric[] = [
  * under RLS and look like fake zeros.
  */
 export async function getPublicBrandProof(): Promise<PublicBrandProof> {
-  const supabase = createClient();
+  const supabase = await createClient();
 
   let liveCampaigns: PublicLiveCampaign[] = [];
   const { data: expData, error: expError } = await supabase.rpc("get_live_experiences");

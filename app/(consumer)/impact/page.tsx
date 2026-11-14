@@ -4,7 +4,7 @@ import Link from "next/link";
 export const dynamic = "force-dynamic";
 
 export default async function ImpactLeaderboardPage() {
-  const supabase = createClient();
+  const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
   let rows: { user_id: string; total_impact: number; verified_interactions: number; store_visits: number; conversions: number }[] = [];

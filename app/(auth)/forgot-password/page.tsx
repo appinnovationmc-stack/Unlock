@@ -2,11 +2,12 @@ import Link from "next/link";
 import { requestPasswordReset } from "@/lib/actions/auth";
 import { Button } from "@/components/ui/Button";
 
-export default function ForgotPasswordPage({
-  searchParams
+export default async function ForgotPasswordPage({
+  searchParams: searchParamsPromise
 }: {
-  searchParams: { error?: string; sent?: string };
+  searchParams: Promise<{ error?: string; sent?: string }>;
 }) {
+  const searchParams = await searchParamsPromise;
   return (
     <main className="min-h-screen flex items-center justify-center px-6 py-16 bg-void">
       <form action={requestPasswordReset} className="w-full max-w-sm">

@@ -117,7 +117,7 @@ function ClaimCard({ claim }: { claim: ClaimRow }) {
 }
 
 export default async function WalletPage() {
-  const supabase = createClient();
+  const supabase = await createClient();
   const {
     data: { user }
   } = await supabase.auth.getUser();

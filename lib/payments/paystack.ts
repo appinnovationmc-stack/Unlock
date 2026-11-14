@@ -10,7 +10,7 @@
  *   PAYSTACK_MODE = live | test
  */
 
-import crypto from "crypto";
+import { verifyPaystackSignature } from "./signature";
 import type {
   CreatePaymentParams,
   PaymentInitResult,
@@ -39,6 +39,7 @@ function isTestMode(): boolean {
 async function paystackFetch(path: string, options: RequestInit = {}) {
   const res = await fetch(`${PAYSTACK_BASE}${path}`, {
     ...options,
+    signal: AbortSignal.timeout(15000),
     headers: {
       Authorization: `Bearer ${getSecretKey()}`,
       "Content-Type": "application/json",
@@ -66,7 +67,7 @@ export class PaystackPaymentProvider implements PaymentProvider {
       const body = {
         amount: params.amountCents,
         currency: params.currency.toUpperCase(),
-        email: params.customerEmail || "billing@unlock.app",
+        email: params.customerEmail,
         reference: params.idempotencyKey,
         callback_url: params.callbackUrl,
         metadata: {
@@ -159,15 +160,7 @@ export class PaystackPaymentProvider implements PaymentProvider {
       return { valid: false, eventId: "", eventType: "", payload: null, error: "Missing signature" };
     }
 
-    const hash = crypto
-      .createHmac("sha512", secret)
-      .update(typeof rawBody === "string" ? rawBody : rawBody)
-      .digest("hex");
-
-    const hashBuf = Buffer.from(hash, "hex");
-    const sigBuf = Buffer.from(signatureHeader, "hex");
-    const validSignature =
-      hashBuf.length === sigBuf.length && crypto.timingSafeEqual(hashBuf, sigBuf);
+    const validSignature = verifyPaystackSignature(rawBody, signatureHeader, secret.split(","));
 
     if (!validSignature) {
       return { valid: false, eventId: "", eventType: "", payload: null, error: "Invalid signature" };
@@ -177,7 +170,7 @@ export class PaystackPaymentProvider implements PaymentProvider {
       const payload = typeof rawBody === "string" ? JSON.parse(rawBody) : JSON.parse(rawBody.toString());
       return {
         valid: true,
-        eventId: payload.data?.id?.toString() || payload.data?.reference || `ps_${Date.now()}`,
+        eventId: `${payload.event}:${payload.data?.id ?? payload.data?.reference ?? "ping"}`,
         eventType: payload.event || "unknown",
         payload
       };

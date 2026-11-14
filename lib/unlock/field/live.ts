@@ -26,7 +26,7 @@ function pinCampaignStub(pin: MapPin): Campaign {
  * so Discover cannot show 5 pins and 0 campaigns.
  */
 export async function getLiveField(): Promise<LiveField> {
-  const supabase = createClient();
+  const supabase = await createClient();
 
   let pins: MapPin[] = [];
   const { data: pinData, error: pinError } = await supabase.rpc("get_live_map_pins");

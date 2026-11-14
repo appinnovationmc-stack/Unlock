@@ -3,7 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import type { ImpactScore } from "@/lib/types";
 
 export async function getUserImpact(userId?: string): Promise<ImpactScore | null> {
-  const supabase = createClient();
+  const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   const target = userId ?? user?.id;
   if (!target) return null;
@@ -13,7 +13,7 @@ export async function getUserImpact(userId?: string): Promise<ImpactScore | null
 }
 
 export async function getImpactLeaderboard(limit = 20) {
-  const supabase = createClient();
+  const supabase = await createClient();
   const { data } = await supabase.from("impact_scores")
     .select("user_id, total_impact, verified_interactions, store_visits, conversions")
     .order("total_impact", { ascending: false }).limit(limit);

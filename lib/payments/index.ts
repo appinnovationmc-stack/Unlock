@@ -1,54 +1,28 @@
-/**
- * Payment service factory.
- * Selects provider based on env. Defaults to sandbox when no live keys.
- */
-
 import type { PaymentProvider, PayoutProvider } from "./types";
 import { sandboxProvider } from "./sandbox";
 import { createPaystackProvider } from "./paystack";
-
 export * from "./types";
 export { sandboxProvider } from "./sandbox";
 
 export function getPaymentProvider(): PaymentProvider {
-  const preferred = (process.env.PAYMENT_PROVIDER || "").toLowerCase();
-
-  if (preferred === "sandbox" || process.env.NODE_ENV === "test") {
-    return sandboxProvider;
+  const provider = process.env.PAYMENT_PROVIDER;
+  const mode = process.env.PAYMENT_ENVIRONMENT;
+  if (mode !== "live" && mode !== "test") throw new Error("Payments are not configured");
+  const productionProject = process.env.NEXT_PUBLIC_SUPABASE_URL?.includes("drhecmogteedejswlnpy");
+  if (mode === "test" && (productionProject || process.env.VERCEL_ENV === "production")) {
+    throw new Error("Test payments require a separate non-production database");
   }
-
-  if (preferred === "paystack" || process.env.PAYSTACK_SECRET_KEY) {
-    try {
-      return createPaystackProvider();
-    } catch {
-      console.warn("[payments] Paystack misconfigured — falling back to sandbox");
-      return sandboxProvider;
-    }
-  }
-
-  // Safe default: never pretend production money without keys
-  return sandboxProvider;
+  if (provider === "sandbox" && mode === "test") return sandboxProvider;
+  if (provider !== "paystack") throw new Error("Unsupported payment provider");
+  const key = process.env.PAYSTACK_SECRET_KEY || "";
+  if (!key.startsWith(mode === "live" ? "sk_live_" : "sk_test_")) throw new Error("Payment key and environment do not match");
+  return createPaystackProvider();
 }
 
-/** Placeholder payout abstraction — implement with Paystack Transfer / Ozow / bank API later */
 export function getPayoutProvider(): PayoutProvider {
-  return {
-    name: "sandbox-payout",
-    isSandbox: true,
-    async initiatePayout(params) {
-      return {
-        success: true,
-        providerReference: `sandbox_po_${Date.now()}`,
-        status: "queued"
-      };
-    },
-    async getPayoutStatus(ref) {
-      return { success: true, providerReference: ref, status: "paid" };
-    }
-  };
+  throw new Error("Payouts use the verified manual bank-transfer process; no automated transfer provider is enabled");
 }
 
 export function isProductionPaymentsEnabled(): boolean {
-  const p = getPaymentProvider();
-  return !p.isSandbox;
+  try { return !getPaymentProvider().isSandbox; } catch { return false; }
 }

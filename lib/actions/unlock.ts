@@ -5,7 +5,7 @@ import { revalidatePath } from "next/cache";
 import { deliverPushToCurrentUser } from "@/lib/push/deliver";
 
 export async function unlockCampaign(campaignId: string, referrerCreatorId?: string | null) {
-  const supabase = createClient();
+  const supabase = await createClient();
   const {
     data: { user }
   } = await supabase.auth.getUser();

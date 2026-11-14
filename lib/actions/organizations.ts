@@ -15,7 +15,7 @@ export async function createOrganization(formData: FormData) {
   const website = String(formData.get("website") ?? "").trim();
   const logoUrl = String(formData.get("logo_url") ?? "").trim() || null;
 
-  const supabase = createClient();
+  const supabase = await createClient();
   const {
     data: { user }
   } = await supabase.auth.getUser();
@@ -56,7 +56,7 @@ export async function updateOrganization(formData: FormData) {
   const website = String(formData.get("website") ?? "").trim();
   const logoUrl = String(formData.get("logo_url") ?? "").trim() || null;
 
-  const supabase = createClient();
+  const supabase = await createClient();
   const {
     data: { user }
   } = await supabase.auth.getUser();

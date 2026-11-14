@@ -30,13 +30,13 @@ export function applyBps(amountCents: number, bps: number): number {
 }
 
 export function assertPositiveCents(cents: number, label = "amount"): void {
-  if (!Number.isInteger(cents) || cents <= 0) {
+  if (!Number.isSafeInteger(cents) || cents <= 0) {
     throw new Error(`${label} must be a positive integer (cents)`);
   }
 }
 
 export function assertNonNegativeCents(cents: number, label = "amount"): void {
-  if (!Number.isInteger(cents) || cents < 0) {
+  if (!Number.isSafeInteger(cents) || cents < 0) {
     throw new Error(`${label} must be a non-negative integer (cents)`);
   }
 }

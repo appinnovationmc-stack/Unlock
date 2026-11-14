@@ -29,7 +29,7 @@ export async function Nav() {
   let role: string | null = null;
 
   try {
-    const supabase = createClient();
+    const supabase = await createClient();
     const {
       data: { user: u }
     } = await supabase.auth.getUser();

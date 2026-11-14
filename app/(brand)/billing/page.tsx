@@ -3,16 +3,18 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { formatMoney } from "@/lib/finance/money";
 import { DepositForm } from "./DepositForm";
+import { TopUpForm } from "./TopUpForm";
 import { FundCampaignForm } from "./FundCampaignForm";
 
 export const dynamic = "force-dynamic";
 
 export default async function BrandBillingPage({
-  searchParams
+  searchParams: searchParamsPromise
 }: {
-  searchParams: { payment?: string; sandbox?: string };
+  searchParams: Promise<{ payment?: string; sandbox?: string }>;
 }) {
-  const supabase = createClient();
+  const searchParams = await searchParamsPromise;
+  const supabase = await createClient();
   const {
     data: { user }
   } = await supabase.auth.getUser();
@@ -52,6 +54,9 @@ export default async function BrandBillingPage({
       .order("created_at", { ascending: false })
   ]);
 
+  if ([accountRes, budgetsRes, ledgerRes, intentsRes, campaignsRes].some(result => result.error)) {
+    return <main className="p-8"><h1>Financial information is unavailable</h1><p>Please retry or contact support. No balance is being shown while this data is unavailable.</p><Link href="/support">Contact support</Link></main>;
+  }
   const account = accountRes.data;
   const budgets = budgetsRes.data || [];
   const ledger = ledgerRes.data || [];
@@ -79,12 +84,8 @@ export default async function BrandBillingPage({
         </Link>
       </header>
 
-      {searchParams.payment === "success" && (
-        <div className="mb-6 border border-volt/30 bg-volt/5 px-4 py-3 font-mono text-sm text-volt">
-          Payment recorded
-          {searchParams.sandbox === "1" ? " (sandbox / test mode)" : ""}. Balance updated.
-        </div>
-      )}
+      {searchParams.payment && <p className="mb-6">Payment status is shown in the payment records below. A return from checkout alone does not confirm settlement.</p>}
+      {account?.reconciliation_hold && <p role="alert" className="mb-6 text-gold">Funding is temporarily on hold while your account is reconciled. Contact support for an update.</p>}
 
       <section className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-10">
         {[
@@ -132,13 +133,14 @@ export default async function BrandBillingPage({
           <div className="border border-white/5 divide-y divide-white/5">
             {budgets.map((b) => {
               const remaining =
-                Number(b.total_budget_cents) - Number(b.spent_cents) - Number(b.reserved_cents);
+                Number(b.total_budget_cents) - Number(b.platform_fee_cents) - Number(b.spent_cents) - Number(b.reserved_cents);
               const title = (b.campaigns as { title?: string } | null)?.title || b.campaign_id;
               return (
                 <div key={b.campaign_id} className="px-5 py-4 grid md:grid-cols-6 gap-2 text-sm">
                   <div className="md:col-span-2">
                     <p className="font-display text-fog">{title}</p>
                     <p className="font-mono text-[10px] text-mute uppercase">{b.status}</p>
+                    {["active","exhausted"].includes(b.status) && <TopUpForm campaignId={b.campaign_id} />}
                   </div>
                   <div>
                     <p className="font-mono text-[10px] text-mute">Total</p>
