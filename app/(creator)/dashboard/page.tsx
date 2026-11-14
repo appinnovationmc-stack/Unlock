@@ -7,7 +7,7 @@ import { CopyReferralLink } from "@/components/creator/CopyReferralLink";
 export const dynamic = "force-dynamic";
 
 export default async function CreatorDashboard() {
-  const supabase = createClient();
+  const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/login");
   const { data: creator } = await supabase.from("creators").select("*").eq("id", user.id).maybeSingle();

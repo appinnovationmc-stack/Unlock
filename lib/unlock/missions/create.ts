@@ -5,7 +5,7 @@ import { revalidatePath } from "next/cache";
 import { getMyOrgId } from "@/lib/actions/campaigns";
 
 export async function createMission(formData: FormData) {
-  const supabase = createClient();
+  const supabase = await createClient();
   const orgId = await getMyOrgId();
   if (!orgId) return { error: "No organisation" };
 

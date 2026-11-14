@@ -45,7 +45,7 @@ export async function deliverPushToCurrentUser(payload: PushPayload): Promise<De
       return { sent: false, reason: "vapid_not_configured" };
     }
 
-    const supabase = createClient();
+    const supabase = await createClient();
     const {
       data: { user }
     } = await supabase.auth.getUser();

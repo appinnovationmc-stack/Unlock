@@ -56,7 +56,7 @@ export async function getCampaignLiveEvents(
   const myOrg = await getMyOrgId();
   if (!myOrg || myOrg !== orgId) return empty;
 
-  const supabase = createClient();
+  const supabase = await createClient();
   const { data, error } = await supabase
     .from("interaction_events")
     .select(

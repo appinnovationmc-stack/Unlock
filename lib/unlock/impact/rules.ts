@@ -6,7 +6,7 @@ import { revalidatePath } from "next/cache";
 import type { InteractionEventType } from "@/lib/types";
 
 export async function upsertCampaignImpactRule(formData: FormData) {
-  const supabase = createClient();
+  const supabase = await createClient();
   const orgId = await getMyOrgId();
   if (!orgId) return { error: "No organisation" };
 

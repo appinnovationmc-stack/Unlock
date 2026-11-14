@@ -2,11 +2,12 @@ import Link from "next/link";
 import { updatePassword } from "@/lib/actions/auth";
 import { Button } from "@/components/ui/Button";
 
-export default function ResetPasswordPage({
-  searchParams
+export default async function ResetPasswordPage({
+  searchParams: searchParamsPromise
 }: {
-  searchParams: { error?: string };
+  searchParams: Promise<{ error?: string }>;
 }) {
+  const searchParams = await searchParamsPromise;
   return (
     <main className="min-h-screen flex items-center justify-center px-6 py-16 bg-void">
       <form action={updatePassword} className="w-full max-w-sm">

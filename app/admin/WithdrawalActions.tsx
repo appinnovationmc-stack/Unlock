@@ -53,13 +53,13 @@ export function WithdrawalActions({
           Start processing
         </button>
       )}
-      {(localStatus === "requested" || localStatus === "processing") && (
+      {localStatus === "processing" && (
         <button
           disabled={busy}
           onClick={() =>
             run(async () => {
-              const providerReference = window.prompt("Provider reference (optional):") || undefined;
-              const r = await adminCompleteWithdrawal(withdrawalId, providerReference);
+              const providerReference = window.prompt("Bank receipt reference (required):") || undefined;
+              const r = await adminCompleteWithdrawal(withdrawalId, providerReference, "manual_bank_transfer");
               if (!r.error) setLocalStatus("paid");
               return r;
             })

@@ -21,7 +21,7 @@ export async function verifyLocationCheckin(
   campaignId?: string,
   _locationId?: string | null
 ) {
-  const supabase = createClient();
+  const supabase = await createClient();
   const {
     data: { user }
   } = await supabase.auth.getUser();

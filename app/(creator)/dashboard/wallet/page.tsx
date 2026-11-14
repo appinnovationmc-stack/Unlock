@@ -45,7 +45,7 @@ const EARNING_GROUPS: { title: string; statuses: string[] }[] = [
 ];
 
 export default async function CreatorWalletPage() {
-  const supabase = createClient();
+  const supabase = await createClient();
   const {
     data: { user }
   } = await supabase.auth.getUser();

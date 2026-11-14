@@ -3,12 +3,13 @@
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import { randomUUID } from "crypto";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { getPaymentProvider, isProductionPaymentsEnabled } from "@/lib/payments";
 import { assertPositiveCents, formatMoney } from "@/lib/finance/money";
 import { getCurrentRole } from "@/lib/actions/auth";
 
 async function requireUser() {
-  const supabase = createClient();
+  const supabase = await createClient();
   const {
     data: { user }
   } = await supabase.auth.getUser();
@@ -41,55 +42,33 @@ export async function initiateBrandDeposit(params: {
     const { supabase, user } = await requireOrgMember(params.orgId);
 
     const provider = getPaymentProvider();
-    const idempotencyKey = `dep_${params.orgId}_${params.amountCents}_${randomUUID().slice(0, 8)}`;
-
-    const init = await provider.createPayment({
-      amountCents: params.amountCents,
-      currency: "ZAR",
-      purpose: params.purpose || "top_up",
-      orgId: params.orgId,
-      campaignId: params.campaignId,
-      description: params.campaignId
-        ? `Campaign funding ${formatMoney(params.amountCents)}`
-        : `Unlock balance top-up ${formatMoney(params.amountCents)}`,
-      customerEmail: params.customerEmail,
-      idempotencyKey,
-      callbackUrl: `${process.env.NEXT_PUBLIC_SITE_URL || ""}/billing?payment=return`,
-      metadata: {
-        user_id: user.id
-      }
+    const idempotencyKey = `${provider.isSandbox ? "sandbox" : "dep"}_${randomUUID()}`;
+    // Persist the reference before contacting the provider so early webhooks can settle it.
+    const { data: intentId, error: intentError } = await supabase.rpc("create_deposit_intent", {
+      p_org_id: params.orgId, p_amount_cents: params.amountCents,
+      p_campaign_id: params.campaignId || null, p_reference: idempotencyKey,
+      p_provider: provider.name, p_is_sandbox: provider.isSandbox
     });
-
-    if (!init.success) {
-      return { error: init.error || "Payment initiation failed" };
-    }
-
-    const { data: intent, error } = await supabase
-      .from("payment_intents")
-      .insert({
-        org_id: params.orgId,
-        campaign_id: params.campaignId || null,
-        amount_cents: params.amountCents,
-        currency: "ZAR",
-        purpose: params.purpose || "top_up",
-        status: "pending",
-        provider: provider.name,
-        provider_reference: init.providerReference,
-        provider_client_secret: init.clientSecret || null,
-        idempotency_key: idempotencyKey,
-        description: params.campaignId ? "Campaign funding" : "Balance top-up",
-        created_by: user.id,
-        metadata: { is_sandbox: provider.isSandbox }
-      })
-      .select("id")
-      .single();
-
-    if (error) {
-      return { error: error.message };
-    }
+    if (intentError) throw new Error(intentError.message);
+    const init = await provider.createPayment({
+      amountCents: params.amountCents, currency: "ZAR", purpose: "top_up",
+      orgId: params.orgId, campaignId: params.campaignId,
+      description: `Unlock balance top-up ${formatMoney(params.amountCents)}`,
+      customerEmail: user.email, idempotencyKey,
+      callbackUrl: `${process.env.NEXT_PUBLIC_SITE_URL || ""}/billing?payment=return`,
+      metadata: { user_id: user.id }
+    });
+    if (!init.success) return { error: init.error || "Payment initiation failed", paymentIntentId: intentId };
+    if (init.providerReference !== idempotencyKey) throw new Error("Payment provider reference mismatch");
+    const admin = createAdminClient();
+    if (!admin) throw new Error("Payment service unavailable");
+    const { error: saveError } = await admin.from("payment_intents").update({
+      provider_client_secret: init.clientSecret || null
+    }).eq("id", intentId);
+    if (saveError) throw new Error(saveError.message);
 
     return {
-      paymentIntentId: intent.id,
+      paymentIntentId: intentId,
       authorizationUrl: init.authorizationUrl,
       providerReference: init.providerReference,
       isSandbox: provider.isSandbox,
@@ -112,7 +91,7 @@ export async function fundCampaignBudgetAction(params: {
     assertPositiveCents(params.totalBudgetCents);
     await requireUser();
 
-    const supabase = createClient();
+    const supabase = await createClient();
     const { data, error } = await supabase.rpc("fund_campaign_budget", {
       p_campaign_id: params.campaignId,
       p_total_budget_cents: params.totalBudgetCents,
@@ -184,6 +163,9 @@ export async function getBrandFinancials(orgId: string) {
         .limit(20)
     ]);
 
+    for (const result of [account, budgets, ledger, intents, invoices]) {
+      if (result.error) throw new Error(result.error.message);
+    }
     return {
       account: account.data,
       budgets: budgets.data || [],
@@ -217,6 +199,9 @@ export async function getCreatorWallet() {
         .limit(20)
     ]);
 
+    for (const result of [wallet, earnings, withdrawals]) {
+      if (result.error) throw new Error(result.error.message);
+    }
     return {
       wallet: wallet.data || {
         pending_cents: 0,
@@ -367,38 +352,28 @@ export async function getPlatformRevenueSummary(fromIso?: string, toIso?: string
 
     const { supabase } = await requireUser();
 
-    let ledgerQuery = supabase
-      .from("financial_ledger")
-      .select("entry_type, amount_cents, status, created_at");
-
-    if (fromIso) ledgerQuery = ledgerQuery.gte("created_at", fromIso);
-    if (toIso) ledgerQuery = ledgerQuery.lte("created_at", toIso);
-
-    const { data: ledger } = await ledgerQuery;
-
-    const rows = ledger || [];
-    const sum = (type: string) =>
-      rows
-        .filter((r) => r.entry_type === type && r.status === "completed")
-        .reduce((a, r) => a + Number(r.amount_cents), 0);
-
-    const platformFees = sum("platform_fee");
-    const creatorPayouts = Math.abs(sum("withdrawal"));
-    const rewardCosts = Math.abs(sum("reward_cost"));
-    const deposits = sum("brand_deposit");
-    const campaignFunding = Math.abs(sum("campaign_funding"));
-
-    return {
-      grossCampaignVolumeCents: campaignFunding,
-      platformRevenueCents: platformFees,
-      creatorPayoutsCents: creatorPayouts,
-      rewardExpenditureCents: rewardCosts,
-      refundsCents: Math.abs(sum("refund")),
-      netPlatformRevenueCents: platformFees - rewardCosts,
-      depositsCents: deposits,
-      transactionCount: rows.length
+    const { data, error } = await supabase.rpc("platform_revenue_summary", {
+      p_from: fromIso || null, p_to: toIso || null
+    });
+    if (error) throw new Error(error.message);
+    return data as {
+      grossCampaignVolumeCents: number; platformRevenueCents: number;
+      creatorPayoutsCents: number; rewardExpenditureCents: number;
+      refundsCents: number; netPlatformRevenueCents: number;
+      depositsCents: number; transactionCount: number;
     };
   } catch (e) {
     return { error: e instanceof Error ? e.message : "Revenue summary failed" };
   }
+}
+
+export async function topUpCampaign(campaignId: string, amountCents: number, requestKey: string) {
+  try {
+    assertPositiveCents(amountCents);
+    const { supabase } = await requireUser();
+    const { error } = await supabase.rpc("top_up_campaign_budget", { p_campaign_id: campaignId, p_amount_cents: amountCents, p_key: requestKey });
+    if (error) throw new Error(error.message);
+    revalidatePath("/billing");
+    return { success: true };
+  } catch (error) { return { error: error instanceof Error ? error.message : "Top-up failed" }; }
 }

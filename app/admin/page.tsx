@@ -8,7 +8,7 @@ import { WithdrawalActions } from "./WithdrawalActions";
 export const dynamic = "force-dynamic";
 
 export default async function AdminPage() {
-  const supabase = createClient();
+  const supabase = await createClient();
   const {
     data: { user }
   } = await supabase.auth.getUser();
@@ -29,6 +29,7 @@ export default async function AdminPage() {
     );
   }
 
+  const { data: supportRequests, error: supportError } = await supabase.from("support_requests").select("id,user_id,category,message,status,created_at").eq("status", "open").order("created_at").limit(100);
   const { count: orgCount } = await supabase
     .from("organizations")
     .select("id", { count: "exact", head: true });
@@ -172,6 +173,9 @@ export default async function AdminPage() {
           <p className="p-5 text-mute font-mono text-sm">No campaigns yet.</p>
         )}
       </div>
-    </main>
+    <section className="mt-10"><h2 className="text-xl mb-4">Open support and privacy requests</h2>
+        {supportError ? <p>Support requests are unavailable.</p> : (supportRequests || []).map(request => <article key={request.id} className="border p-4 mb-3"><p>{request.category} · {request.id}</p><p className="whitespace-pre-wrap">{request.message}</p><p className="text-xs">Account: {request.user_id}</p></article>)}
+      </section>
+      </main>
   );
 }

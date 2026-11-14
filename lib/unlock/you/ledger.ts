@@ -26,7 +26,7 @@ function label(kind: string) {
 }
 
 export async function getConsumerLedger(userId: string): Promise<ConsumerLedger> {
-  const supabase = createClient();
+  const supabase = await createClient();
 
   const { count: unlocks } = await supabase
     .from("campaign_participations")

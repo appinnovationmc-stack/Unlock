@@ -11,13 +11,15 @@
     "test:unlock": "node scripts/test-unlock-concurrency.mjs",
     "test:fraud": "node scripts/test-fraud-logic.mjs",
     "test:recon": "node scripts/test-reconciliation-logic.mjs",
-    "test:gates": "node scripts/test-finance-logic.mjs && node scripts/test-fraud-logic.mjs && node scripts/test-reconciliation-logic.mjs && node scripts/test-unlock-concurrency.mjs"
+    "test:gates": "node scripts/test-finance-logic.mjs && node scripts/test-fraud-logic.mjs && node scripts/test-reconciliation-logic.mjs && node scripts/test-unlock-concurrency.mjs",
+    "test:payments": "node --test tests/payment-signature.test.mjs",
+    "test:database": "bash scripts/test-database.sh"
   },
   "dependencies": {
-    "@supabase/ssr": "^0.5.1",
-    "@supabase/supabase-js": "^2.45.4",
+    "@supabase/ssr": "0.12.7",
+    "@supabase/supabase-js": "2.119.0",
     "maplibre-gl": "^6.6.0",
-    "next": "14.2.35",
+    "next": "15.5.29",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "web-push": "^3.6.7"
@@ -29,9 +31,12 @@
     "@types/web-push": "^3.6.4",
     "autoprefixer": "^10.4.19",
     "eslint": "^8.57.1",
-    "eslint-config-next": "^14.2.35",
-    "postcss": "^8.4.40",
+    "eslint-config-next": "15.5.29",
+    "postcss": "8.5.33",
     "tailwindcss": "^3.4.7",
     "typescript": "^5.5.4"
+  },
+  "overrides": {
+    "postcss": "8.5.33"
   }
 }

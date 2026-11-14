@@ -1,26 +1,18 @@
 "use server";
-
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 
-export async function redeemClaim(claimId: string) {
-  const supabase = createClient();
-  const {
-    data: { user }
-  } = await supabase.auth.getUser();
+export async function prepareRedemption(claimId: string) {
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("prepare_reward_redemption", { p_claim_id: claimId });
+  return error ? { error: error.message } : { token: data as string };
+}
 
-  if (!user) {
-    return { error: "Log in to redeem.", ok: false };
-  }
-
-  const { error } = await supabase.rpc("redeem_reward_claim", {
-    p_claim_id: claimId
-  });
-
-  if (error) {
-    return { error: error.message, ok: false };
-  }
-
+export async function merchantRedeem(formData: FormData) {
+  const supabase = await createClient();
+  const token = String(formData.get("token") || "").trim();
+  const { error } = await supabase.rpc("merchant_redeem_reward", { p_token: token });
+  if (error) return { error: error.message };
   revalidatePath("/wallet");
-  return { error: null, ok: true };
+  return { success: true };
 }

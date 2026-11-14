@@ -16,13 +16,15 @@ import Link from "next/link";
 export const dynamic = "force-dynamic";
 
 export default async function CampaignPage({
-  params,
-  searchParams
+  params: paramsPromise,
+  searchParams: searchParamsPromise
 }: {
-  params: { id: string };
-  searchParams: { ref?: string; code?: string };
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ ref?: string; code?: string }>;
 }) {
-  const supabase = createClient();
+  const searchParams = await searchParamsPromise;
+  const params = await paramsPromise;
+  const supabase = await createClient();
   const field = await getLiveField();
   const pin = field.pins.find((p) => p.campaign_id === params.id) ?? null;
 
